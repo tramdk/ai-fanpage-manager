@@ -3,12 +3,15 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import authRoutes from './routes/auth.routes.js';
 import userRoutes from './routes/user.routes.js';
-import facebookRoutes from './routes/facebook.routes.js';
+import fanpageRoutes from './routes/fanpage.routes.js';
+import fbAppRoutes from './routes/fbapp.routes.js';
 import aiRoutes from './routes/ai.routes.js';
 import scheduleRoutes from './routes/schedule.routes.js';
 import postRoutes from './routes/post.routes.js';
 import adminRoutes from './routes/admin.routes.js';
 import dashboardRoutes from './routes/dashboard.routes.js';
+import topicRoutes from './routes/topic.routes.js';
+import oauthRoutes from './routes/oauth.routes.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -25,15 +28,19 @@ app.use('/api/media', express.static(path.join(PROJECT_ROOT, 'public/uploads')))
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
-app.use('/api/facebook', facebookRoutes); // note: some routes were /api/facebook-apps, some /api/fanpages
 app.use('/api/ai', aiRoutes);
 app.use('/api/schedules', scheduleRoutes);
 app.use('/api/posts', postRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/dashboard', dashboardRoutes);
+app.use('/api/topics', topicRoutes);
 
-// Compatibility with legacy routes if needed
-app.use('/api/facebook-apps', facebookRoutes);
-app.use('/api/fanpages', facebookRoutes);
+// Detailed Facebook/Fanpage routing
+app.use('/api/fanpages', fanpageRoutes);
+app.use('/api/facebook-apps', fbAppRoutes);
+app.use('/api/facebook', fanpageRoutes); // For /api/facebook/post and /api/facebook/exchange-token
+
+// [OAUTH] Callback handler MUST be top-level or whatever redirect_uri is set to
+app.use('/auth', oauthRoutes);
 
 export default app;

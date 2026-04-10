@@ -1,71 +1,115 @@
 import { GoogleGenAI } from '@google/genai';
-import dotenv from 'dotenv';
+import { uploadBufferToCloudinary } from '../config/cloudinary.js';
+import path from 'path';
+import fs from 'fs';
+import { fileURLToPath } from 'url';
 
-dotenv.config();
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const PROJECT_ROOT = path.resolve(__dirname, '../../');
 
-export const GENAI_MODELS = [
-  'gemini-2.0-flash',
-  'gemini-1.5-pro-latest',
-  'gemini-1.5-flash-002',
-  'gemini-1.5-flash-latest',
-  'gemini-1.5-flash',
-  'gemini-1.5-pro'
-];
+// Use the model name WITHOUT 'models/' prefix — the @google/genai v1 SDK requires it
+const DEFAULT_MODEL = 'gemini-2.0-flash';
 
-export function cleanAIResult(text: string): string {
-  if (!text) return text;
+export function cleanAIResult(text: string) {
+  if (!text) return '';
   let cleaned = text.trim();
   
+  // Remove markdown code blocks
   if (cleaned.startsWith('```')) {
     const lines = cleaned.split('\n');
-    if (cleaned.endsWith('```')) {
-       const firstNewline = cleaned.indexOf('\n');
-       if (firstNewline !== -1) {
-         cleaned = cleaned.substring(firstNewline, cleaned.length - 3).trim();
-       }
-    } else {
-       const firstNewline = cleaned.indexOf('\n');
-       if (firstNewline !== -1) {
-         cleaned = cleaned.substring(firstNewline).trim();
-       }
-    }
+    cleaned = lines.slice(1, lines.length - 1).join('\n').trim();
   }
 
+  // Remove common AI conversational prefixes
   const patterns = [
     /^Sure, here (is|are) [^:]+:\s*/i,
     /^Here is (the|a) [^:]+:\s*/i,
     /^Certainly! Here [^:]+:\s*/i,
-    /^Sẵn lòng, đây là [^:]+:\s*/i,
-    /^Đây là nội dung [^:]+:\s*/i,
-    /^Dưới đây là [^:]+:\s*/i,
-    /^Nội dung bài viết:\s*/i,
-    /^Nội dung Facebook Post:\s*/i,
-    /^Title:\s*/i,
-    /^Caption:\s*/i
+    /^Sẵn lòng, đây là/i,
+    /^Đây là nội dung/i,
+    /^Dưới đây là/i
   ];
 
   for (const pattern of patterns) {
-    if (pattern.test(cleaned)) {
-      cleaned = cleaned.replace(pattern, '').trim();
-    }
+    cleaned = cleaned.replace(pattern, '').trim();
   }
 
-  if (cleaned.startsWith('"') && cleaned.endsWith('"')) {
-    cleaned = cleaned.substring(1, cleaned.length - 1).trim();
-  }
-
-  return cleaned;
+  return cleaned.replace(/```/g, '').trim();
 }
 
-export async function getStableModel(genAI: GoogleGenAI) {
-  for (const modelName of GENAI_MODELS) {
+/**
+ * Text Generation Service
+ */
+export async function generateText(prompt: string) {
+  const genAI = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || '' });
+  const result = await genAI.models.generateContent({ model: DEFAULT_MODEL, contents: prompt });
+  return cleanAIResult(result.text || '');
+}
+
+/**
+ * Image Generation Service with Multi-stage Fallback
+ */
+export async function generateImage(topic: string, userPrompt?: string) {
+  const genAI = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || '' });
+
+  // PHASE 1: Refine prompt with Gemini
+  const refinementPrompt = `Refine this concept for a high-quality AI image generator (Flux/SDXL). 
+  Topic: ${topic || userPrompt}. 
+  Return ONLY a detailed English prompt describing the scene, lighting, and style. No intro.`;
+  
+  const kResult = await genAI.models.generateContent({ model: DEFAULT_MODEL, contents: refinementPrompt });
+  const refinedPrompt = kResult.text?.trim() || userPrompt || topic;
+  const keyword = encodeURIComponent((topic || userPrompt || 'flower').substring(0, 50));
+
+  // PHASE 2: Try Pollinations (download + persist)
+  const seed = Math.floor(Math.random() * 9999999);
+  const aiGenUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(refinedPrompt)}?width=1024&height=1024&nologo=true&seed=${seed}`;
+  
+  try {
+    console.log('[AI-IMAGE] Trying Pollinations...');
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 12000);
+    const imageRes = await fetch(aiGenUrl, { signal: controller.signal });
+    clearTimeout(timeout);
+    
+    if (!imageRes.ok) throw new Error(`Pollinations status ${imageRes.status}`);
+    const buffer = Buffer.from(await imageRes.arrayBuffer());
+    console.log('[AI-IMAGE] Pollinations OK, persisting...');
+
+    // PHASE 3: Persist to Cloudinary or local disk
     try {
-      const model = genAI.getGenerativeModel({ model: modelName });
-      // Quick check if model is available
-      return model;
+      return await uploadBufferToCloudinary(buffer);
+    } catch {
+      const filename = `ai-${Date.now()}.jpg`;
+      const uploadDir = path.join(PROJECT_ROOT, 'public', 'uploads');
+      if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
+      fs.writeFileSync(path.join(uploadDir, filename), buffer);
+      return `/api/media/${filename}`;
+    }
+  } catch (err: any) {
+    console.warn(`[AI-IMAGE] Pollinations failed (${err.message}). Using direct URL fallback.`);
+  }
+
+  // PHASE 2 Fallback A: Unsplash direct URL (no download needed)
+  if (process.env.UNSPLASH_ACCESS_KEY) {
+    try {
+      const uRes = await fetch(`https://api.unsplash.com/photos/random?query=${keyword}&orientation=landscape`, {
+        headers: { 'Authorization': `Client-ID ${process.env.UNSPLASH_ACCESS_KEY}` },
+        signal: AbortSignal.timeout(5000)
+      });
+      const uData = await uRes.json();
+      if (uData.urls?.regular) {
+        console.log('[AI-IMAGE] Unsplash fallback OK');
+        return uData.urls.regular; // Return URL directly — no download
+      }
     } catch (e) {
-      continue;
+      console.warn('[AI-IMAGE] Unsplash failed, trying Picsum...');
     }
   }
-  return genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+
+  // PHASE 2 Fallback B: Picsum (reliable, fast, no API key)
+  const picsumUrl = `https://picsum.photos/seed/${seed}/1024/1024`;
+  console.log('[AI-IMAGE] Using Picsum fallback:', picsumUrl);
+  return picsumUrl; // Return URL directly — guaranteed to work
 }

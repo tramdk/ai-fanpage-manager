@@ -1,86 +1,49 @@
 import { Router } from 'express';
-import { prisma } from '../config/prisma.js';
-import { decrypt } from '../utils/encryption.js';
 import { authenticateToken } from '../middleware/auth.js';
-import { postToFacebook } from '../services/facebook.service.js';
+import * as postService from '../services/post.service.js';
 
 const router = Router();
 
-router.get('/posts', authenticateToken, async (req: any, res) => {
+router.get('/', authenticateToken, async (req: any, res) => {
     try {
-      const posts = await prisma.post.findMany({
-        where: { userId: req.user.id },
-        orderBy: { createdAt: 'desc' },
-        include: { fanpage: { select: { name: true } } }
-      });
+      const posts = await postService.getPostHistory(req.user.id);
       res.json(posts);
     } catch (error: any) {
       res.status(500).json({ error: error.message });
     }
 });
 
-router.post('/posts/queue', authenticateToken, async (req: any, res) => {
-    const { scheduleId, posts } = req.body;
-    if (!scheduleId || !Array.isArray(posts)) return res.status(400).json({ error: 'Missing scheduleId or posts array' });
-
+router.delete('/schedule/:scheduleId/queue', authenticateToken, async (req: any, res) => {
     try {
-      const schedule = await prisma.schedule.findUnique({
-        where: { id: scheduleId, userId: req.user.id }
-      });
-      if (!schedule) return res.status(404).json({ error: 'Schedule not found' });
-
-      // Delete existing queued posts for this schedule
-      await prisma.post.deleteMany({ where: { scheduleId, status: 'queued', userId: req.user.id } });
-
-      const createdPosts = await prisma.post.createMany({
-        data: posts.map((p: any, index: number) => ({
-          scheduleId,
-          userId: req.user.id,
-          fanpageId: schedule.fanpageId,
-          content: p.content,
-          imageUrl: p.imageUrl,
-          status: 'queued',
-          topic: schedule.topic,
-          orderIndex: index
-        }))
-      });
-
-      res.json({ message: 'Queue updated successfully', count: createdPosts.count });
+      const result = await postService.clearScheduleQueue(req.user.id, req.params.scheduleId);
+      res.json({ success: true, ...result });
     } catch (error: any) {
       res.status(500).json({ error: error.message });
     }
 });
 
-router.post('/facebook/post', authenticateToken, async (req: any, res) => {
-    const { content, imageUrl, fanpageId } = req.body;
-    if (!fanpageId) return res.status(400).json({ error: 'Fanpage ID is required' });
-
+router.put('/:id', authenticateToken, async (req: any, res) => {
     try {
-      const fanpage = await prisma.fanpage.findUnique({
-        where: { pageId: fanpageId, userId: req.user.id },
-        include: { user: true }
-      });
+      const post = await postService.updatePost(req.user.id, req.params.id, req.body);
+      res.json({ success: true, post });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+});
 
-      if (!fanpage || !fanpage.accessToken || !fanpage.user) return res.status(404).json({ error: 'Fanpage not found or user missing' });
+router.post('/queue', authenticateToken, async (req: any, res) => {
+    try {
+      const post = await postService.queuePost(req.user.id, req.body);
+      res.json({ success: true, post });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+});
 
-      const decryptedToken = decrypt(fanpage.accessToken, fanpage.user.email);
-      const postData = { content, imageUrl };
-      
-      const result = await postToFacebook(postData, fanpage, decryptedToken);
-
-      await prisma.post.create({
-        data: {
-          userId: req.user.id,
-          fanpageId,
-          content: content || '',
-          imageUrl,
-          status: 'published',
-          topic: 'Manual Post',
-          fbPostId: result.id
-        }
-      });
-
-      res.json({ success: true, postId: result.id });
+router.post('/reorder', authenticateToken, async (req: any, res) => {
+    try {
+      await postService.reorderPosts(req.user.id, req.body.postIds);
+      res.json({ success: true });
     } catch (error: any) {
       res.status(500).json({ error: error.message });
     }

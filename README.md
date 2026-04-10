@@ -34,19 +34,19 @@
 
 ### 🤖 AI Content Studio
 - Sinh bài viết Facebook từ chủ đề và từ khóa tùy chỉnh.
-- Sinh hình ảnh minh họa bằng Gemini AI (hoặc fallback về Unsplash API).
+- Sinh hình ảnh minh họa bằng Pollinations AI (Flux/SDXL) với fallback tự động về Unsplash và LoremFlickr.
 - Chỉnh sửa nội dung, tái sinh một phần (text hoặc ảnh) trước khi đăng.
 - Đăng lên Fanpage trực tiếp hoặc lưu vào hàng đợi.
 
 ### 📅 Automation & Lập lịch
 - Tạo lịch đăng bài định kỳ: chọn Fanpage, chủ đề, giờ đăng, số lượng bài trong một lần chạy.
 - Hệ thống **Cron Job** tự động kích hoạt đúng giờ, sinh content và đăng lên Facebook.
-- Hỗ trợ **Advanced Prompt** để tinh chỉnh giọng văn, phong cách theo từng chiến dịch.
+- Hỗ trợ **Automation Config** để tinh chỉnh giọng văn, từ khóa, chỉ dẫn bổ sung.
 - Quản lý trạng thái lịch trình: `active` / `suspended`.
 
 ### 🗺️ AI Campaign Architect
 - Lập kế hoạch chiến dịch nội dung dài hạn theo phễu marketing **Hook → Narrative → Conversion**.
-- **Visual Journey Explorer**: bản đồ nội dung trực quan, hỗ trợ kéo thả (Drag & Drop) để sắp xếp lại thứ tự bài viết.
+- **Visual Journey Explorer**: bản đồ nội dung trực quan, hỗ trợ kéo thả để sắp xếp lại thứ tự bài viết.
 - Tự động sinh chuỗi bài viết có liên kết logic, phù hợp cho các chiến dịch ra mắt sản phẩm, thương hiệu, sự kiện.
 
 ### 📊 Lịch sử bài đăng
@@ -62,6 +62,7 @@
 ### 👑 Admin Panel
 - Quản lý toàn bộ người dùng trong hệ thống.
 - Kích hoạt / thu hồi quyền truy cập tài khoản.
+- Reset mật khẩu tạm thời cho người dùng.
 - Chỉ hiển thị với tài khoản có role `admin`.
 
 ---
@@ -69,50 +70,74 @@
 ## 🏗️ Kiến trúc hệ thống
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                        CLIENT (Browser)                     │
-│  React 19 + TypeScript  ·  Vite 6  ·  TailwindCSS 4        │
-│  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐   │
-│  │Dashboard │  │  AI      │  │Campaign  │  │Settings  │   │
-│  │ View     │  │ Studio   │  │Architect │  │  View    │   │
-│  └──────────┘  └──────────┘  └──────────┘  └──────────┘   │
-│               ApiService Layer (centralized)                │
-└───────────────────────┬─────────────────────────────────────┘
-                        │ HTTP / REST API
-┌───────────────────────▼─────────────────────────────────────┐
-│                  SERVER (Node.js / Express)                  │
-│  server.ts (monolith + modular route handlers)              │
-│  ┌──────────┐  ┌──────────┐  ┌──────────────────────────┐  │
-│  │Auth &    │  │Facebook  │  │  AI Generation Pipeline  │  │
-│  │JWT Guard │  │Graph API │  │  (Gemini text + image)   │  │
-│  └──────────┘  └──────────┘  └──────────────────────────┘  │
-│  ┌──────────┐  ┌──────────┐  ┌──────────────────────────┐  │
-│  │ Cron Job │  │ Cloudinary│  │  Prisma ORM (SQLite)     │  │
-│  │(node-cron│  │(Image    │  │                          │  │
-│  │scheduler)│  │ storage) │  │                          │  │
-│  └──────────┘  └──────────┘  └──────────────────────────┘  │
-└─────────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────┐
+│                        CLIENT (Browser)                         │
+│  React 19 + TypeScript  ·  Vite 6  ·  TailwindCSS 4            │
+│  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐        │
+│  │Dashboard │  │  AI      │  │Campaign  │  │Settings  │        │
+│  │ View     │  │ Studio   │  │Architect │  │  View    │        │
+│  └──────────┘  └──────────┘  └──────────┘  └──────────┘        │
+│                   ApiService Layer (centralized)                 │
+└──────────────────────────┬──────────────────────────────────────┘
+                           │ HTTP / REST API
+┌──────────────────────────▼──────────────────────────────────────┐
+│                  SERVER (Node.js / Express)                      │
+│                                                                  │
+│  ┌─────────────────────────────────────────────────────────┐    │
+│  │                  Route Layer (Thin)                      │    │
+│  │  auth · fanpage · ai · schedule · post · admin · ...    │    │
+│  └───────────────────────┬─────────────────────────────────┘    │
+│                          │ delegates to                          │
+│  ┌───────────────────────▼─────────────────────────────────┐    │
+│  │                 Service Layer (Business Logic)           │    │
+│  │  AuthService  ·  AiService  ·  FanpageService           │    │
+│  │  ScheduleService  ·  PostService  ·  OAuthService        │    │
+│  │  AdminService  ·  FbAppService  ·  FacebookService       │    │
+│  └───────────────────────┬─────────────────────────────────┘    │
+│                          │                                       │
+│  ┌───────────────────────▼─────────────────────────────────┐    │
+│  │              Infrastructure Layer                        │    │
+│  │  Prisma ORM  ·  node-cron  ·  Cloudinary  ·  Multer     │    │
+│  └─────────────────────────────────────────────────────────┘    │
+│                                                                  │
+└──────────────────────────────────────────────────────────────────┘
 ```
 
-### Luồng nghiệp vụ chính
+### Luồng tạo ảnh AI (Multi-stage Fallback)
 
 ```
-User tạo Schedule
-      │
-      ▼
-Cron Job kích hoạt đúng giờ
-      │
-      ├──▶ Gemini AI sinh nội dung bài viết
-      │
-      ├──▶ Gemini AI sinh / tìm kiếm hình ảnh
-      │    └──▶ Tải lên Cloudinary (Storage lâu dài)
-      │
-      ├──▶ Lưu Post vào DB (status: queued)
-      │
-      └──▶ Gọi Facebook Graph API đăng bài
-               │
-               ├── Thành công → status: posted
-               └── Thất bại   → status: failed + ghi lỗi
+User yêu cầu tạo ảnh
+       │
+       ▼
+Gemini AI mở rộng prompt (Refinement)
+       │
+       ▼
+Pollinations.ai (Flux/SDXL) ──[timeout 12s]──▶ Thất bại?
+       │                                               │
+       ▼ Thành công                                    ▼
+  Tải lên Cloudinary                        Unsplash API (nếu có key)
+       │                                               │
+       ▼                                               ▼ Thất bại?
+  Trả imageUrl                                  LoremFlickr (fallback cuối)
+```
+
+### Luồng đăng bài tự động (Cron Job)
+
+```
+Cron Job kích hoạt đúng giờ (node-cron)
+       │
+       ├──▶ Lấy bài "queued" đầu tiên trong hàng đợi
+       │
+       ├──▶ Giải mã Access Token (AES encryption)
+       │
+       ├──▶ Gọi Facebook Graph API v18.0
+       │         ├── Text only → /feed
+       │         ├── 1 ảnh    → /photos
+       │         └── n ảnh    → /feed + attached_media
+       │
+       └──▶ Cập nhật trạng thái Post
+                 ├── Thành công → status: published
+                 └── Thất bại   → status: failed + ghi lỗi
 ```
 
 ---
@@ -126,7 +151,6 @@ Cron Job kích hoạt đúng giờ
 | **TypeScript**        | ~5.8.2     | Type safety toàn bộ codebase                      |
 | **Vite**              | ^6.2.0     | Build tool & Dev server (HMR)                     |
 | **TailwindCSS**       | ^4.1.14    | Utility-first CSS framework                       |
-| **Motion (Framer)**   | ^12.23.24  | Animations & transitions                          |
 | **Lucide React**      | ^0.546.0   | Icon library                                      |
 
 ### Backend
@@ -134,26 +158,28 @@ Cron Job kích hoạt đúng giờ
 |-----------------------|------------|---------------------------------------------------|
 | **Node.js + Express** | ^4.21.2    | HTTP server & REST API                            |
 | **tsx**               | ^4.21.0    | TypeScript execution (dev mode)                   |
-| **esbuild**           | ^0.27.4    | Bundle server cho production                      |
 | **node-cron**         | ^4.2.1     | Cron job scheduler (tự động đăng bài)             |
-| **Multer**            | ^2.1.1     | File upload (ảnh AI tạo ra)                       |
+| **Multer**            | ^2.1.1     | File upload (ảnh, video)                          |
 | **bcryptjs**          | ^3.0.3     | Hash mật khẩu người dùng                         |
 | **jsonwebtoken**      | ^9.0.3     | Xác thực JWT                                      |
-| **Cloudinary**        | ^2.5.1     | Lưu trữ hình ảnh trên đám mây (Cloud Storage)   |
+| **Cloudinary**        | ^2.5.1     | Lưu trữ hình ảnh trên đám mây                    |
+| **@google/genai**     | ^1.29.0    | Google Gemini AI SDK                              |
 
 ### Database & ORM
 | Công nghệ       | Phiên bản  | Mục đích                                              |
 |-----------------|------------|-------------------------------------------------------|
 | **Prisma ORM**  | ^6.19.3    | Type-safe database client                             |
-| **SQLite**      | (Prisma)   | Database nhúng, dễ deploy, không cần server riêng     |
+| **PostgreSQL**  | -          | Database production                                   |
 
 ### AI & Tích hợp bên thứ ba
-| Dịch vụ                    | Mục đích                                              |
-|----------------------------|-------------------------------------------------------|
-| **Google Gemini AI**       | Sinh nội dung văn bản & hình ảnh cho bài đăng         |
-| **Facebook Graph API**     | Đăng bài lên Fanpage, OAuth Fanpage connection        |
-| **Unsplash API** (fallback)| Hình ảnh dự phòng khi Gemini image generation thất bại|
-| **Cloudinary**             | Nền tảng lưu trữ và tối ưu hóa hình ảnh              |
+| Dịch vụ                     | Mục đích                                              |
+|-----------------------------|-------------------------------------------------------|
+| **Google Gemini AI**        | Sinh nội dung văn bản & tinh chỉnh prompt             |
+| **Pollinations.ai**         | Tạo hình ảnh chất lượng cao (Flux/SDXL)               |
+| **Facebook Graph API v18**  | Đăng bài lên Fanpage, OAuth Fanpage connection        |
+| **Unsplash API** (fallback) | Hình ảnh dự phòng cấp 1                               |
+| **LoremFlickr** (fallback)  | Hình ảnh dự phòng cấp 2 (không cần API key)          |
+| **Cloudinary**              | Lưu trữ và tối ưu hóa hình ảnh                       |
 
 ---
 
@@ -162,36 +188,67 @@ Cron Job kích hoạt đúng giờ
 ```
 fanpage-ai-manager/
 ├── prisma/
-│   └── schema.prisma          # Database schema (User, Fanpage, Schedule, Post, Topic)
+│   └── schema.prisma             # DB schema (User, Fanpage, Schedule, Post, Topic)
 ├── public/
-│   └── uploads/               # Ảnh local (fallback nếu không có Cloudinary)
-├── src/
+│   └── uploads/                  # Ảnh local (fallback nếu Cloudinary không khả dụng)
+├── backend/                      # Express Server (Service-Oriented Architecture)
+│   ├── index.ts                  # Entry point: khởi động server & load schedules
+│   ├── app.ts                    # Express app config & route mounting
+│   ├── routes/                   # HTTP Route handlers (thin — chỉ điều phối)
+│   │   ├── auth.routes.ts        # Đăng nhập, đăng ký, setup password, OAuth URL
+│   │   ├── admin.routes.ts       # Quản lý người dùng (admin only)
+│   │   ├── ai.routes.ts          # Sinh content & hình ảnh bằng AI
+│   │   ├── fanpage.routes.ts     # Quản lý Fanpage & đăng bài thủ công
+│   │   ├── fbapp.routes.ts       # Quản lý Facebook App credentials
+│   │   ├── oauth.routes.ts       # Facebook OAuth callback handler
+│   │   ├── post.routes.ts        # Lịch sử, hàng đợi, sắp xếp bài viết
+│   │   ├── schedule.routes.ts    # Tạo & quản lý lịch trình tự động
+│   │   ├── topic.routes.ts       # Quản lý chủ đề & từ khóa
+│   │   ├── dashboard.routes.ts   # Số liệu tổng quan
+│   │   └── user.routes.ts        # Cập nhật hồ sơ người dùng
+│   ├── services/                 # Business logic layer (tái sử dụng được)
+│   │   ├── ai.service.ts         # generateText(), generateImage() với fallback 3 lớp
+│   │   ├── auth.service.ts       # login(), register(), setupPassword(), getMe()
+│   │   ├── admin.service.ts      # listUsers(), setUserStatus(), resetPassword()
+│   │   ├── fanpage.service.ts    # listFanpages(), updateToken(), postDirectly()
+│   │   ├── fbapp.service.ts      # listApps(), createApp(), deleteApp()
+│   │   ├── facebook.service.ts   # postToFacebook() — xử lý đa media cho Graph API
+│   │   ├── oauth.service.ts      # handleFacebookCallback() — token exchange & sync
+│   │   ├── post.service.ts       # getPostHistory(), queuePost(), reorderPosts()
+│   │   ├── schedule.service.ts   # createSchedule(), deleteSchedule(), updateStatus()
+│   │   ├── topic.service.ts      # listTopics(), createTopic(), deleteTopic()
+│   │   └── cron.service.ts       # scheduleJob() — cron job engine
+│   ├── middleware/
+│   │   └── auth.ts               # authenticateToken(), authenticateAdmin()
+│   ├── config/
+│   │   ├── prisma.ts             # Prisma client singleton
+│   │   └── cloudinary.ts         # Cloudinary upload helper
+│   └── utils/
+│       └── encryption.ts         # AES encrypt/decrypt cho Access Tokens
+├── src/                          # React Frontend
 │   ├── api/
-│   │   └── index.ts           # ApiService — tầng giao tiếp Backend tập trung
+│   │   └── index.ts              # ApiService — tầng giao tiếp Backend tập trung
 │   ├── components/
-│   │   ├── AIContentView.tsx   # Sinh & đăng bài thủ công bằng AI
-│   │   ├── AICreativeStudio.tsx # Editor chỉnh sửa bài viết AI cao cấp
-│   │   ├── AdminView.tsx       # Quản lý người dùng (admin only)
-│   │   ├── AuthView.tsx        # Đăng nhập / Đăng ký
-│   │   ├── AutomationView.tsx  # Quản lý lịch đăng bài tự động
+│   │   ├── AIContentView.tsx     # Sinh & đăng bài thủ công bằng AI
+│   │   ├── AICreativeStudio.tsx  # Editor chỉnh sửa bài viết AI cao cấp
+│   │   ├── AdminView.tsx         # Quản lý người dùng (admin only)
+│   │   ├── AuthView.tsx          # Đăng nhập / Đăng ký
+│   │   ├── AutomationSettings.tsx# Component cấu hình AI cho lịch trình
+│   │   ├── AutomationView.tsx    # Quản lý lịch đăng bài tự động
 │   │   ├── CampaignPlannerView.tsx # AI Campaign Architect
-│   │   ├── DashboardView.tsx   # Tổng quan số liệu
-│   │   ├── FanpageView.tsx     # Kết nối & quản lý Fanpage
-│   │   ├── HistoryView.tsx     # Lịch sử bài đăng
-│   │   ├── SettingsView.tsx    # Cài đặt tài khoản & Facebook App
-│   │   └── StatusBadge.tsx     # Badge hiển thị trạng thái
-│   ├── hooks/                  # Custom React hooks
-│   ├── App.tsx                 # Root component, routing & auth state
-│   ├── LanguageContext.tsx     # i18n context (VI/EN)
-│   ├── config.ts               # Cấu hình ứng dụng
-│   ├── translations.ts         # Nội dung đa ngôn ngữ
-│   ├── types.ts                # TypeScript interfaces chung
-│   ├── index.css               # Global styles
-│   └── main.tsx                # Entry point React
-├── server.ts                   # Express server — API routes, Cron jobs, Auth
-├── .env.example                # Mẫu biến môi trường
-├── vite.config.ts              # Vite configuration
-├── tsconfig.json               # TypeScript configuration
+│   │   ├── DashboardView.tsx     # Tổng quan số liệu
+│   │   ├── FanpageView.tsx       # Kết nối & quản lý Fanpage
+│   │   ├── HistoryView.tsx       # Lịch sử bài đăng
+│   │   ├── SettingsView.tsx      # Cài đặt tài khoản & Facebook App
+│   │   └── StatusBadge.tsx       # Badge hiển thị trạng thái
+│   ├── App.tsx                   # Root component, routing & auth state
+│   ├── LanguageContext.tsx       # i18n context (VI/EN)
+│   ├── config.ts                 # Cấu hình ứng dụng
+│   ├── translations.ts           # Nội dung đa ngôn ngữ
+│   └── types.ts                  # TypeScript interfaces chung
+├── .env.example                  # Mẫu biến môi trường
+├── docker-compose.yml            # Docker config (PostgreSQL)
+├── vite.config.ts                # Vite configuration
 └── package.json
 ```
 
@@ -199,14 +256,14 @@ fanpage-ai-manager/
 
 ## ⚙️ Data Models (Prisma Schema)
 
-| Model           | Mô tả                                                                 |
-|-----------------|-----------------------------------------------------------------------|
-| `User`          | Tài khoản người dùng, phân quyền `user` / `admin`                    |
-| `FacebookApp`   | Facebook App (App ID + Secret) do người dùng đăng ký                 |
-| `Fanpage`       | Fanpage đã kết nối, lưu Access Token và Page ID                      |
-| `Schedule`      | Lịch trình đăng bài tự động (topic, time, runCount, status)          |
-| `Post`          | Bài viết đã sinh (content, imageUrl, status, error log)              |
-| `Topic`         | Chủ đề nội dung với từ khóa, dùng cho lập kế hoạch chiến dịch       |
+| Model           | Mô tả                                                                      |
+|-----------------|----------------------------------------------------------------------------|
+| `User`          | Tài khoản người dùng, phân quyền `user` / `admin`                         |
+| `FacebookApp`   | Facebook App (App ID + Secret) do người dùng đăng ký                      |
+| `Fanpage`       | Fanpage đã kết nối, lưu Access Token mã hóa và Page ID                    |
+| `Schedule`      | Lịch trình đăng bài tự động (topic, time, runCount, advancedPrompt, status)|
+| `Post`          | Bài viết (content, imageUrl, status, fbPostId, error log)                 |
+| `Topic`         | Chủ đề nội dung với từ khóa, dùng cho lập kế hoạch chiến dịch            |
 
 ---
 
@@ -216,6 +273,7 @@ fanpage-ai-manager/
 - **Node.js** >= 18.x
 - Tài khoản **Google AI Studio** để lấy Gemini API Key
 - **Facebook Developer App** với quyền `pages_manage_posts`
+- **Docker** (để chạy PostgreSQL) hoặc chuỗi kết nối PostgreSQL sẵn có
 - **Cloudinary** (Tùy chọn) để lưu trữ ảnh bền vững
 
 ### 1. Cài đặt dependencies
@@ -235,37 +293,43 @@ cp .env.example .env
 Điền các giá trị vào `.env`:
 
 ```env
+# === BẮT BUỘC ===
+DATABASE_URL="postgresql://user:password@localhost:5433/fanpage_ai_manager"
+JWT_SECRET="your_super_secret_jwt_key"
 GEMINI_API_KEY="your_gemini_api_key"
 APP_URL="http://localhost:3000"
+
+# === TÙY CHỌN ===
 ADMIN_EMAIL="admin@yourdomain.com"
 ADMIN_PASSWORD="your_secure_password"
 
-# Cloudinary (Tùy chọn, để lưu trữ ảnh bền vững)
+# Facebook App mặc định (có thể cấu hình trong UI)
+FACEBOOK_APP_ID=""
+FACEBOOK_APP_SECRET=""
+
+# Cloudinary (lưu trữ ảnh bền vững)
 CLOUDINARY_CLOUD_NAME=""
 CLOUDINARY_API_KEY=""
 CLOUDINARY_API_SECRET=""
+
+# Unsplash (ảnh dự phòng cấp 1)
+UNSPLASH_ACCESS_KEY=""
 ```
 
-### 3. Khởi tạo database
+### 3. Khởi động Database (Docker)
 
-Ứng dụng hỗ trợ cả **SQLite** và **PostgreSQL**. Mặc định là SQLite.
-
-**Để chuyển sang PostgreSQL:**
-1. Chạy lệnh: `npm run db:postgres`
-2. Cập nhật `DATABASE_URL` trong file `.env` thành chuỗi kết nối Postgres của bạn.
-3. Chạy migration: `npx prisma migrate dev --name init_postgres`
-
-**Để quay lại SQLite:**
-1. Chạy lệnh: `npm run db:sqlite`
-2. Đảm bảo `DATABASE_URL="file:./dev.db"` trong file `.env`.
-3. Chạy migration: `npx prisma migrate dev --name init_sqlite`
-
-Sau khi cấu hình xong, chạy tiếp:
 ```bash
+docker-compose up -d
+```
+
+### 4. Khởi tạo database schema
+
+```bash
+npx prisma db push
 npx prisma generate
 ```
 
-### 4. Chạy ứng dụng (Development)
+### 5. Chạy ứng dụng (Development)
 
 ```bash
 npm run dev
@@ -273,7 +337,7 @@ npm run dev
 
 Ứng dụng sẽ khởi động tại: `http://localhost:3000`
 
-### 5. Build production
+### 6. Build production
 
 ```bash
 npm run build
@@ -284,35 +348,75 @@ npm start
 
 ## 🔐 Bảo mật
 
-- **JWT Authentication**: mọi API đều yêu cầu Bearer token, trừ `/api/auth/login`.
+- **JWT Authentication**: mọi API đều yêu cầu Bearer token, trừ `/api/auth/login` và `/api/auth/register`.
 - **Role-based Access Control**: endpoint `/api/admin/*` chỉ cho phép role `admin`.
 - **Server-side AI**: Gemini API Key chỉ được dùng phía server — không bao giờ expose ra client.
-- **Token isolation**: Access Token Facebook của mỗi user chỉ dùng được trong phạm vi tài khoản đó.
-- **Password hashing**: mật khẩu được hash bằng `bcryptjs` trước khi lưu DB.
+- **Token Encryption**: Access Token Facebook được mã hóa bằng AES trước khi lưu DB.
+- **Token isolation**: token của mỗi user chỉ dùng được trong phạm vi tài khoản đó.
+- **Password hashing**: mật khẩu được hash bằng `bcryptjs` (salt rounds: 10).
+- **Mandatory Password Change**: Admin có thể yêu cầu người dùng đổi mật khẩu ngay lần đăng nhập tiếp theo.
 
 ---
 
-## 🌐 API Endpoints tóm tắt
+## 🌐 API Endpoints
 
+### Auth
 | Method | Endpoint                      | Mô tả                                  |
 |--------|-------------------------------|----------------------------------------|
+| POST   | `/api/auth/register`          | Đăng ký tài khoản mới                  |
 | POST   | `/api/auth/login`             | Đăng nhập, trả về JWT                  |
+| POST   | `/api/auth/setup-password`    | Đổi mật khẩu lần đầu (setup token)    |
 | GET    | `/api/auth/me`                | Lấy thông tin user hiện tại            |
-| GET    | `/api/dashboard`              | Số liệu tổng quan                      |
+| GET    | `/api/auth/facebook/url`      | Lấy URL Facebook OAuth                 |
+
+### Fanpage
+| Method | Endpoint                      | Mô tả                                  |
+|--------|-------------------------------|----------------------------------------|
 | GET    | `/api/fanpages`               | Danh sách Fanpage đã kết nối           |
-| DELETE | `/api/fanpages/:id`           | Xóa kết nối Fanpage                    |
 | PATCH  | `/api/fanpages/:id/token`     | Cập nhật Access Token                  |
-| GET    | `/api/schedules`              | Danh sách lịch trình                   |
-| POST   | `/api/schedules`              | Tạo lịch trình mới                     |
-| DELETE | `/api/schedules/:id`          | Xóa lịch trình                         |
-| GET    | `/api/posts`                  | Lịch sử bài đăng                       |
+| DELETE | `/api/fanpages/:id`           | Xóa kết nối Fanpage                    |
 | POST   | `/api/facebook/post`          | Đăng bài lên Fanpage ngay lập tức      |
+
+### AI
+| Method | Endpoint                      | Mô tả                                  |
+|--------|-------------------------------|----------------------------------------|
 | POST   | `/api/ai/generate-text`       | Sinh nội dung bài viết bằng Gemini     |
-| POST   | `/api/ai/generate-image`      | Sinh hình ảnh bằng Gemini              |
-| GET    | `/api/media/:filename`        | Truy cập file ảnh đã upload            |
+| POST   | `/api/ai/generate-image`      | Sinh hình ảnh (Pollinations → Unsplash → LoremFlickr) |
+
+### Posts
+| Method | Endpoint                      | Mô tả                                  |
+|--------|-------------------------------|----------------------------------------|
+| GET    | `/api/posts`                  | Lịch sử bài đăng (kèm tên Fanpage)    |
+| PUT    | `/api/posts/:id`              | Chỉnh sửa bài đang queued             |
+| POST   | `/api/posts/queue`            | Thêm bài vào hàng đợi                 |
+| POST   | `/api/posts/reorder`          | Sắp xếp lại thứ tự hàng đợi          |
+
+### Schedules
+| Method | Endpoint                       | Mô tả                                  |
+|--------|--------------------------------|----------------------------------------|
+| GET    | `/api/schedules`               | Danh sách lịch trình                   |
+| POST   | `/api/schedules`               | Tạo lịch trình mới                     |
+| GET    | `/api/schedules/:id/posts`     | Bài trong hàng đợi của lịch trình      |
+| PATCH  | `/api/schedules/:id/status`    | Cập nhật trạng thái (active/suspended) |
+| DELETE | `/api/schedules/:id`           | Xóa lịch trình                         |
+
+### Topics & Facebook Apps
+| Method | Endpoint                      | Mô tả                                  |
+|--------|-------------------------------|----------------------------------------|
 | GET    | `/api/topics`                 | Danh sách chủ đề                       |
+| POST   | `/api/topics`                 | Tạo chủ đề mới                         |
+| DELETE | `/api/topics/:id`             | Xóa chủ đề                             |
 | GET    | `/api/facebook-apps`          | Danh sách Facebook App đã đăng ký     |
-| GET    | `/api/admin/users`            | (Admin) Danh sách người dùng           |
+| POST   | `/api/facebook-apps`          | Thêm Facebook App mới                  |
+| DELETE | `/api/facebook-apps/:id`      | Xóa Facebook App                       |
+
+### Admin
+| Method | Endpoint                            | Mô tả                                  |
+|--------|-------------------------------------|----------------------------------------|
+| GET    | `/api/admin/users`                  | Danh sách người dùng                   |
+| PUT    | `/api/admin/users/:id/status`       | Kích hoạt / vô hiệu hóa tài khoản     |
+| POST   | `/api/admin/users/:id/reset-password` | Reset mật khẩu tạm thời             |
+| POST   | `/api/admin/users/:id/revoke`       | Thu hồi quyền truy cập                 |
 
 ---
 

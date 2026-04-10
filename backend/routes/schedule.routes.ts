@@ -1,82 +1,49 @@
 import { Router } from 'express';
-import { prisma } from '../config/prisma.js';
 import { authenticateToken } from '../middleware/auth.js';
-import { scheduleJob, activeCronJobs } from '../services/cron.service.js';
+import * as scheduleService from '../services/schedule.service.js';
 
 const router = Router();
 
-router.get('/schedules', authenticateToken, async (req: any, res) => {
+router.get('/', authenticateToken, async (req: any, res) => {
     try {
-      const schedules = await prisma.schedule.findMany({
-        where: { userId: req.user.id },
-        include: { fanpage: { select: { name: true } } }
-      });
+      const schedules = await scheduleService.listSchedules(req.user.id);
       res.json(schedules);
     } catch (error: any) {
       res.status(500).json({ error: error.message });
     }
 });
 
-router.post('/schedules', authenticateToken, async (req: any, res) => {
-    const { topic, time, fanpageId, instructions, runCount } = req.body;
-    if (!topic || !time || !fanpageId) return res.status(400).json({ error: 'Missing required fields' });
-
+router.post('/', authenticateToken, async (req: any, res) => {
     try {
-      const schedule = await prisma.schedule.create({
-        data: {
-          topic,
-          time,
-          fanpageId,
-          instructions: instructions || 'Generate high quality content.',
-          runCount: parseInt(runCount) || 1,
-          status: 'active',
-          userId: req.user.id
-        },
-        include: { fanpage: true }
-      });
+      const schedule = await scheduleService.createSchedule(req.user.id, req.body);
+      res.json({ success: true, schedule });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+});
 
-      scheduleJob(schedule);
+router.get('/:id/posts', authenticateToken, async (req: any, res) => {
+    try {
+      const posts = await scheduleService.getSchedulePosts(req.user.id, req.params.id);
+      res.json(posts);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+});
+
+router.patch('/:id/status', authenticateToken, async (req: any, res) => {
+    try {
+      const schedule = await scheduleService.updateScheduleStatus(req.user.id, req.params.id, req.body.status);
       res.json(schedule);
     } catch (error: any) {
       res.status(500).json({ error: error.message });
     }
 });
 
-router.delete('/schedules/:id', authenticateToken, async (req: any, res) => {
-    const { id } = req.params;
+router.delete('/:id', authenticateToken, async (req: any, res) => {
     try {
-      const job = activeCronJobs.get(id);
-      if (job) {
-        job.stop();
-        activeCronJobs.delete(id);
-      }
-      await prisma.schedule.delete({ where: { id, userId: req.user.id } });
+      await scheduleService.deleteSchedule(req.user.id, req.params.id);
       res.json({ message: 'Schedule deleted' });
-    } catch (error: any) {
-      res.status(500).json({ error: error.message });
-    }
-});
-
-router.patch('/schedules/:id/status', authenticateToken, async (req: any, res) => {
-    const { id } = req.params;
-    const { status } = req.body;
-    try {
-      const schedule = await prisma.schedule.update({
-        where: { id, userId: req.user.id },
-        data: { status },
-        include: { fanpage: true }
-      });
-
-      if (status === 'active') {
-        scheduleJob(schedule);
-      } else {
-        const job = activeCronJobs.get(id);
-        if (job) {
-          job.stop();
-          activeCronJobs.delete(id);
-        }
-      }
-      res.json(schedule);
     } catch (error: any) {
       res.status(500).json({ error: error.message });
     }

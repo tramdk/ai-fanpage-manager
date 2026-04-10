@@ -78,6 +78,7 @@ model Post {
   status      String    @default("published")
   orderIndex  Int       @default(0)
   error       String?
+  fbPostId    String?   // External Facebook Post ID for tracking
   userId      String
   user        User      @relation(fields: [userId], references: [id])
   createdAt   DateTime  @default(now())

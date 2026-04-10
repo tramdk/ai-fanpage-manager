@@ -1,7 +1,8 @@
-import React, { useState, useEffect, useCallback, memo, useMemo, useTransition } from 'react';
-import { Clock, Sliders, X, Plus, Bot, RefreshCw } from 'lucide-react';
+import React, { useState, useEffect, useCallback, memo } from 'react';
+import { Clock, Sliders, X, Plus, Bot, RefreshCw, Trash2, Pause, Play } from 'lucide-react';
 import { StatusBadge } from './StatusBadge';
 import { Fanpage, Schedule, Topic } from '../types';
+import { AutomationSettings, AutomationConfig } from './AutomationSettings';
 import { useLanguage } from '../LanguageContext';
 import { CONFIG } from '../config';
 import { ApiService } from '../api';
@@ -140,14 +141,25 @@ export const AutomationView = ({ fanpages, api, initialFanpageId }: { fanpages: 
   const [time, setTime] = useState(CONFIG.DEFAULT_TIME);
   const [runCount, setRunCount] = useState<number>(CONFIG.DEFAULT_RUN_COUNT);
   const [showAdvanced, setShowAdvanced] = useState(false);
-  const [tone, setTone] = useState('professional and elegant');
-  const [mustInclude, setMustInclude] = useState('');
-  const [additionalInstructions, setAdditionalInstructions] = useState('');
+  const [automationConfig, setAutomationConfig] = useState<AutomationConfig>({
+    tone: 'professional and elegant',
+    keywords: '',
+    instructions: ''
+  });
   const [selectedFanpage, setSelectedFanpage] = useState('');
-  const [isSaving, setIsSaving] = useState(false);
-  const [isGeneratingBatch, setIsGeneratingBatch] = useState<Record<string, boolean>>({});
+  const [isSaving, setIsGeneratingBatch] = useState(false); // Refactored state
+  const [isGeneratingBatchRecord, setIsGeneratingBatchRecord] = useState<Record<string, boolean>>({});
   const [selectedScheduleForQueue, setSelectedScheduleForQueue] = useState<Schedule | null>(null);
+  const [postStatus, setPostStatus] = useState({ type: '', message: '' });
+  const [batchConflict, setBatchConflict] = useState<{ schedule: Schedule, existingCount: number } | null>(null);
   const { t } = useLanguage();
+
+  useEffect(() => {
+    if (postStatus.message) {
+      const timer = setTimeout(() => setPostStatus({ type: '', message: '' }), 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [postStatus.message]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -165,46 +177,102 @@ export const AutomationView = ({ fanpages, api, initialFanpageId }: { fanpages: 
   }, [initialFanpageId, fanpages]);
 
   const handleCreateSchedule = useCallback(async () => {
-    if (!topic || !selectedFanpage || !time) { alert('Full Strategy Required'); return; }
+    if (!topic || !selectedFanpage || !time) { 
+      setPostStatus({ type: 'error', message: 'Full Strategy Required' });
+      return; 
+    }
     const page = fanpages.find(p => p.id === selectedFanpage);
     if (!page) return;
 
-    let advancedPrompt = showAdvanced ? `Tone: ${tone}\nMust include: ${mustInclude}\nAdditional: ${additionalInstructions}` : '';
-    setIsSaving(true);
+    let advancedPrompt = showAdvanced ? `Tone: ${automationConfig.tone}\nMust include: ${automationConfig.keywords}\nAdditional: ${automationConfig.instructions}` : '';
+    setIsGeneratingBatch(true);
+    setPostStatus({ type: '', message: '' });
     try {
       const data = await api.schedules.create({ topic, fanpageId: page.pageId, fanpageName: page.name, accessToken: page.accessToken, time, runCount, advancedPrompt });
       if (data.schedule) {
         setSchedules(prev => [...prev, data.schedule]);
         setShowAdvanced(false);
+        setPostStatus({ type: 'success', message: 'Schedule launched successfully' });
       }
-    } catch (err) { alert('API Error'); } finally { setIsSaving(false); }
-  }, [topic, selectedFanpage, time, tone, mustInclude, additionalInstructions, showAdvanced, fanpages, runCount, api]);
+    } catch (err) { 
+      setPostStatus({ type: 'error', message: 'Failed to launch schedule' });
+    } finally { setIsGeneratingBatch(false); }
+  }, [topic, selectedFanpage, time, automationConfig, showAdvanced, fanpages, runCount, api]);
 
-  const handleGenerateBatch = useCallback(async (schedule: Schedule) => {
+  const handleGenerateBatch = useCallback(async (schedule: Schedule, mode?: 'add' | 'replace') => {
     const scheduleId = schedule.id;
-    setIsGeneratingBatch(prev => ({ ...prev, [scheduleId]: true }));
+
+    // If mode is not specified, check for existing queued posts first
+    if (!mode) {
+      const existingPosts = await api.schedules.getPosts(scheduleId);
+      const queuedCount = existingPosts.filter((p: any) => p.status === 'queued').length;
+      if (queuedCount > 0) {
+        setBatchConflict({ schedule, existingCount: queuedCount });
+        return; // Show conflict modal, wait for user choice
+      }
+    }
+
+    setBatchConflict(null);
+    setIsGeneratingBatchRecord(prev => ({ ...prev, [scheduleId]: true }));
+    setPostStatus({ type: '', message: '' });
 
     try {
+      // If replace mode: delete all queued/failed posts first
+      if (mode === 'replace') {
+        await api.fetch(`/api/posts/schedule/${scheduleId}/queue`, { method: 'DELETE' });
+      }
+
+      // Get current max orderIndex to append correctly in 'add' mode
+      let startIndex = 0;
+      if (mode === 'add') {
+        const existingPosts = await api.schedules.getPosts(scheduleId);
+        const queued = existingPosts.filter((p: any) => p.status === 'queued');
+        startIndex = queued.length;
+      }
+
       const numToGenerate = schedule.runCount || 1;
       const tasks = Array.from({ length: numToGenerate }, async (_, i) => {
-         let basePrompt = `Write a professional Facebook post about ${schedule.topic} [#${i+1}]. Tone: engaging. Language: Vietnamese. IMPORTANT: Return ONLY post content.`;
+         let basePrompt = `Write a professional Facebook post about ${schedule.topic} [#${startIndex + i + 1}]. Tone: engaging. Language: Vietnamese. IMPORTANT: Return ONLY post content.`;
          if (schedule.advancedPrompt) basePrompt += `\nGuidelines: ${schedule.advancedPrompt}`;
          
          const textData = await api.ai.generateText(basePrompt);
          const imgData = await api.ai.generateImage(`Photography of ${schedule.topic}. ${schedule.advancedPrompt || ''}`);
-         
          const finalImageUrl = imgData.imageUrl ? JSON.stringify([{ type: 'image', data: imgData.imageUrl, id: `${Date.now()}-${i}` }]) : null;
          
          return api.fetch('/api/posts/queue', {
            method: 'POST',
-           body: JSON.stringify({ topic: schedule.topic, content: textData.text, imageUrl: finalImageUrl, fanpageId: schedule.fanpageId, scheduleId: schedule.id, status: 'queued', orderIndex: i })
+           body: JSON.stringify({ topic: schedule.topic, content: textData.text, imageUrl: finalImageUrl, fanpageId: schedule.fanpageId, scheduleId: schedule.id, status: 'queued', orderIndex: startIndex + i })
          });
       });
 
       await Promise.all(tasks);
-      alert(`Batch Deployment: ${numToGenerate} nodes synchronized.`);
-    } catch (err) { alert('Batch Error'); } finally {
-      setIsGeneratingBatch(prev => ({ ...prev, [scheduleId]: false }));
+      setPostStatus({ type: 'success', message: `Batch deployed: ${numToGenerate} posts queued.` });
+    } catch (err) { 
+      setPostStatus({ type: 'error', message: 'Batch generation failed' });
+    } finally {
+      setIsGeneratingBatchRecord(prev => ({ ...prev, [scheduleId]: false }));
+    }
+  }, [api]);
+
+  const handleToggleSuspend = useCallback(async (schedule: Schedule) => {
+    const newStatus = schedule.status === 'active' ? 'suspended' : 'active';
+    try {
+      const updated = await api.schedules.updateStatus(schedule.id, newStatus);
+      setSchedules(prev => prev.map(s => s.id === schedule.id ? { ...s, status: newStatus } : s));
+      setPostStatus({ type: 'success', message: newStatus === 'suspended' ? 'Schedule suspended.' : 'Schedule resumed.' });
+    } catch (err) {
+      setPostStatus({ type: 'error', message: 'Failed to update schedule status.' });
+    }
+  }, [api]);
+
+  const handleDeleteSchedule = useCallback(async (schedule: Schedule) => {
+    if (!confirm(`Hard Delete "${schedule.topic}"?\n\nSẽ xóa:\n• Tất cả bài chưa đăng (queued/failed)\n• Lịch trình này\n\nBài đã published sẽ được giữ lại trong Activity Logs.`)) return;
+    try {
+      await api.schedules.delete(schedule.id);
+      setSchedules(prev => prev.filter(s => s.id !== schedule.id));
+      setPostStatus({ type: 'success', message: 'Schedule and unpublished posts deleted.' });
+    } catch (err) {
+      setPostStatus({ type: 'error', message: 'Failed to delete schedule.' });
     }
   }, [api]);
 
@@ -218,7 +286,7 @@ export const AutomationView = ({ fanpages, api, initialFanpageId }: { fanpages: 
           {t('contentScheduler')}
         </h3>
 
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-6 items-end relative z-10">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 items-end relative z-10">
            <div>
              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-3 block ml-2">{t('topicsKeywords')}</label>
              <select className="w-full bg-slate-800 border border-slate-700 rounded-xl px-5 py-3 text-sm font-bold text-slate-200 outline-none focus:border-emerald-500/50 transition-all appearance-none" value={topic} onChange={e => setTopic(e.target.value)}>
@@ -236,10 +304,26 @@ export const AutomationView = ({ fanpages, api, initialFanpageId }: { fanpages: 
              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-3 block ml-2">Post Time</label>
              <input type="time" className="w-full bg-slate-800 border border-slate-700 rounded-xl px-5 py-3 text-sm font-bold text-slate-200 outline-none focus:border-emerald-500/50 transition-all" value={time} onChange={e => setTime(e.target.value)} />
            </div>
-           <button onClick={handleCreateSchedule} disabled={isSaving} className="md:col-span-2 bg-emerald-500 text-white py-4 rounded-xl font-black uppercase text-[10px] tracking-widest shadow-xl shadow-emerald-500/10 hover:bg-emerald-600 transition-all flex items-center justify-center gap-3 active:scale-95 disabled:opacity-30">
+           <button onClick={handleCreateSchedule} disabled={isSaving} className="bg-emerald-500 text-white py-4 rounded-xl font-black uppercase text-[10px] tracking-widest shadow-xl shadow-emerald-500/10 hover:bg-emerald-600 transition-all flex items-center justify-center gap-3 active:scale-95 disabled:opacity-30">
              <Plus size={16} /> {isSaving ? t('loading') : t('launchSchedule')}
            </button>
         </div>
+
+        <div className="mt-8">
+          <AutomationSettings 
+            config={automationConfig} 
+            onChange={setAutomationConfig} 
+            show={showAdvanced} 
+            onToggle={() => setShowAdvanced(!showAdvanced)} 
+          />
+        </div>
+
+        {postStatus.message && (
+          <div className={`mt-8 px-6 py-4 rounded-2xl text-[10px] font-bold uppercase tracking-widest flex items-center gap-4 animate-in slide-in-from-top-4 duration-300 ${postStatus.type === 'success' ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20' : 'bg-red-500/10 text-red-500 border border-red-500/20'}`}>
+            <div className={`w-2 h-2 rounded-full animate-pulse ${postStatus.type === 'success' ? 'bg-emerald-500' : 'bg-red-500'}`}></div>
+            {postStatus.message}
+          </div>
+        )}
       </div>
 
       <div className="bg-slate-900 border border-slate-800 rounded-[32px] overflow-hidden shadow-2xl">
@@ -265,13 +349,26 @@ export const AutomationView = ({ fanpages, api, initialFanpageId }: { fanpages: 
                     <td className="px-8 py-5 font-bold text-slate-200 text-sm">{s.topic}</td>
                     <td className="px-8 py-5 text-xs text-slate-500 font-medium">{s.fanpageName}</td>
                     <td className="px-8 py-5">
-                       <span className="text-[10px] font-bold text-emerald-500/80 bg-emerald-500/5 px-2.5 py-1 rounded-lg border border-emerald-500/10">Daily {s.time} • {s.runCount}x</span>
+                       <div className="flex items-center gap-2">
+                         <span className={`text-[10px] font-bold px-2.5 py-1 rounded-lg border ${s.status === 'suspended' ? 'text-amber-500/80 bg-amber-500/5 border-amber-500/10' : 'text-emerald-500/80 bg-emerald-500/5 border-emerald-500/10'}`}>
+                           Daily {s.time} • {s.runCount}x
+                         </span>
+                         {s.status === 'suspended' && (
+                           <span className="text-[9px] font-black text-amber-500 bg-amber-500/10 px-2 py-1 rounded-lg border border-amber-500/20 uppercase tracking-widest">Suspended</span>
+                         )}
+                       </div>
                     </td>
                     <td className="px-8 py-5 text-right flex items-center justify-end gap-3">
-                      <button onClick={() => handleGenerateBatch(s)} disabled={isGeneratingBatch[s.id]} className="bg-slate-800 text-slate-300 px-4 py-2.5 rounded-xl text-[9px] font-black uppercase border border-slate-700 hover:bg-emerald-500 hover:text-white hover:border-emerald-500 transition-all">
-                        {isGeneratingBatch[s.id] ? 'Deploying...' : 'Generate'}
+                      <button onClick={() => handleGenerateBatch(s)} disabled={isGeneratingBatchRecord[s.id] || s.status === 'suspended'} className="bg-slate-800 text-slate-300 px-4 py-2.5 rounded-xl text-[9px] font-black uppercase border border-slate-700 hover:bg-emerald-500 hover:text-white hover:border-emerald-500 transition-all disabled:opacity-30">
+                        {isGeneratingBatchRecord[s.id] ? 'Deploying...' : 'Generate'}
                       </button>
                       <button onClick={() => setSelectedScheduleForQueue(s)} className="bg-slate-900 border border-slate-800 text-slate-400 px-4 py-2.5 rounded-xl text-[9px] font-black uppercase hover:bg-slate-800 hover:text-slate-200 transition-all">Queue</button>
+                      <button onClick={() => handleToggleSuspend(s)} className={`p-2.5 rounded-xl border transition-all ${s.status === 'suspended' ? 'text-emerald-500 bg-emerald-500/10 border-emerald-500/20 hover:bg-emerald-500/20' : 'text-amber-500 bg-amber-500/10 border-amber-500/20 hover:bg-amber-500/20'}`} title={s.status === 'suspended' ? 'Resume Schedule' : 'Suspend Schedule'}>
+                        {s.status === 'suspended' ? <Play size={14} /> : <Pause size={14} />}
+                      </button>
+                      <button onClick={() => handleDeleteSchedule(s)} className="p-2.5 text-slate-600 hover:text-red-500 hover:bg-red-500/10 rounded-xl border border-transparent hover:border-red-500/20 transition-all" title="Hard Delete">
+                        <Trash2 size={14} />
+                      </button>
                     </td>
                   </tr>
                 ))
@@ -284,6 +381,46 @@ export const AutomationView = ({ fanpages, api, initialFanpageId }: { fanpages: 
       {selectedScheduleForQueue ? (
         <QueueModal schedule={selectedScheduleForQueue} onClose={() => setSelectedScheduleForQueue(null)} api={api} />
       ) : null}
+
+      {/* Batch Conflict Resolution Modal */}
+      {batchConflict && (
+        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+          <div className="bg-slate-900 border border-slate-800 rounded-[32px] shadow-3xl w-full max-w-md animate-in fade-in zoom-in duration-200 p-8">
+            <div className="flex items-center gap-4 mb-6">
+              <div className="p-2.5 bg-amber-500/10 text-amber-500 rounded-xl border border-amber-500/20">
+                <RefreshCw className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="text-base font-bold text-slate-50 uppercase tracking-tight">Queue Conflict</h3>
+                <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mt-0.5">{batchConflict.schedule.topic}</p>
+              </div>
+            </div>
+            <p className="text-sm text-slate-400 mb-2">
+              Hàng đợi hiện đang có <span className="font-black text-amber-500">{batchConflict.existingCount} bài chưa đăng</span>.
+            </p>
+            <p className="text-[11px] text-slate-600 mb-8">Bạn muốn thêm bài mới vào cuối hàng đợi, hay xóa hàng đợi cũ và tạo mới hoàn toàn?</p>
+            <div className="grid grid-cols-2 gap-4">
+              <button
+                onClick={() => handleGenerateBatch(batchConflict.schedule, 'add')}
+                className="px-6 py-3.5 bg-slate-800 border border-slate-700 text-slate-200 rounded-xl font-black uppercase text-[10px] tracking-widest hover:bg-slate-700 transition-all"
+              >
+                 <Plus size={12} className="inline mr-2" />
+                 Thêm vào ({batchConflict.existingCount} + {batchConflict.schedule.runCount})
+              </button>
+              <button
+                onClick={() => handleGenerateBatch(batchConflict.schedule, 'replace')}
+                className="px-6 py-3.5 bg-red-500/10 border border-red-500/20 text-red-500 rounded-xl font-black uppercase text-[10px] tracking-widest hover:bg-red-500/20 transition-all"
+              >
+                <Trash2 size={12} className="inline mr-2" />
+                Thay thế ({batchConflict.existingCount} bài cũ sẽ bị xóa)
+              </button>
+            </div>
+            <button onClick={() => setBatchConflict(null)} className="w-full mt-4 py-2.5 text-slate-600 hover:text-slate-400 text-[10px] font-bold uppercase tracking-widest transition-colors">
+              Hủy
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

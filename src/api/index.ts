@@ -53,6 +53,7 @@ export class ApiService {
     list: () => this.fetch('/api/schedules').then(r => this.handleResponse(r)) as Promise<Schedule[]>,
     create: (data: any) => this.fetch('/api/schedules', { method: 'POST', body: JSON.stringify(data) }).then(r => this.handleResponse(r)),
     delete: (id: string) => this.fetch(`/api/schedules/${id}`, { method: 'DELETE' }).then(r => this.handleResponse(r)),
+    updateStatus: (id: string, status: string) => this.fetch(`/api/schedules/${id}/status`, { method: 'PATCH', body: JSON.stringify({ status }) }).then(r => this.handleResponse(r)),
     getPosts: (id: string) => this.fetch(`/api/schedules/${id}/posts`).then(r => this.handleResponse(r)),
   };
 
