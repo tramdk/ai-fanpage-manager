@@ -1,0 +1,93 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                String        @id @default(uuid())
+  email             String        @unique
+  password          String
+  name              String?
+  role                  String        @default("user")
+  isActive              Boolean       @default(false)
+  requirePasswordChange Boolean       @default(false)
+  facebookAppId         String?       // Deprecated: legacy support
+  facebookAppSecret String?       // Deprecated: legacy support
+  createdAt         DateTime      @default(now())
+  facebookApps      FacebookApp[]
+  fanpages          Fanpage[]
+  schedules         Schedule[]
+  posts             Post[]
+  topics            Topic[]
+}
+
+model FacebookApp {
+  id        String    @id @default(uuid())
+  appId     String
+  appSecret String
+  name      String?
+  userId    String
+  user      User      @relation(fields: [userId], references: [id])
+  fanpages  Fanpage[]
+  createdAt DateTime  @default(now())
+}
+
+model Fanpage {
+  id            String       @id @default(uuid())
+  pageId        String       @unique
+  name          String
+  accessToken   String
+  status        String       @default("active")
+  connectedAt   DateTime     @default(now())
+  userId        String
+  user          User         @relation(fields: [userId], references: [id])
+  facebookAppId String?
+  facebookApp   FacebookApp? @relation(fields: [facebookAppId], references: [id])
+  schedules     Schedule[]
+  posts         Post[]
+}
+
+model Schedule {
+  id             String   @id @default(uuid())
+  topic          String
+  time           String
+  advancedPrompt String?
+  runCount       Int      @default(1)
+  status         String   @default("active")
+  fanpageId      String
+  fanpage        Fanpage  @relation(fields: [fanpageId], references: [pageId])
+  userId         String
+  user           User     @relation(fields: [userId], references: [id])
+  createdAt      DateTime @default(now())
+  posts          Post[]
+}
+
+model Post {
+  id          String    @id @default(uuid())
+  topic       String
+  content     String
+  imageUrl    String?
+  fanpageId   String?
+  fanpage     Fanpage?  @relation(fields: [fanpageId], references: [pageId])
+  scheduleId  String?
+  schedule    Schedule? @relation(fields: [scheduleId], references: [id])
+  status      String    @default("published")
+  orderIndex  Int       @default(0)
+  error       String?
+  userId      String
+  user        User      @relation(fields: [userId], references: [id])
+  createdAt   DateTime  @default(now())
+}
+
+model Topic {
+  id          String   @id @default(uuid())
+  name        String
+  keywords    String
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+  createdAt   DateTime @default(now())
+}
