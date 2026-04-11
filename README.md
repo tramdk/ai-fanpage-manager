@@ -1,6 +1,6 @@
 # 🤖 Fanpage AI Manager
 
-> **Nền tảng quản lý & tự động hóa nội dung Facebook Fanpage bằng AI** — đăng bài thông minh, lập lịch tự động, sinh nội dung & hình ảnh bằng Gemini AI.
+> **Nền tảng quản lý & tự động hóa nội dung Facebook Fanpage bằng AI** — đăng bài thông minh, lập lịch tự động, sinh nội dung bằng Gemini AI & tìm kiếm hình ảnh chất lượng cao từ Internet.
 
 ---
 
@@ -12,7 +12,7 @@
 
 | Vấn đề                                         | Giải pháp                                                    |
 |------------------------------------------------|--------------------------------------------------------------|
-| Tốn thời gian tạo nội dung thủ công            | AI sinh content + ảnh tự động theo chủ đề                   |
+| Tốn thời gian tạo nội dung thủ công            | AI sinh content tự động + tìm ảnh liên quan từ Internet     |
 | Khó quản lý nhiều Fanpage cùng lúc             | Dashboard tập trung, kết nối đa Fanpage qua Facebook API     |
 | Thiếu nhất quán trong lịch đăng bài            | Hệ thống lập lịch (Cron Job) tự động hóa theo giờ cố định   |
 | Không có chiến lược nội dung dài hạn           | AI Campaign Architect tạo chuỗi bài theo phễu marketing       |
@@ -32,10 +32,11 @@
 - Cập nhật Access Token khi token hết hạn mà không mất cấu hình.
 - Xem trạng thái kết nối và thu hồi quyền truy cập bất kỳ lúc nào.
 
-### 🤖 AI Content Studio
-- Sinh bài viết Facebook từ chủ đề và từ khóa tùy chỉnh.
-- Sinh hình ảnh minh họa bằng Pollinations AI (Flux/SDXL) với fallback tự động về Unsplash và LoremFlickr.
-- Chỉnh sửa nội dung, tái sinh một phần (text hoặc ảnh) trước khi đăng.
+### 🤖 Social Discover Studio
+- Sinh bài viết Facebook từ chủ đề và từ khóa tùy chỉnh bằng Gemini AI.
+- **Tìm kiếm hình ảnh chất lượng cao** từ Unsplash, Pexels, LoremFlickr — tiết kiệm chi phí so với AI generation.
+- Ưu tiên tìm kiếm theo **Keywords** (từ Automation Settings); fallback sang **Topic Name** nếu không có keywords.
+- Chỉnh sửa nội dung, tìm lại ảnh mới trước khi đăng.
 - Đăng lên Fanpage trực tiếp hoặc lưu vào hàng đợi.
 
 ### 📅 Automation & Lập lịch
@@ -103,23 +104,28 @@
 └──────────────────────────────────────────────────────────────────┘
 ```
 
-### Luồng tạo ảnh AI (Multi-stage Fallback)
+### Luồng tìm kiếm hình ảnh (Image Discovery)
 
 ```
-User yêu cầu tạo ảnh
+User yêu cầu tìm ảnh
+       │
+       ├── Có Keywords (từ Automation Settings)? → Dùng Keywords làm search query
+       └── Không có Keywords? → Dùng Topic Name làm search query
        │
        ▼
-Gemini AI mở rộng prompt (Refinement)
-       │
-       ▼
-Pollinations.ai (Flux/SDXL) ──[timeout 12s]──▶ Thất bại?
+  Unsplash API (ưu tiên 1, cần API Key) ──▶ Thất bại?
        │                                               │
        ▼ Thành công                                    ▼
-  Tải lên Cloudinary                        Unsplash API (nếu có key)
+  Tải buffer → Upload Cloudinary             Pexels API (ưu tiên 2, cần API Key)
        │                                               │
        ▼                                               ▼ Thất bại?
-  Trả imageUrl                                  LoremFlickr (fallback cuối)
+  Trả imageUrl                               LoremFlickr (fallback miễn phí)
+                                                       │
+                                                       ▼ Thất bại?
+                                               Picsum (fallback cuối)
 ```
+
+> **Lưu ý**: Không sử dụng AI để sinh ảnh (zero AI cost cho hình ảnh). Chỉ dùng Gemini cho việc sinh văn bản.
 
 ### Luồng đăng bài tự động (Cron Job)
 
@@ -171,14 +177,15 @@ Cron Job kích hoạt đúng giờ (node-cron)
 | **Prisma ORM**  | ^6.19.3    | Type-safe database client                             |
 | **PostgreSQL**  | -          | Database production                                   |
 
-### AI & Tích hợp bên thứ ba
+### Image Discovery & Tích hợp bên thứ ba
 | Dịch vụ                     | Mục đích                                              |
 |-----------------------------|-------------------------------------------------------|
-| **Google Gemini AI**        | Sinh nội dung văn bản & tinh chỉnh prompt             |
-| **Pollinations.ai**         | Tạo hình ảnh chất lượng cao (Flux/SDXL)               |
+| **Google Gemini AI**        | Sinh nội dung văn bản (chỉ text, không dùng cho ảnh)  |
+| **Unsplash API**            | Tìm kiếm ảnh chất lượng cao — ưu tiên số 1 (miễn phí)|
+| **Pexels API**              | Tìm kiếm ảnh chất lượng cao — ưu tiên số 2 (miễn phí)|
+| **LoremFlickr**             | Fallback tìm ảnh miễn phí (không cần API key)         |
+| **Picsum**                  | Fallback cuối cùng (ảnh ngẫu nhiên, luôn khả dụng)    |
 | **Facebook Graph API v18**  | Đăng bài lên Fanpage, OAuth Fanpage connection        |
-| **Unsplash API** (fallback) | Hình ảnh dự phòng cấp 1                               |
-| **LoremFlickr** (fallback)  | Hình ảnh dự phòng cấp 2 (không cần API key)          |
 | **Cloudinary**              | Lưu trữ và tối ưu hóa hình ảnh                       |
 
 ---
@@ -207,7 +214,7 @@ fanpage-ai-manager/
 │   │   ├── dashboard.routes.ts   # Số liệu tổng quan
 │   │   └── user.routes.ts        # Cập nhật hồ sơ người dùng
 │   ├── services/                 # Business logic layer (tái sử dụng được)
-│   │   ├── ai.service.ts         # generateText(), generateImage() với fallback 3 lớp
+│   │   ├── ai.service.ts         # generateText(), generateImage() — image discovery từ Internet
 │   │   ├── auth.service.ts       # login(), register(), setupPassword(), getMe()
 │   │   ├── admin.service.ts      # listUsers(), setUserStatus(), resetPassword()
 │   │   ├── fanpage.service.ts    # listFanpages(), updateToken(), postDirectly()
@@ -218,6 +225,8 @@ fanpage-ai-manager/
 │   │   ├── schedule.service.ts   # createSchedule(), deleteSchedule(), updateStatus()
 │   │   ├── topic.service.ts      # listTopics(), createTopic(), deleteTopic()
 │   │   └── cron.service.ts       # scheduleJob() — cron job engine
+│   ├── tests/                    # Backend Test Suite
+│   │   └── ai-service.test.ts    # Test: text gen, image discovery, keywords, Cloudinary
 │   ├── middleware/
 │   │   └── auth.ts               # authenticateToken(), authenticateAdmin()
 │   ├── config/
@@ -229,8 +238,8 @@ fanpage-ai-manager/
 │   ├── api/
 │   │   └── index.ts              # ApiService — tầng giao tiếp Backend tập trung
 │   ├── components/
-│   │   ├── AIContentView.tsx     # Sinh & đăng bài thủ công bằng AI
-│   │   ├── AICreativeStudio.tsx  # Editor chỉnh sửa bài viết AI cao cấp
+│   │   ├── AIContentView.tsx     # Social Discover — sinh bài & tìm ảnh từ Internet
+│   │   ├── AICreativeStudio.tsx  # Editor chỉnh sửa bài viết cao cấp
 │   │   ├── AdminView.tsx         # Quản lý người dùng (admin only)
 │   │   ├── AuthView.tsx          # Đăng nhập / Đăng ký
 │   │   ├── AutomationSettings.tsx# Component cấu hình AI cho lịch trình
@@ -295,25 +304,23 @@ cp .env.example .env
 ```env
 # === BẮT BUỘC ===
 DATABASE_URL="postgresql://user:password@localhost:5433/fanpage_ai_manager"
-JWT_SECRET="your_super_secret_jwt_key"
-GEMINI_API_KEY="your_gemini_api_key"
+GEMINI_API_KEY="your_gemini_api_key"     # Chỉ dùng cho sinh văn bản
 APP_URL="http://localhost:3000"
 
-# === TÙY CHỌN ===
+# === TÙY CHỌN (nhưng khuyến nghị) ===
 ADMIN_EMAIL="admin@yourdomain.com"
 ADMIN_PASSWORD="your_secure_password"
 
-# Facebook App mặc định (có thể cấu hình trong UI)
-FACEBOOK_APP_ID=""
-FACEBOOK_APP_SECRET=""
-
-# Cloudinary (lưu trữ ảnh bền vững)
+# Cloudinary (lưu trữ ảnh tìm được)
 CLOUDINARY_CLOUD_NAME=""
 CLOUDINARY_API_KEY=""
 CLOUDINARY_API_SECRET=""
 
-# Unsplash (ảnh dự phòng cấp 1)
+# Stock Photo API Keys (MIỄN PHÍ — khuyến nghị để có ảnh chất lượng cao)
+# Đăng ký tại: https://unsplash.com/developers
 UNSPLASH_ACCESS_KEY=""
+# Đăng ký tại: https://www.pexels.com/api/
+PEXELS_API_KEY=""
 ```
 
 ### 3. Khởi động Database (Docker)
@@ -329,7 +336,15 @@ npx prisma db push
 npx prisma generate
 ```
 
-### 5. Chạy ứng dụng (Development)
+### 5. Chạy test suite
+
+```bash
+npm test
+```
+
+Đảm bảo tất cả test case đều pass trước khi chạy hoặc commit.
+
+### 6. Chạy ứng dụng (Development)
 
 ```bash
 npm run dev
@@ -337,7 +352,7 @@ npm run dev
 
 Ứng dụng sẽ khởi động tại: `http://localhost:3000`
 
-### 6. Build production
+### 7. Build production
 
 ```bash
 npm run build
@@ -381,7 +396,7 @@ npm start
 | Method | Endpoint                      | Mô tả                                  |
 |--------|-------------------------------|----------------------------------------|
 | POST   | `/api/ai/generate-text`       | Sinh nội dung bài viết bằng Gemini     |
-| POST   | `/api/ai/generate-image`      | Sinh hình ảnh (Pollinations → Unsplash → LoremFlickr) |
+| POST   | `/api/ai/generate-image`      | Tìm hình ảnh từ Internet (Unsplash → Pexels → LoremFlickr). Body: `{ topic, prompt?, keywords? }` |
 
 ### Posts
 | Method | Endpoint                      | Mô tả                                  |
@@ -417,6 +432,24 @@ npm start
 | PUT    | `/api/admin/users/:id/status`       | Kích hoạt / vô hiệu hóa tài khoản     |
 | POST   | `/api/admin/users/:id/reset-password` | Reset mật khẩu tạm thời             |
 | POST   | `/api/admin/users/:id/revoke`       | Thu hồi quyền truy cập                 |
+
+---
+
+## 🧪 Testing
+
+Dự án sử dụng hệ thống test tự viết nằm trong `backend/tests/`. Chạy toàn bộ test suite bằng:
+
+```bash
+npm test
+```
+
+### Test coverage hiện tại
+
+| File                          | Nội dung kiểm thử                                            |
+|-------------------------------|--------------------------------------------------------------|
+| `ai-service.test.ts`          | Text generation, Image discovery (keywords ưu tiên, topic fallback), Cloudinary upload |
+
+> **Quy tắc**: Mọi thay đổi phải pass toàn bộ test case trước khi commit.
 
 ---
 

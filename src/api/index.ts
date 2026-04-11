@@ -90,8 +90,8 @@ export class ApiService {
   ai = {
     generateText: (prompt: string) => 
       this.fetch('/api/ai/generate-text', { method: 'POST', body: JSON.stringify({ prompt }) }).then(r => this.handleResponse(r)),
-    generateImage: (prompt: string) =>
-      this.fetch('/api/ai/generate-image', { method: 'POST', body: JSON.stringify({ prompt }) }).then(r => this.handleResponse(r)),
+    generateImage: (data: { topic?: string, prompt?: string, keywords?: string[] | string }) =>
+      this.fetch('/api/ai/generate-image', { method: 'POST', body: JSON.stringify(data) }).then(r => this.handleResponse(r)),
   };
 
   // --- FACEBOOK APPS ---

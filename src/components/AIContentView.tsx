@@ -61,11 +61,11 @@ export const AIContentView = memo(({ fanpages, api }: { fanpages: Fanpage[], api
   const handleGenerateImage = useCallback(async (topicName: string, keywords: string[], replaceExistingAi = false) => {
     setIsGeneratingImage(true);
     try {
-      let prompt = `Hyper-realistic 4K commercial photography of ${topicName}. Elements: ${keywords.join(', ')}. Cinematic lighting, professional studio setup, 8K UHD quality, high resolution, ultra-detailed. NO TEXT.`;
-      if (automationConfig.tone) prompt += ` Overall vibe/style: ${automationConfig.tone}.`;
-      if (automationConfig.keywords) prompt += ` Important visual details: ${automationConfig.keywords}.`;
-
-      const data = await api.ai.generateImage(prompt);
+      const allKeywords = [...keywords];
+      if (automationConfig.keywords) {
+        allKeywords.push(...automationConfig.keywords.split(',').map(s => s.trim()));
+      }
+      const data = await api.ai.generateImage({ topic: topicName, keywords: allKeywords });
       if (data.imageUrl) {
         setMediaItems(prev => {
           const filtered = replaceExistingAi ? prev.filter(item => !item.isAiGenerated) : prev;
@@ -205,8 +205,8 @@ export const AIContentView = memo(({ fanpages, api }: { fanpages: Fanpage[], api
           <div className="flex items-center space-x-6">
             <div className="p-4 bg-emerald-500 text-white rounded-[18px] shadow-lg shadow-emerald-500/20"><Bot size={32} /></div>
             <div>
-              <h3 className="text-xl font-bold text-slate-50 tracking-tight uppercase leading-none">{t('aiGeneration')}</h3>
-              <p className="text-[10px] font-bold text-slate-500 uppercase tracking-[0.2em] mt-2">{t('promptInstructions')}</p>
+              <h3 className="text-xl font-bold text-slate-50 tracking-tight uppercase leading-none">Social Discover</h3>
+              <p className="text-[10px] font-bold text-slate-500 uppercase tracking-[0.2em] mt-2">Sourcing high-quality assets</p>
             </div>
           </div>
           <button onClick={() => setIsAddingTopic(prev => !prev)} className="px-6 py-3 bg-slate-800 text-slate-300 rounded-xl font-bold uppercase text-[10px] tracking-widest hover:bg-slate-700 hover:text-emerald-500 transition-all border border-slate-700">
@@ -247,7 +247,7 @@ export const AIContentView = memo(({ fanpages, api }: { fanpages: Fanpage[], api
           <div className="flex justify-center pt-6">
             <button onClick={handleGenerate} disabled={isGenerating || !selectedTopic} className="px-12 py-5 bg-emerald-500 text-white rounded-[24px] font-extrabold uppercase text-[11px] tracking-[0.2em] shadow-xl shadow-emerald-500/20 hover:bg-emerald-600 transition-all flex items-center gap-5 disabled:opacity-30 active:scale-95 group">
               <Sparkles className={`w-6 h-6 ${isGenerating ? 'animate-spin' : 'group-hover:rotate-12 transition-transform'}`} />
-              <span>{isGenerating ? t('loading') : t('aiGeneration')}</span>
+              <span>{isGenerating ? t('loading') : 'Discover Content'}</span>
             </button>
           </div>
         </div>
@@ -299,7 +299,7 @@ export const AIContentView = memo(({ fanpages, api }: { fanpages: Fanpage[], api
                   <div key={item.id} className="relative aspect-square rounded-[24px] overflow-hidden bg-slate-800 border border-slate-700 shadow-xl group">
                     <img src={item.data} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
                     <button onClick={() => setMediaItems(prev => prev.filter(i => i.id !== item.id))} className="absolute top-3 right-3 bg-red-500 text-white p-2 rounded-xl opacity-0 group-hover:opacity-100 transition-all shadow-xl"><X size={14} /></button>
-                    {item.isAiGenerated && <div className="absolute bottom-3 left-3 bg-emerald-500/80 backdrop-blur-md text-[7px] font-bold text-white px-2 py-1 rounded-md uppercase tracking-widest shadow-lg">AI Vision</div>}
+                    {item.isAiGenerated && <div className="absolute bottom-3 left-3 bg-indigo-500/80 backdrop-blur-md text-[7px] font-bold text-white px-2 py-1 rounded-md uppercase tracking-widest shadow-lg">Web Resource</div>}
                   </div>
                 ))}
                 {isGeneratingImage ? (

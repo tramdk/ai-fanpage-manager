@@ -54,7 +54,10 @@ export const AICreativeStudio: React.FC<AICreativeStudioProps> = memo(({ post, a
   const handleRegenImage = useCallback(async () => {
     setIsGeneratingImage(true);
     try {
-      const data = await api.ai.generateImage(`${post.topic || 'Product Photography'}, high-end style, ${prompt || ''}`);
+      const data = await api.ai.generateImage({ 
+        topic: post.topic || 'Product Photography', 
+        prompt: prompt 
+      });
       if (data.imageUrl) {
         setMedia(prev => [...prev, { type: 'image', data: data.imageUrl, id: Date.now().toString() }]);
       }
@@ -166,7 +169,7 @@ export const AICreativeStudio: React.FC<AICreativeStudioProps> = memo(({ post, a
                     disabled={isGeneratingImage} 
                     className="px-4 py-2 bg-slate-800 text-emerald-500 border border-slate-700 rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-emerald-500 hover:text-white transition-all disabled:opacity-30"
                   >
-                    <Sparkles size={14} className={`mr-1.5 inline ${isGeneratingImage ? 'animate-spin' : ''}`} /> {isGeneratingImage ? 'Syncing...' : 'Regen artwork'}
+                    <Sparkles size={14} className={`mr-1.5 inline ${isGeneratingImage ? 'animate-spin' : ''}`} /> {isGeneratingImage ? 'Sourcing...' : 'Find matching image'}
                   </button>
                   <label className="cursor-pointer px-4 py-2 bg-slate-100 text-slate-950 rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-emerald-500 hover:text-white transition-all flex items-center gap-2">
                     <Upload size={14} /> <span>Upload</span>
@@ -185,7 +188,7 @@ export const AICreativeStudio: React.FC<AICreativeStudioProps> = memo(({ post, a
               {isGeneratingImage ? (
                 <div className="aspect-square bg-slate-900 rounded-2xl animate-pulse flex flex-col items-center justify-center border border-dashed border-slate-800">
                    <Loader2 className="animate-spin text-emerald-500 mb-2" size={24} />
-                   <p className="text-[8px] font-bold text-slate-600 uppercase">Generating...</p>
+                   <p className="text-[8px] font-bold text-slate-600 uppercase">Searching...</p>
                 </div>
               ) : null}
               {media.length === 0 && !isGeneratingImage ? (

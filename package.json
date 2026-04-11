@@ -11,7 +11,8 @@
     "clean": "rm -rf dist",
     "lint": "tsc --noEmit",
     "db:sqlite": "node scripts/switch-db.js sqlite",
-    "db:postgres": "node scripts/switch-db.js postgres"
+    "db:postgres": "node scripts/switch-db.js postgres",
+    "test": "tsx backend/tests/ai-service.test.ts"
   },
   "dependencies": {
     "@google/genai": "^1.29.0",
