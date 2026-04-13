@@ -58,7 +58,7 @@ router.get('/facebook/url', async (req, res) => {
   if (!token) return res.status(401).json({ error: 'Authentication required' });
   try {
     const decoded = jwt.verify(token, JWT_SECRET) as any;
-    const url = await authService.getFacebookOAuthUrl(decoded.id, origin || '', fbAppRecordId);
+    const url = await authService.getFacebookOAuthUrl(decoded.id, token, origin || '', fbAppRecordId);
     res.json({ url });
   } catch (error: any) {
     if (error.requires_config) return res.status(400).json({ error: error.message, requires_config: true });

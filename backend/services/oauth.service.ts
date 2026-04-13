@@ -26,7 +26,8 @@ export async function handleFacebookCallback(code: string, state: string) {
   }
 
   // Exchange code for short-lived token
-  const redirectUri = `${cleanOrigin}/auth/facebook/callback`;
+  const backendUrl = (process.env.APP_URL || cleanOrigin).replace(/\/$/, '');
+  const redirectUri = `${backendUrl}/auth/facebook/callback`;
   const tRes = await fetch(`https://graph.facebook.com/v18.0/oauth/access_token?client_id=${appId}&redirect_uri=${redirectUri}&client_secret=${appSecret}&code=${code}`);
   const tData = await tRes.json();
   if (tData.error) throw new Error(tData.error.message);

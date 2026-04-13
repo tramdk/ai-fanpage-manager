@@ -51,7 +51,7 @@ export async function getMe(userId: string) {
   return { id: user.id, email: user.email, name: user.name, role: user.role, isActive: user.isActive };
 }
 
-export async function getFacebookOAuthUrl(userId: string, origin: string, fbAppRecordId?: string) {
+export async function getFacebookOAuthUrl(userId: string, token: string, origin: string, fbAppRecordId?: string) {
   const user = await prisma.user.findUnique({ where: { id: userId } });
   if (!user) throw new Error('User not found');
 
@@ -74,7 +74,11 @@ export async function getFacebookOAuthUrl(userId: string, origin: string, fbAppR
 
   const cleanOrigin = origin.replace(/\/$/, '');
   const backendUrl = (process.env.APP_URL || cleanOrigin).replace(/\/$/, '');
-  const stateStr = Buffer.from(JSON.stringify({ origin: cleanOrigin, fbAppRecordId: fbAppRecordId || 'legacy' })).toString('base64');
+  const stateStr = Buffer.from(JSON.stringify({ 
+    token,
+    origin: cleanOrigin, 
+    fbAppRecordId: fbAppRecordId || 'legacy' 
+  })).toString('base64');
   const params = new URLSearchParams({ 
     client_id: appId, 
     redirect_uri: `${backendUrl}/auth/facebook/callback`, 
