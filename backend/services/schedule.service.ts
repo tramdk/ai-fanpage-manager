@@ -9,9 +9,15 @@ export async function listSchedules(userId: string) {
 }
 
 export async function createSchedule(userId: string, data: any) {
+    const { topic, time, advancedPrompt, runCount, fanpageId } = data;
+    
     const schedule = await prisma.schedule.create({
         data: {
-          ...data,
+          topic,
+          time,
+          advancedPrompt,
+          runCount: parseInt(runCount?.toString() || '1'),
+          fanpageId,
           userId,
           status: 'active'
         },
