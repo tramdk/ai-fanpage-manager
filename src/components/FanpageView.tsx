@@ -66,7 +66,7 @@ export const FanpageView = ({ fanpages, onConnect, onConfigure, api }: { fanpage
       {/* Dynamic Header */}
       <div className="bg-slate-900 rounded-[32px] border border-slate-800 p-8 lg:p-10 flex flex-col md:flex-row justify-between items-center relative overflow-hidden">
         <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/5 blur-[100px] -mr-32 -mt-32"></div>
-        
+
         <div className="flex items-center space-x-6 mb-8 md:mb-0 relative z-10">
           <div className="p-4 bg-emerald-500 text-white rounded-[20px] shadow-xl shadow-emerald-500/20">
             <Facebook className="w-8 h-8" />
@@ -86,7 +86,7 @@ export const FanpageView = ({ fanpages, onConnect, onConfigure, api }: { fanpage
           >
             <RefreshCw className={`w-5 h-5 ${isRefreshing ? 'animate-spin' : ''}`} />
           </button>
-          
+
           <div className="bg-slate-800 p-1.5 rounded-xl flex items-center border border-slate-700">
             <button
               onClick={() => setViewMode('grid')}
@@ -133,7 +133,7 @@ export const FanpageView = ({ fanpages, onConnect, onConfigure, api }: { fanpage
                   <div className="min-w-0">
                     <h3 className={`text-lg font-bold truncate uppercase tracking-tight leading-tight ${page.status === 'expired' ? 'text-red-500/80 line-through' : 'text-slate-50'}`}>{page.name}</h3>
                     <p className="text-[10px] font-bold text-slate-500 uppercase tracking-[0.15em] mt-1.5 flex items-center gap-2">
-                       ID: {page.id} {page.status === 'expired' && <span className="px-1.5 py-0.5 bg-red-500/10 text-red-500 rounded text-[9px] font-black border border-red-500/20">EXPIRED</span>}
+                      ID: {page.id} {page.status === 'expired' && <span className="px-1.5 py-0.5 bg-red-500/10 text-red-500 rounded text-[9px] font-black border border-red-500/20">EXPIRED</span>}
                     </p>
                   </div>
                 </div>
@@ -157,29 +157,29 @@ export const FanpageView = ({ fanpages, onConnect, onConfigure, api }: { fanpage
                   </button>
                 ) : (
                   <>
-                  <a
-                    href={`https://facebook.com/${page.pageId}`}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="flex items-center justify-center space-x-2 p-3.5 bg-slate-800 text-slate-300 rounded-xl text-[10px] font-bold uppercase tracking-widest hover:bg-slate-50 hover:text-slate-950 transition-all border border-slate-700"
-                  >
-                    <ExternalLink className="w-3.5 h-3.5" />
-                    <span>{t('viewOnFB')}</span>
-                  </a>
-                  <button
-                    onClick={() => onConfigure(page.id)}
-                    className="flex items-center justify-center space-x-2 p-3.5 bg-indigo-500/10 text-indigo-400 rounded-xl text-[10px] font-bold uppercase tracking-widest hover:bg-indigo-500 hover:text-white transition-all border border-indigo-500/20"
-                  >
-                    <Settings className="w-3.5 h-3.5" />
-                    <span>{t('configureAutomation')}</span>
-                  </button>
-                  <button
-                    onClick={() => openTokenModal(page.id, page.name)}
-                    className="flex items-center justify-center space-x-2 p-3.5 bg-emerald-500/10 text-emerald-500 rounded-xl text-[10px] font-bold uppercase tracking-widest hover:bg-emerald-500 hover:text-white transition-all border border-emerald-500/20 col-span-2"
-                  >
-                    <Key className="w-3.5 h-3.5" />
-                    <span>Update Token</span>
-                  </button>
+                    <a
+                      href={`https://facebook.com/${page.pageId}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="flex items-center justify-center space-x-2 p-3.5 bg-slate-800 text-slate-300 rounded-xl text-[10px] font-bold uppercase tracking-widest hover:bg-slate-50 hover:text-slate-950 transition-all border border-slate-700"
+                    >
+                      <ExternalLink className="w-3.5 h-3.5" />
+                      <span>{t('viewOnFB')}</span>
+                    </a>
+                    <button
+                      onClick={() => onConfigure(page.id)}
+                      className="flex items-center justify-center space-x-2 p-3.5 bg-indigo-500/10 text-indigo-400 rounded-xl text-[10px] font-bold uppercase tracking-widest hover:bg-indigo-500 hover:text-white transition-all border border-indigo-500/20"
+                    >
+                      <Settings className="w-3.5 h-3.5" />
+                      <span>{t('configureAutomation')}</span>
+                    </button>
+                    <button
+                      onClick={() => openTokenModal(page.id, page.name)}
+                      className="flex items-center justify-center space-x-2 p-3.5 bg-emerald-500/10 text-emerald-500 rounded-xl text-[10px] font-bold uppercase tracking-widest hover:bg-emerald-500 hover:text-white transition-all border border-emerald-500/20 col-span-2"
+                    >
+                      <Key className="w-3.5 h-3.5" />
+                      <span>Update Token</span>
+                    </button>
                   </>
                 )}
               </div>
@@ -220,7 +220,7 @@ export const FanpageView = ({ fanpages, onConnect, onConfigure, api }: { fanpage
                       <StatusBadge status={page.status || 'active'} />
                     </td>
                     <td className="px-8 py-6 text-right space-x-2">
-                       {page.status === 'expired' ? (
+                      {page.status === 'expired' ? (
                         <button
                           onClick={() => openTokenModal(page.id, page.name)}
                           className="inline-flex items-center space-x-2 px-6 py-3 bg-red-500 text-white rounded-xl font-bold uppercase tracking-widest text-[10px] hover:bg-slate-50 hover:text-red-600 transition-all animate-pulse"
@@ -230,29 +230,29 @@ export const FanpageView = ({ fanpages, onConnect, onConfigure, api }: { fanpage
                         </button>
                       ) : (
                         <>
-                        <button
-                          onClick={() => openTokenModal(page.id, page.name)}
-                          className="inline-flex items-center justify-center p-2.5 bg-emerald-500/10 text-emerald-500 rounded-lg hover:bg-emerald-500 hover:text-white transition-all border border-emerald-500/20"
-                          title="Update Token"
-                        >
-                          <Key className="w-4 h-4" />
-                        </button>
-                        <a
-                          href={`https://facebook.com/${page.pageId}`}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="inline-flex items-center justify-center p-2.5 bg-slate-800 text-slate-400 rounded-lg hover:bg-slate-50 hover:text-slate-950 transition-all border border-slate-700"
-                          title={t('viewOnFB')}
-                        >
-                          <ExternalLink className="w-4 h-4" />
-                        </a>
-                        <button
-                          onClick={() => onConfigure(page.id)}
-                          className="inline-flex items-center space-x-2 px-5 py-2.5 bg-indigo-500/10 text-indigo-400 rounded-lg font-bold uppercase tracking-widest text-[10px] hover:bg-indigo-500 hover:text-white transition-all border border-indigo-500/20"
-                        >
-                          <Settings className="w-3.5 h-3.5" />
-                          <span>{t('configureAutomation')}</span>
-                        </button>
+                          <button
+                            onClick={() => openTokenModal(page.id, page.name)}
+                            className="inline-flex items-center justify-center p-2.5 bg-emerald-500/10 text-emerald-500 rounded-lg hover:bg-emerald-500 hover:text-white transition-all border border-emerald-500/20"
+                            title="Update Token"
+                          >
+                            <Key className="w-4 h-4" />
+                          </button>
+                          <a
+                            href={`https://facebook.com/${page.pageId}`}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="inline-flex items-center justify-center p-2.5 bg-slate-800 text-slate-400 rounded-lg hover:bg-slate-50 hover:text-slate-950 transition-all border border-slate-700"
+                            title={t('viewOnFB')}
+                          >
+                            <ExternalLink className="w-4 h-4" />
+                          </a>
+                          <button
+                            onClick={() => onConfigure(page.id)}
+                            className="inline-flex items-center space-x-2 px-5 py-2.5 bg-indigo-500/10 text-indigo-400 rounded-lg font-bold uppercase tracking-widest text-[10px] hover:bg-indigo-500 hover:text-white transition-all border border-indigo-500/20"
+                          >
+                            <Settings className="w-3.5 h-3.5" />
+                            <span>{t('configureAutomation')}</span>
+                          </button>
                         </>
                       )}
                       <button
@@ -276,7 +276,7 @@ export const FanpageView = ({ fanpages, onConnect, onConfigure, api }: { fanpage
         <div className="fixed inset-0 bg-slate-950/90 backdrop-blur-md flex items-center justify-center z-[200] p-6 overflow-y-auto">
           <div className="bg-slate-900 border border-slate-800 rounded-[40px] shadow-3xl max-w-2xl w-full my-auto animate-in zoom-in-95 duration-300 relative overflow-hidden">
             <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/5 blur-[100px] -mr-32 -mt-32"></div>
-            
+
             {/* Modal Header */}
             <div className="px-10 py-8 border-b border-slate-800 flex justify-between items-center relative z-10">
               <div className="flex items-center space-x-4">
@@ -296,7 +296,7 @@ export const FanpageView = ({ fanpages, onConnect, onConfigure, api }: { fanpage
                   <Info size={18} />
                   <span className="text-[10px] font-black uppercase tracking-[0.2em]">Hướng dẫn lấy Token vĩnh viễn</span>
                 </div>
-                
+
                 <div className="space-y-4">
                   {[
                     "Truy cập Meta for Developers và mở Graph API Explorer.",
@@ -313,18 +313,18 @@ export const FanpageView = ({ fanpages, onConnect, onConfigure, api }: { fanpage
               </div>
 
               <div className="p-6 bg-slate-950/50 border border-slate-800 rounded-3xl border-l-4 border-l-amber-500/50 flex space-x-4">
-                 <div className="text-amber-500"><Info size={20} /></div>
-                 <p className="text-[10px] font-bold text-slate-500 uppercase leading-relaxed tracking-tight">
-                    Lưu ý: Nếu bạn sử dụng App của riêng mình, Token sẽ an toàn hơn. Tuyệt đối không chia sẻ Token này cho người không có quyền quản trị.
-                 </p>
+                <div className="text-amber-500"><Info size={20} /></div>
+                <p className="text-[10px] font-bold text-slate-500 uppercase leading-relaxed tracking-tight">
+                  Lưu ý: Nếu bạn sử dụng App của riêng mình, Token sẽ an toàn hơn. Tuyệt đối không chia sẻ Token này cho người không có quyền quản trị.
+                </p>
               </div>
 
               <form onSubmit={handleUpdateTokenSubmit} className="space-y-6">
                 <div className="space-y-3">
                   <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-2">Nhập Access Token Mới</label>
-                  <textarea 
+                  <textarea
                     required
-                    className="w-full bg-slate-800 border border-slate-700 rounded-2xl px-6 py-5 text-sm font-bold text-slate-200 outline-none focus:border-emerald-500/50 transition-all resize-none min-h-[120px] placeholder:text-slate-600" 
+                    className="w-full bg-slate-800 border border-slate-700 rounded-2xl px-6 py-5 text-sm font-bold text-slate-200 outline-none focus:border-emerald-500/50 transition-all resize-none min-h-[120px] placeholder:text-slate-600"
                     placeholder="Dán Page Access Token của bạn tại đây..."
                     value={newToken}
                     onChange={(e) => setNewToken(e.target.value)}
@@ -332,14 +332,14 @@ export const FanpageView = ({ fanpages, onConnect, onConfigure, api }: { fanpage
                 </div>
 
                 <div className="flex flex-col md:flex-row gap-4 pt-4">
-                  <button 
+                  <button
                     type="button"
                     onClick={() => setShowTokenModal(false)}
                     className="flex-1 px-8 py-4 bg-slate-800 text-slate-400 rounded-2xl font-bold uppercase text-[10px] tracking-widest hover:bg-slate-700 hover:text-slate-200 transition-all border border-slate-700"
                   >
                     Hủy bỏ
                   </button>
-                  <button 
+                  <button
                     type="submit"
                     disabled={isUpdatingToken || !newToken.trim()}
                     className="flex-[2] bg-emerald-500 text-white px-8 py-4 rounded-2xl font-black uppercase tracking-[0.2em] text-[11px] hover:bg-emerald-600 transition-all shadow-xl shadow-emerald-500/20 active:scale-95 flex items-center justify-center space-x-3 disabled:opacity-30"
