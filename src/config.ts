@@ -3,7 +3,7 @@
  */
 export const CONFIG = {
   // Base URL for API requests. Can be configured via .env in build time if needed.
-  API_BASE_URL: '', // Relative to current domain for simplicity, but can be external
+  API_BASE_URL: (import.meta as any).env?.VITE_API_URL || '', 
   
   // Default values for common settings
   DEFAULT_TIME: '09:00',
