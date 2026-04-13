@@ -24,17 +24,32 @@ export async function clearScheduleQueue(userId: string, scheduleId: string) {
     return { deleted: result.count };
 }
 
-export async function updatePost(userId: string, id: string, data: { content?: string, imageUrl?: string, status?: string }) {
+export async function updatePost(userId: string, id: string, data: any) {
+    const { content, imageUrl, status, topic, fbPostId } = data;
+    const updateData: any = {};
+    if (content !== undefined) updateData.content = content;
+    if (imageUrl !== undefined) updateData.imageUrl = imageUrl;
+    if (status !== undefined) updateData.status = status;
+    if (topic !== undefined) updateData.topic = topic;
+    if (fbPostId !== undefined) updateData.fbPostId = fbPostId;
+
     return prisma.post.update({
         where: { id, userId },
-        data
+        data: updateData
     });
 }
 
 export async function queuePost(userId: string, data: any) {
+    const { topic, content, imageUrl, fanpageId, scheduleId, orderIndex, fbPostId } = data;
     return prisma.post.create({
         data: {
-          ...data,
+          topic,
+          content,
+          imageUrl,
+          fanpageId,
+          scheduleId,
+          orderIndex: orderIndex !== undefined ? parseInt(orderIndex.toString()) : 0,
+          fbPostId,
           userId,
           status: 'queued'
         }
