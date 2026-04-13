@@ -4,9 +4,9 @@ import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const PROJECT_ROOT = path.resolve(__dirname, '../../');
+const __filename = typeof import.meta.url !== 'undefined' ? fileURLToPath(import.meta.url) : '';
+const __dirname = __filename ? path.dirname(__filename) : process.cwd();
+const PROJECT_ROOT = path.resolve(__dirname, __filename ? '../../' : './');
 
 // Use the model name WITHOUT 'models/' prefix — the @google/genai v1 SDK requires it
 const DEFAULT_MODEL = 'gemini-2.0-flash';

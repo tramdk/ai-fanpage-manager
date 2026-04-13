@@ -9,9 +9,9 @@ import { fileURLToPath } from 'url';
 
 dotenv.config();
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const PROJECT_ROOT = path.resolve(__dirname, '../');
+const __filename = typeof import.meta.url !== 'undefined' ? fileURLToPath(import.meta.url) : '';
+const __dirname = __filename ? path.dirname(__filename) : process.cwd();
+const PROJECT_ROOT = path.resolve(__dirname, __filename ? '../' : './');
 
 async function startServer() {
   const PORT = process.env.PORT || 3000;

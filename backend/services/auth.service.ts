@@ -73,8 +73,15 @@ export async function getFacebookOAuthUrl(userId: string, origin: string, fbAppR
   if (!appId || !appSecret) throw Object.assign(new Error('Facebook App not configured'), { requires_config: true });
 
   const cleanOrigin = origin.replace(/\/$/, '');
+  const backendUrl = (process.env.APP_URL || cleanOrigin).replace(/\/$/, '');
   const stateStr = Buffer.from(JSON.stringify({ origin: cleanOrigin, fbAppRecordId: fbAppRecordId || 'legacy' })).toString('base64');
-  const params = new URLSearchParams({ client_id: appId, redirect_uri: `${cleanOrigin}/auth/facebook/callback`, response_type: 'code', scope: 'pages_show_list,pages_read_engagement,pages_manage_posts', state: stateStr });
+  const params = new URLSearchParams({ 
+    client_id: appId, 
+    redirect_uri: `${backendUrl}/auth/facebook/callback`, 
+    response_type: 'code', 
+    scope: 'pages_show_list,pages_read_engagement,pages_manage_posts', 
+    state: stateStr 
+  });
 
   return `https://www.facebook.com/v18.0/dialog/oauth?${params.toString()}`;
 }

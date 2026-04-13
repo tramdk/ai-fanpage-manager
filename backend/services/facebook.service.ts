@@ -5,9 +5,9 @@ import { Buffer } from 'buffer';
 import { prisma } from '../config/prisma.js';
 import { decrypt } from '../utils/encryption.js';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const PROJECT_ROOT = path.resolve(__dirname, '../../');
+const __filename = typeof import.meta.url !== 'undefined' ? fileURLToPath(import.meta.url) : '';
+const __dirname = __filename ? path.dirname(__filename) : process.cwd();
+const PROJECT_ROOT = path.resolve(__dirname, __filename ? '../../' : './');
 
 export async function postToFacebook(queuedPost: any, fanpage: any, decryptedToken: string) {
   let fbRes;

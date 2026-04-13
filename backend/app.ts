@@ -12,12 +12,15 @@ import adminRoutes from './routes/admin.routes.js';
 import dashboardRoutes from './routes/dashboard.routes.js';
 import topicRoutes from './routes/topic.routes.js';
 import oauthRoutes from './routes/oauth.routes.js';
+import cors from 'cors';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const PROJECT_ROOT = path.resolve(__dirname, '../');
+const __filename = typeof import.meta.url !== 'undefined' ? fileURLToPath(import.meta.url) : '';
+const __dirname = __filename ? path.dirname(__filename) : process.cwd();
+const PROJECT_ROOT = path.resolve(__dirname, __filename ? '../' : './');
 
 const app = express();
+
+app.use(cors());
 
 app.use(express.json({ limit: '20MB' }));
 app.use(express.urlencoded({ limit: '20MB', extended: true }));
