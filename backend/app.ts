@@ -28,6 +28,11 @@ app.use(express.urlencoded({ limit: '20MB', extended: true }));
 // Serve uploads
 app.use('/api/media', express.static(path.join(PROJECT_ROOT, 'public/uploads')));
 
+// Health check for anti-sleep ping
+app.get('/api/health', (req, res) => {
+  res.status(200).json({ status: 'ok', time: new Date().toISOString() });
+});
+
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
