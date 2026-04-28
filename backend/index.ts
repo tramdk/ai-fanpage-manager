@@ -1,3 +1,4 @@
+import express from 'express';
 import app from './app.js';
 import { prisma } from './config/prisma.js';
 import { scheduleJob } from './services/cron.service.js';
