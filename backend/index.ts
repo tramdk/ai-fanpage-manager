@@ -52,8 +52,14 @@ async function startServer() {
     app.use(vite.middlewares);
   } else {
     // Prod: serve built dist
-    // app.use(express.static(path.resolve(PROJECT_ROOT, 'dist')));
-    // (Actual prod deployment might use specialized static serving)
+    const distPath = path.resolve(PROJECT_ROOT, 'dist');
+    app.use(express.static(distPath));
+    
+    // SPA catch-all for client-side routing
+    app.get('*', (req, res, next) => {
+      if (req.path.startsWith('/api')) return next();
+      res.sendFile(path.resolve(distPath, 'index.html'));
+    });
   }
 
   app.listen(PORT, () => {
