@@ -39,12 +39,58 @@ export function cleanAIResult(text: string) {
 }
 
 /**
- * Text Generation Service
+ * Text Generation Service with Detailed Error Handling
  */
 export async function generateText(prompt: string) {
-  const genAI = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || '' });
-  const result = await genAI.models.generateContent({ model: DEFAULT_MODEL, contents: prompt });
-  return cleanAIResult(result.text || '');
+  const apiKey = process.env.GEMINI_API_KEY || '';
+  
+  if (!apiKey) {
+    throw new Error('GOOGLE_API_KEY_MISSING: Gemini API Key is not configured in .env file.');
+  }
+
+  try {
+    const genAI = new GoogleGenAI({ apiKey });
+    
+    // Usage for the specific @google/genai package
+    const result = await genAI.models.generateContent({ 
+      model: DEFAULT_MODEL, 
+      contents: prompt 
+    });
+    
+    const text = result.text;
+    
+    if (!text) {
+      // Check if blocked by safety (some SDKs return empty text when blocked)
+      if (result.status === 'blocked') {
+        throw new Error('GOOGLE_API_SAFETY_BLOCK: Content was blocked due to safety settings.');
+      }
+      throw new Error('GOOGLE_API_EMPTY_RESPONSE: Gemini returned an empty response.');
+    }
+
+    return cleanAIResult(text);
+  } catch (error: any) {
+    // Categorize and provide detailed messages for common Google API errors
+    const errorMessage = error.message || '';
+    
+    if (errorMessage.includes('429') || errorMessage.toLowerCase().includes('quota')) {
+      throw new Error('GOOGLE_API_QUOTA_EXCEEDED: You have reached the rate limit for Gemini. Please wait a moment or upgrade your plan.');
+    }
+    
+    if (errorMessage.includes('403') || errorMessage.toLowerCase().includes('permission')) {
+      throw new Error('GOOGLE_API_PERMISSION_DENIED: Access denied. Check if your API key is valid and has Gemini API enabled.');
+    }
+
+    if (errorMessage.includes('400')) {
+      throw new Error(`GOOGLE_API_BAD_REQUEST: Invalid request parameters. ${errorMessage}`);
+    }
+
+    if (errorMessage.includes('500') || errorMessage.includes('503')) {
+      throw new Error('GOOGLE_API_SERVER_ERROR: Google AI servers are temporarily overloaded. Please try again in a few seconds.');
+    }
+
+    // Pass through other errors with a prefix
+    throw new Error(`GOOGLE_API_ERROR: ${errorMessage}`);
+  }
 }
 
 /**

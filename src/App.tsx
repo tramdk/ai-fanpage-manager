@@ -1,34 +1,37 @@
 import React, { useState, useCallback, useEffect, useTransition, useMemo } from 'react';
 import {
-  LayoutDashboard, Facebook, Settings, Bell, Search, Menu, 
-  Activity, History, User as UserIcon, Clock, Bot, LogOut, 
-  Plus, X, Sparkles, Loader2
+  LayoutDashboard, Facebook, Settings, Bell, Search, Menu,
+  Activity, History, User as UserIcon, Clock, Bot, LogOut,
+  Plus, X, Sparkles, Loader2, Workflow, Sun, Moon
 } from 'lucide-react';
 import { useLanguage } from './LanguageContext';
 import { CONFIG } from './config';
 import { useApiService } from './hooks/useApiService';
+import { Toaster, toast } from 'sonner';
 
 // --- TYPES ---
 import { User, Fanpage, AuthFetch } from './types';
 
-// --- COMPONENTS ---
-import { DashboardView } from './components/DashboardView';
-import { FanpageView } from './components/FanpageView';
-import { AutomationView } from './components/AutomationView';
-import { AIContentView } from './components/AIContentView';
-import { HistoryView } from './components/HistoryView';
-import { AdminView } from './components/AdminView';
-import { SettingsView } from './components/SettingsView';
-import { AuthView } from './components/AuthView';
-import CampaignPlannerView from './components/CampaignPlannerView';
-import { ForcePasswordChangeView } from './components/ForcePasswordChangeView';
+// --- COMPONENT MAP (Lazy Loading) ---
+const DashboardView = React.lazy(() => import('./features/dashboard/DashboardView').then(m => ({ default: m.DashboardView })));
+const FanpageView = React.lazy(() => import('./features/fanpages/FanpageView').then(m => ({ default: m.FanpageView })));
+const AutomationView = React.lazy(() => import('./features/automation/AutomationView').then(m => ({ default: m.AutomationView })));
+const AIContentView = React.lazy(() => import('./features/ai-studio/AIContentView').then(m => ({ default: m.AIContentView })));
+const HistoryView = React.lazy(() => import('./features/history/HistoryView').then(m => ({ default: m.HistoryView })));
+const AdminView = React.lazy(() => import('./features/admin/AdminView').then(m => ({ default: m.AdminView })));
+const SettingsView = React.lazy(() => import('./features/settings/SettingsView').then(m => ({ default: m.SettingsView })));
+const AuthView = React.lazy(() => import('./features/auth/AuthView').then(m => ({ default: m.AuthView })));
+const CampaignStudioView = React.lazy(() => import('./features/studio/CampaignStudioView').then(m => ({ default: m.CampaignStudioView })));
+const StrategyWorkflowView = React.lazy(() => import('./features/strategy/StrategyWorkflowView'));
+const ForcePasswordChangeView = React.lazy(() => import('./features/auth/ForcePasswordChangeView').then(m => ({ default: m.ForcePasswordChangeView })));
 
 // [rerender-memo-with-default-value] - Hoist static constants outside component
 const GET_NAV_ITEMS = (t: any, role?: string) => [
   { id: 'dashboard', label: t('dashboard'), icon: LayoutDashboard },
   { id: 'fanpages', label: t('fanpages'), icon: Facebook },
   { id: 'automation', label: t('automation'), icon: Clock },
-  { id: 'planner', label: 'AI Planner', icon: Sparkles },
+  { id: 'studio', label: 'Campaign Studio', icon: Sparkles },
+  { id: 'strategy', label: 'Strategy Workflow', icon: Workflow },
   { id: 'ai-content', label: t('aiContent'), icon: Bot },
   { id: 'history', label: t('history'), icon: History },
   ...(role === 'admin' ? [{ id: 'admin', label: t('admin'), icon: UserIcon }] : []),
@@ -40,8 +43,9 @@ export default function App() {
   const [user, setUser] = useState<User | null>(null);
   const [activeTab, setActiveTab] = useState('dashboard');
   const [isPending, startTransition] = useTransition(); // [rerender-transitions]
-  
+
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [theme, setTheme] = useState<'light' | 'dark'>(() => (localStorage.getItem('theme') as any) || 'dark');
   const [fanpages, setFanpages] = useState<Fanpage[]>([]);
   const [preSelectedFanpageId, setPreSelectedFanpageId] = useState<string | undefined>(undefined);
   const { language, setLanguage, t } = useLanguage();
@@ -78,29 +82,36 @@ export default function App() {
     setToken(null); setUser(null); setFanpages([]);
   }, []);
 
-  // [async-parallel] - Start user verification
-  useEffect(() => {
-    if (!token) return;
-    api.users.getMe()
-      .then(data => setUser(data))
-      .catch(() => handleLogout());
-  }, [token, api, handleLogout]);
-
   const fetchData = useCallback(async () => {
     if (!token) return;
     try {
-      // [async-parallel] - Parallelize initial fetches
-      const [fanpagesData, fbAppsData] = await Promise.all([
+      // [async-parallel] - Parallelize initial bootstrap fetches
+      const [userData, fanpagesData, fbAppsData] = await Promise.all([
+        api.users.getMe(),
         api.fanpages.list(),
         api.fbApps.list()
       ]);
+      setUser(userData);
       setFanpages(fanpagesData);
       setFbApps(fbAppsData);
-    } catch (err) { console.error('Bootstrap Error', err); }
-  }, [token, api]);
+    } catch (err: any) {
+      console.warn('Bootstrap Error:', err?.message || 'Unknown Error');
+      // If unauthorized or forbidden, logout
+      if (err?.statusCode === 401 || err?.statusCode === 403) {
+        handleLogout();
+      }
+    }
+  }, [token, api, handleLogout]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
-  
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('theme', theme);
+  }, [theme]);
+
+  const toggleTheme = () => setTheme(prev => prev === 'light' ? 'dark' : 'light');
+
   // [OAUTH-OBSERVER] Listen for Facebook Auth results from popup
   useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
@@ -108,7 +119,7 @@ export default function App() {
         console.log('Facebook Connection Success:', event.data.payload);
         fetchData(); // Automatically refresh fanpages list
       } else if (event.data?.type === 'FACEBOOK_AUTH_ERROR') {
-        alert('Facebook Error: ' + event.data.error);
+        toast.error('Facebook Error: ' + event.data.error);
       }
     };
     window.addEventListener('message', handleMessage);
@@ -145,7 +156,7 @@ export default function App() {
 
       window.open(authUrl, 'facebook_oauth', `width=${width},height=${height},left=${left},top=${top},status=yes,scrollbars=yes`);
       setShowAppPicker(false);
-    } catch (err: any) { alert(err.message || 'Connect Error'); }
+    } catch (err: any) { toast.error(err.message || 'Connect Error'); }
   }, [fbApps, token, authFetch]);
 
   const handleTabChange = (tab: string) => {
@@ -157,163 +168,168 @@ export default function App() {
 
   // [rerender-memo] - Memoize view rendering
   const content = useMemo(() => {
-    switch (activeTab) {
-      case 'dashboard': return <DashboardView api={api} />;
-      case 'fanpages': return <FanpageView fanpages={fanpages} onConnect={() => handleConnectFacebook()} onConfigure={(id) => { setPreSelectedFanpageId(id); handleTabChange('automation'); }} api={api} />;
-      case 'automation': return <AutomationView fanpages={fanpages} api={api} initialFanpageId={preSelectedFanpageId} />;
-      case 'ai-content': return <AIContentView fanpages={fanpages} api={api} />;
-      case 'history': return <HistoryView api={api} />;
-      case 'admin': return user?.role === 'admin' ? <AdminView api={api} /> : <DashboardView api={api} />;
-      case 'settings': return <SettingsView api={api} />;
-      case 'planner': return <CampaignPlannerView api={api} />;
-      default: return null;
-    }
+    return (
+      <React.Suspense fallback={
+        <div className="flex flex-col items-center justify-center h-96 space-y-4 animate-pulse">
+          <Loader2 className="w-12 h-12 text-indigo-500 animate-spin" />
+          <p className="text-[10px] font-black text-text-secondary uppercase tracking-[0.4em]">Optimizing Neural Bridge...</p>
+        </div>
+      }>
+        {(() => {
+          switch (activeTab) {
+            case 'dashboard': return <DashboardView api={api} onViewLog={() => handleTabChange('history')} />;
+            case 'fanpages': return <FanpageView fanpages={fanpages} onConnect={() => handleConnectFacebook()} onConfigure={(id) => { setPreSelectedFanpageId(id); handleTabChange('automation'); }} api={api} />;
+            case 'automation': return <AutomationView fanpages={fanpages} api={api} initialFanpageId={preSelectedFanpageId} />;
+            case 'ai-content': return <AIContentView fanpages={fanpages} api={api} />;
+            case 'history': return <HistoryView api={api} />;
+            case 'admin': return user?.role === 'admin' ? <AdminView api={api} /> : <DashboardView api={api} onViewLog={() => handleTabChange('history')} />;
+            case 'settings': return <SettingsView api={api} />;
+            case 'studio': return <CampaignStudioView api={api} />;
+            case 'planner': return <CampaignStudioView api={api} />;
+            case 'strategy': return <StrategyWorkflowView api={api} />;
+            default: return null;
+          }
+        })()}
+      </React.Suspense>
+    );
   }, [activeTab, api, fanpages, handleConnectFacebook, preSelectedFanpageId, user?.role]);
 
   const navItems = useMemo(() => GET_NAV_ITEMS(t, user?.role), [t, user?.role]);
 
   if (!token) return <AuthView onLogin={handleLogin} />;
-  
+
   if (user?.requirePasswordChange) {
     return <ForcePasswordChangeView api={api} user={user} onSuccess={(updatedUser) => setUser(updatedUser)} />;
   }
 
-  const handleSaveConfig = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!configAppId || !configAppSecret) return;
-    setConfigLoading(true);
-    setConfigError('');
-    try {
-      await api.fbApps.create({ appId: configAppId, appSecret: configAppSecret });
-      await fetchData();
-      setShowConfigModal(false);
-      setConfigAppId('');
-      setConfigAppSecret('');
-      handleConnectFacebook(); // Retry connection
-    } catch (err: any) {
-      setConfigError(err.message || 'Config Error');
-    } finally {
-      setConfigLoading(false);
-    }
-  };
-
   return (
-    <div className="min-h-screen bg-slate-950 flex font-sans selection:bg-emerald-500/30">
-      <aside className={`bg-slate-950 text-slate-400 transition-all duration-300 flex flex-col fixed h-full z-[100] border-r border-slate-900 ${isSidebarOpen ? 'w-64' : 'w-20'}`}>
-        <div className="h-16 flex items-center justify-between px-6 border-b border-slate-900">
-          {isSidebarOpen ? <span className="text-slate-50 font-black text-[10px] uppercase tracking-[0.4em]">Neural Ops</span> : null}
-          <button onClick={() => setIsSidebarOpen(prev => !prev)} className="p-2.5 hover:bg-slate-900 rounded-xl transition-all mx-auto text-slate-500 hover:text-slate-300"><Menu size={16} /></button>
+    <div className="h-screen overflow-hidden bg-app-bg flex font-sans selection:bg-soft-blue/30 p-4 sm:p-6 lg:p-8 gap-4 sm:gap-6 lg:gap-8">
+      <Toaster position="top-right" expand={true} richColors theme={theme === 'dark' ? 'dark' : 'light'} />
+
+      {/* Sidebar - Auto-collapses on small heights/widths if possible, but keep current toggle logic */}
+      <aside className={`nm-sidebar h-full transition-all duration-500 z-[100] flex flex-col p-4 sm:p-6 ${isSidebarOpen ? 'w-72' : 'w-20'}`}>
+        <div className="h-16 sm:h-20 flex items-center px-2 sm:px-4 mb-6 sm:mb-10">
+          <div className="flex-shrink-0 w-10 h-10 sm:w-12 sm:h-12 bg-soft-blue rounded-xl sm:rounded-2xl flex items-center justify-center shadow-lg">
+            <Bot size={20} className="text-white" />
+          </div>
+          {isSidebarOpen && (
+            <div className="ml-4 truncate">
+              <h1 className="text-xl sm:text-2xl font-black text-text-primary leading-none tracking-tight truncate">TDK AI</h1>
+              <p className="text-[10px] font-semibold text-text-muted mt-1.5 truncate">Management Engine</p>
+            </div>
+          )}
         </div>
 
-        <nav className="flex-1 py-10 px-4 space-y-1.5 overflow-y-auto custom-scrollbar">
+        <nav className="flex-1 space-y-2 sm:space-y-4 px-1 sm:px-2 overflow-y-auto custom-scrollbar">
           {navItems.map((item) => {
-            const Icon = item.icon, isActive = activeTab === item.id;
+            const Icon = item.icon;
+            const isActive = activeTab === item.id;
             return (
-              <button key={item.id} onClick={() => handleTabChange(item.id)} className={`w-full flex items-center px-4 py-3.5 rounded-xl transition-all relative group ${isActive ? 'bg-indigo-600/10 text-indigo-400' : 'hover:bg-slate-900/50 text-slate-500 hover:text-slate-300'} ${!isSidebarOpen ? 'justify-center' : 'space-x-3'}`}>
-                {isActive && <div className="absolute left-0 w-1 h-6 bg-indigo-500 rounded-r-full" />}
-                <Icon size={18} className={isActive ? 'text-indigo-400' : 'group-hover:text-slate-300 transition-colors'} />
-                {isSidebarOpen ? <span className={`font-bold text-[10px] uppercase tracking-widest ${isActive ? 'text-slate-50' : ''}`}>{item.label}</span> : null}
+              <button
+                key={item.id}
+                onClick={() => handleTabChange(item.id)}
+                className={`w-full flex items-center transition-all duration-300 group relative p-3 sm:p-4 rounded-xl sm:rounded-2xl
+                  ${isActive
+                    ? 'nm-button-active text-soft-blue font-bold'
+                    : 'text-text-secondary hover:text-text-primary'}
+                  ${!isSidebarOpen ? 'justify-center' : 'space-x-4 sm:space-x-5'}
+                `}
+              >
+                <Icon size={isSidebarOpen ? 20 : 22} />
+                {isSidebarOpen && <span className="text-sm font-semibold tracking-tight truncate">{item.label}</span>}
               </button>
             );
           })}
         </nav>
 
-        <div className="p-6 border-t border-slate-900 space-y-4">
-           <button onClick={() => setLanguage(language === 'en' ? 'vi' : 'en')} className={`w-full flex items-center p-3 rounded-xl border border-slate-800 hover:bg-slate-900 transition-all ${!isSidebarOpen ? 'justify-center' : 'space-x-3'}`}>
-              <div className="w-7 h-7 rounded-lg bg-slate-800 flex items-center justify-center text-base">{language === 'en' ? '🇺🇸' : '🇻🇳'}</div>
-              {isSidebarOpen ? <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest transition-colors">{language === 'en' ? 'ENG' : 'VIE'}</p> : null}
-           </button>
-           <div className="flex items-center justify-between px-1">
-              {isSidebarOpen ? (
-                <div className="flex items-center space-x-3">
-                   <div className="w-8 h-8 rounded-xl bg-slate-800 border border-slate-700 flex items-center justify-center font-bold text-[10px] text-emerald-500">{user?.name?.charAt(0) || 'U'}</div>
-                   <div className="max-w-[100px]"><p className="text-[9px] font-bold text-slate-200 uppercase tracking-tight truncate">{user?.name || 'User'}</p></div>
+        <div className="pt-6 sm:pt-8 mt-auto border-t border-text-muted/10">
+          <button onClick={() => setLanguage(language === 'en' ? 'vi' : 'en')} className={`w-full flex items-center p-2.5 nm-flat-sm hover:scale-[1.02] transition-all mb-4 sm:mb-8 ${!isSidebarOpen ? 'justify-center' : 'space-x-3 sm:space-x-4'}`}>
+            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg sm:rounded-xl bg-app-bg nm-inset flex items-center justify-center text-base sm:text-lg">{language === 'en' ? '🇺🇸' : '🇻🇳'}</div>
+            {isSidebarOpen && <p className="text-[10px] font-bold text-text-primary uppercase tracking-widest">{language === 'en' ? 'English' : 'Tiếng Việt'}</p>}
+          </button>
+
+          <div className="nm-inset p-3 sm:p-5 space-y-3 sm:space-y-5 rounded-[20px] sm:rounded-[24px]">
+            <div className="flex items-center gap-3 sm:gap-4">
+              <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-app-bg nm-inset flex items-center justify-center text-soft-blue shadow-sm font-bold text-xs sm:text-base">{user?.name?.charAt(0) || 'U'}</div>
+              {isSidebarOpen && (
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs sm:text-sm font-bold text-text-primary truncate">{user?.name || 'User'}</p>
+                  <p className="text-[9px] font-semibold text-text-muted uppercase tracking-wider">Admin</p>
                 </div>
-              ) : <div className="w-8 h-8 rounded-xl bg-slate-800 border border-slate-700 flex items-center justify-center font-bold text-[10px] text-emerald-500 mx-auto">{user?.name?.charAt(0) || 'U'}</div>}
-              {isSidebarOpen ? <button onClick={handleLogout} className="p-2 text-slate-600 hover:text-red-400 transition-colors"><LogOut size={14} /></button> : null}
-           </div>
+              )}
+              {isSidebarOpen && <button onClick={handleLogout} className="text-text-muted hover:text-soft-pink transition-colors"><LogOut size={16} /></button>}
+            </div>
+            {isSidebarOpen && (
+              <button className="w-full bg-soft-blue text-white py-2.5 sm:py-3.5 rounded-lg sm:rounded-xl text-[10px] sm:text-xs font-bold tracking-wide shadow-lg hover:brightness-110 transition-all">
+                Upgrade
+              </button>
+            )}
+          </div>
         </div>
       </aside>
 
-      <main className={`flex-1 flex flex-col min-h-screen transition-all duration-300 ${isSidebarOpen ? 'ml-64' : 'ml-20'}`}>
-        <header className="h-16 bg-slate-950/80 backdrop-blur-md border-b border-slate-900 flex items-center justify-between px-10 sticky top-0 z-50">
-           <div className="flex items-center gap-3">
-              <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse shadow-[0_0_10px_rgba(16,185,129,0.5)]"></span>
-              <h1 className="text-[10px] font-bold uppercase text-slate-50 tracking-[0.3em]">{navItems.find(i => i.id === activeTab)?.label}</h1>
-              {isPending ? <Loader2 size={12} className="animate-spin text-indigo-500" /> : null}
-           </div>
-           <div className="flex items-center gap-6">
-              <div className="bg-slate-900/50 p-2 rounded-xl border border-slate-800 flex items-center px-4 gap-3 focus-within:border-emerald-500/30 transition-all">
-                <Search size={14} className="text-slate-600" /> 
-                <input type="text" className="bg-transparent text-[10px] font-bold outline-none w-44 text-slate-200 placeholder:text-slate-700" placeholder="Neural Search..." />
-              </div>
-              <button className="text-slate-600 hover:text-slate-300 transition-colors"><Bell size={16} /></button>
-           </div>
+      {/* Main Content Area */}
+      <div className="flex-1 flex flex-col gap-4 sm:gap-8 min-w-0">
+        <header className="h-16 sm:h-24 flex items-center justify-between px-2 sm:px-4">
+          <div className="flex items-center gap-4 sm:gap-12 flex-1 min-w-0">
+            <div className="relative group w-full max-w-xl">
+              <Search className="absolute left-4 sm:left-6 top-1/2 -translate-y-1/2 text-text-muted w-4 h-4 sm:w-5 sm:h-5" />
+              <input
+                type="text"
+                placeholder="Search..."
+                className="nm-input pl-10 sm:pl-16 py-2.5 sm:py-4 text-xs sm:text-sm font-medium text-text-primary"
+              />
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3 sm:gap-8 ml-4">
+            <button
+              onClick={toggleTheme}
+              className="w-10 h-10 sm:w-14 sm:h-14 nm-button flex items-center justify-center text-text-secondary hover:text-soft-blue transition-all"
+            >
+              {theme === 'light' ? <Moon size={18} sm:size={22} /> : <Sun size={18} sm:size={22} />}
+            </button>
+            <button className="w-10 h-10 sm:w-14 sm:h-14 nm-button flex items-center justify-center text-text-secondary hover:text-soft-blue transition-all hidden xs:flex">
+              <Bell size={18} sm:size={22} />
+            </button>
+          </div>
         </header>
 
-        <div className={`p-8 lg:p-10 flex-1 bg-slate-950 transition-all duration-500 ${isPending ? 'opacity-30 blur-[2px]' : 'opacity-100'}`}>
+        <div className={`flex-1 transition-all duration-500 overflow-y-auto custom-scrollbar pr-4 ${isPending ? 'opacity-50' : 'opacity-100'}`}>
           {content}
         </div>
-      </main>
+      </div>
 
-      {/* Modals */}
-      {showAppPicker ? (
-        <div className="fixed inset-0 bg-slate-950/90 backdrop-blur-sm flex items-center justify-center z-[200] p-6 text-white overflow-y-auto">
-           <div className="bg-slate-900 border border-slate-800 rounded-[32px] p-10 max-w-sm w-full animate-in zoom-in-95 duration-200 shadow-3xl">
-              <h3 className="text-lg font-bold uppercase text-slate-50 mb-8 tracking-tight">Strategic Bridge</h3>
-              <div className="space-y-3">
-                 {fbApps.map(app => (
-                    <button key={app.id} onClick={() => handleConnectFacebook(app.id)} className="w-full flex items-center justify-between p-6 bg-slate-800 hover:bg-emerald-500 hover:text-white rounded-2xl border border-slate-700 transition-all font-bold text-[10px] uppercase tracking-widest">{app.name} <Plus size={14} /></button>
-                 ))}
-                 <button onClick={() => setShowAppPicker(false)} className="w-full text-[10px] font-bold uppercase tracking-widest text-slate-500 mt-6 hover:text-slate-300 transition-colors uppercase">{t('cancel')}</button>
+      {/* Modals - Adapted for Neumorphism */}
+      {showAppPicker && (
+        <div className="fixed inset-0 bg-black/20 backdrop-blur-md flex items-center justify-center z-[200] p-6">
+          <div className="nm-flat p-12 max-w-md w-full animate-in zoom-in-95 duration-300 relative">
+            <button onClick={() => setShowAppPicker(false)} className="absolute top-8 right-8 text-text-muted hover:text-text-primary transition-colors"><X size={24} /></button>
+            <div className="mb-10 text-center">
+              <div className="w-16 h-16 nm-flat text-soft-blue flex items-center justify-center mx-auto mb-6">
+                <Facebook size={32} />
               </div>
-           </div>
-        </div>
-      ) : null}
-
-      {showConfigModal ? (
-        <div className="fixed inset-0 bg-slate-950/90 backdrop-blur-sm flex items-center justify-center z-[200] p-6 text-white overflow-y-auto">
-           <div className="bg-slate-900 border border-slate-800 rounded-[32px] p-10 max-w-md w-full animate-in zoom-in-95 duration-200 shadow-3xl">
-              <div className="flex justify-between items-center mb-10 px-2 text-white">
-                 <h3 className="text-lg font-bold uppercase text-slate-50 tracking-tight">System Auth</h3>
-                 <button onClick={() => setShowConfigModal(false)} className="text-slate-500 hover:text-slate-300 transition-colors"><X size={20} /></button>
-              </div>
-              <form onSubmit={handleSaveConfig} className="space-y-6">
-                 <div className="space-y-3 px-2">
-                    <label className="text-[9px] font-bold text-slate-500 uppercase tracking-widest block ml-2">Application Hub ID</label>
-                    <input 
-                      type="text" 
-                      required
-                      value={configAppId}
-                      onChange={(e) => setConfigAppId(e.target.value)}
-                      className="w-full bg-slate-800 border border-slate-700 rounded-xl p-4 text-sm font-bold text-slate-200 outline-none focus:border-emerald-500/50 transition-all" 
-                      placeholder="Facebook App ID"
-                    />
-                 </div>
-                 <div className="space-y-3 px-2">
-                    <label className="text-[9px] font-bold text-slate-500 uppercase tracking-widest block ml-2">Application Hub Secret</label>
-                    <input 
-                      type="password" 
-                      required
-                      value={configAppSecret}
-                      onChange={(e) => setConfigAppSecret(e.target.value)}
-                      className="w-full bg-slate-800 border border-slate-700 rounded-xl p-4 text-sm font-bold text-slate-200 outline-none focus:border-emerald-500/50 transition-all" 
-                      placeholder="Facebook App Secret"
-                    />
-                 </div>
-                 {configError && <div className="p-4 bg-red-500/10 border border-red-500/20 text-red-500 text-[10px] font-bold uppercase tracking-widest rounded-xl text-center">{configError}</div>}
-                 <button 
-                  type="submit"
-                  disabled={configLoading}
-                  className="w-full bg-emerald-500 text-white p-5 rounded-2xl font-black uppercase text-[10px] tracking-widest shadow-xl shadow-emerald-500/10 hover:bg-emerald-600 transition-all disabled:opacity-50"
+              <h3 className="text-2xl font-black text-text-primary tracking-tight">Strategic Bridge</h3>
+              <p className="text-xs font-bold text-text-secondary mt-2">Connect your application endpoint</p>
+            </div>
+            <div className="space-y-4">
+              {fbApps.map(app => (
+                <button
+                  key={app.id}
+                  onClick={() => handleConnectFacebook(app.id)}
+                  className="w-full flex items-center justify-between p-6 nm-button hover:text-soft-blue group"
                 >
-                   {configLoading ? t('loading') : 'Authorize Node'}
+                  <div className="text-left">
+                    <p className="text-[11px] font-black uppercase tracking-widest">{app.name}</p>
+                    <p className="text-[9px] text-text-secondary mt-1">ENDPOINT ID: {app.appId}</p>
+                  </div>
+                  <Plus size={18} className="group-hover:rotate-90 transition-transform" />
                 </button>
-              </form>
-           </div>
+              ))}
+            </div>
+          </div>
         </div>
-      ) : null}
-      <style>{`.custom-scrollbar::-webkit-scrollbar { width: 2px; } .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 10px; }`}</style>
+      )}
     </div>
   );
 }

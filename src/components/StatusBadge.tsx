@@ -7,7 +7,7 @@ export const StatusBadge = ({ status }: { status: string }) => {
     active: 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20',
     posted: 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20',
     published: 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20',
-    inactive: 'bg-slate-500/10 text-slate-500 border-slate-500/20',
+    inactive: 'bg-slate-500/10 text-text-secondary border-slate-500/20',
     paused: 'bg-amber-500/10 text-amber-500 border-amber-500/20',
     scheduled: 'bg-blue-500/10 text-blue-500 border-blue-500/20',
     queued: 'bg-indigo-500/10 text-indigo-500 border-indigo-500/20',

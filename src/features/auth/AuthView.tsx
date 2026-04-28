@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Facebook, Mail, Lock, User, Bot, Sparkles, CheckCircle, Info, Clock } from 'lucide-react';
-import { useLanguage } from '../LanguageContext';
-import { CONFIG } from '../config';
+import { useLanguage } from '../../LanguageContext';
+import { CONFIG } from '../../config';
 import { ForcePasswordChangeView } from './ForcePasswordChangeView';
 
 export const AuthView = ({ onLogin }: { onLogin: (token: string, user: any) => void }) => {
@@ -97,7 +97,7 @@ export const AuthView = ({ onLogin }: { onLogin: (token: string, user: any) => v
   }
 
   return (
-    <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center p-8 relative overflow-hidden font-sans">
+    <div className="min-h-screen bg-app-bg flex flex-col items-center justify-center p-8 relative overflow-hidden font-sans">
       {/* Dynamic Background Effects */}
       <div className="absolute top-0 left-0 w-full h-full pointer-events-none">
         <div className="absolute -top-[20%] -left-[10%] w-[60%] h-[60%] bg-indigo-900/20 rounded-full blur-[120px] animate-pulse"></div>
@@ -117,50 +117,50 @@ export const AuthView = ({ onLogin }: { onLogin: (token: string, user: any) => v
            
            <div className="space-y-8">
               <div className="flex items-start space-x-6 group">
-                 <div className="p-3 bg-slate-900 border border-slate-800 text-indigo-400 rounded-2xl group-hover:scale-110 group-hover:bg-indigo-600 group-hover:text-white transition-all shadow-xl">
+                 <div className="p-3 bg-card-bg border border-card-border text-indigo-400 rounded-2xl group-hover:scale-110 group-hover:bg-indigo-600 group-hover:text-white transition-all shadow-xl">
                     <Sparkles className="w-6 h-6" />
                  </div>
                  <div>
                     <h3 className="text-lg font-bold text-white mb-1">Automated Intelligence</h3>
-                    <p className="text-slate-400 leading-relaxed text-sm max-w-sm font-medium opacity-80 group-hover:opacity-100 italic transition-opacity">Leverage sophisticated Gemini models to envision, draft, and schedule content without manual oversight.</p>
+                    <p className="text-text-secondary leading-relaxed text-sm max-w-sm font-medium opacity-80 group-hover:opacity-100 italic transition-opacity">Leverage sophisticated Gemini models to envision, draft, and schedule content without manual oversight.</p>
                  </div>
               </div>
               
               <div className="flex items-start space-x-6 group">
-                 <div className="p-3 bg-slate-900 border border-slate-800 text-blue-400 rounded-2xl group-hover:scale-110 group-hover:bg-blue-600 group-hover:text-white transition-all shadow-xl">
+                 <div className="p-3 bg-card-bg border border-card-border text-blue-400 rounded-2xl group-hover:scale-110 group-hover:bg-blue-600 group-hover:text-white transition-all shadow-xl">
                     <Facebook className="w-6 h-6" />
                  </div>
                  <div>
                     <h3 className="text-lg font-bold text-white mb-1">Ecosystem Mastery</h3>
-                    <p className="text-slate-400 leading-relaxed text-sm max-w-sm font-medium opacity-80 group-hover:opacity-100 italic transition-opacity">Direct API integration with the Facebook Graph for seamless publishing and audience synchronization.</p>
+                    <p className="text-text-secondary leading-relaxed text-sm max-w-sm font-medium opacity-80 group-hover:opacity-100 italic transition-opacity">Direct API integration with the Facebook Graph for seamless publishing and audience synchronization.</p>
                  </div>
               </div>
               
               <div className="flex items-start space-x-6 group">
-                 <div className="p-3 bg-slate-900 border border-slate-800 text-emerald-400 rounded-2xl group-hover:scale-110 group-hover:bg-emerald-600 group-hover:text-white transition-all shadow-xl">
+                 <div className="p-3 bg-card-bg border border-card-border text-emerald-400 rounded-2xl group-hover:scale-110 group-hover:bg-emerald-600 group-hover:text-white transition-all shadow-xl">
                     <Clock className="w-6 h-6" />
                  </div>
                  <div>
                     <h3 className="text-lg font-bold text-white mb-1">Strategic Scheduling</h3>
-                    <p className="text-slate-400 leading-relaxed text-sm max-w-sm font-medium opacity-80 group-hover:opacity-100 italic transition-opacity">Sophisticated batch queuing engine with manual override for total command over your post sequence.</p>
+                    <p className="text-text-secondary leading-relaxed text-sm max-w-sm font-medium opacity-80 group-hover:opacity-100 italic transition-opacity">Sophisticated batch queuing engine with manual override for total command over your post sequence.</p>
                  </div>
               </div>
            </div>
 
            <div className="pt-8 flex items-center space-x-6 opacity-30">
-              <div className="h-px flex-1 bg-slate-800"></div>
-              <p className="text-xs font-black uppercase tracking-[0.4em] text-slate-500">Enterprise AI Engine</p>
-              <div className="h-px flex-1 bg-slate-800"></div>
+              <div className="h-px flex-1 bg-accent-bg"></div>
+              <p className="text-xs font-black uppercase tracking-[0.4em] text-text-secondary">Enterprise AI Engine</p>
+              <div className="h-px flex-1 bg-accent-bg"></div>
            </div>
         </div>
 
         {/* Input Side */}
-        <div className="bg-slate-900/40 backdrop-blur-3xl p-10 lg:p-14 rounded-[48px] border border-slate-800/60 shadow-3xl ring-1 ring-white/5 animate-in zoom-in-95 duration-500">
+        <div className="bg-card-bg/40 backdrop-blur-3xl p-10 lg:p-14 rounded-[48px] border border-card-border/60 shadow-3xl ring-1 ring-white/5 animate-in zoom-in-95 duration-500">
           <div className="text-center mb-10">
             <h2 className="text-3xl font-black text-white mb-3">
               {isLogin ? t('welcomeBack') : t('initiateIdentity')}
             </h2>
-            <p className="text-slate-500 font-bold text-xs uppercase tracking-widest leading-loose">
+            <p className="text-text-secondary font-bold text-xs uppercase tracking-widest leading-loose">
               {isLogin ? t('login') : t('register')}
             </p>
           </div>
@@ -168,13 +168,13 @@ export const AuthView = ({ onLogin }: { onLogin: (token: string, user: any) => v
           <form onSubmit={handleSubmit} className="space-y-6">
             {!isLogin && (
               <div className="space-y-2 group">
-                <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest ml-1">Master Account Name</label>
+                <label className="block text-xs font-bold text-text-secondary uppercase tracking-widest ml-1">Master Account Name</label>
                 <div className="relative">
-                  <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-600 group-focus-within:text-indigo-400 transition-colors" />
+                  <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-text-secondary group-focus-within:text-indigo-400 transition-colors" />
                   <input
                     type="text"
                     required
-                    className="w-full bg-slate-950 border-2 border-slate-800 rounded-2xl pl-12 pr-6 py-4 text-white focus:outline-none focus:ring-4 focus:ring-indigo-600/20 focus:border-indigo-600 transition-all font-bold placeholder:text-slate-700"
+                    className="w-full bg-app-bg border-2 border-card-border rounded-2xl pl-12 pr-6 py-4 text-white focus:outline-none focus:ring-4 focus:ring-indigo-600/20 focus:border-indigo-600 transition-all font-bold placeholder:text-slate-700"
                     placeholder="Full Display Name"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
@@ -184,13 +184,13 @@ export const AuthView = ({ onLogin }: { onLogin: (token: string, user: any) => v
             )}
             
             <div className="space-y-2 group">
-              <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest ml-1">Identity Secret (Email)</label>
+              <label className="block text-xs font-bold text-text-secondary uppercase tracking-widest ml-1">Identity Secret (Email)</label>
               <div className="relative">
-                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-600 group-focus-within:text-blue-400 transition-colors" />
+                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-text-secondary group-focus-within:text-blue-400 transition-colors" />
                 <input
                   type="email"
                   required
-                  className="w-full bg-slate-950 border-2 border-slate-800 rounded-2xl pl-12 pr-6 py-4 text-white focus:outline-none focus:ring-4 focus:ring-blue-600/20 focus:border-blue-600 transition-all font-bold placeholder:text-slate-700"
+                  className="w-full bg-app-bg border-2 border-card-border rounded-2xl pl-12 pr-6 py-4 text-white focus:outline-none focus:ring-4 focus:ring-blue-600/20 focus:border-blue-600 transition-all font-bold placeholder:text-slate-700"
                   placeholder="name@organization.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
@@ -199,13 +199,13 @@ export const AuthView = ({ onLogin }: { onLogin: (token: string, user: any) => v
             </div>
 
             <div className="space-y-2 group">
-              <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest ml-1">Secure Passkey</label>
+              <label className="block text-xs font-bold text-text-secondary uppercase tracking-widest ml-1">Secure Passkey</label>
               <div className="relative">
-                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-600 group-focus-within:text-purple-400 transition-colors" />
+                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-text-secondary group-focus-within:text-purple-400 transition-colors" />
                 <input
                   type="password"
                   required
-                  className="w-full bg-slate-950 border-2 border-slate-800 rounded-2xl pl-12 pr-6 py-4 text-white focus:outline-none focus:ring-4 focus:ring-purple-600/20 focus:border-purple-600 transition-all font-bold placeholder:text-slate-700"
+                  className="w-full bg-app-bg border-2 border-card-border rounded-2xl pl-12 pr-6 py-4 text-white focus:outline-none focus:ring-4 focus:ring-purple-600/20 focus:border-purple-600 transition-all font-bold placeholder:text-slate-700"
                   placeholder="••••••••••••"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
@@ -244,10 +244,10 @@ export const AuthView = ({ onLogin }: { onLogin: (token: string, user: any) => v
 
           <button
             onClick={() => { setIsLogin(!isLogin); setError(''); setSuccess(''); }}
-            className="w-full mt-8 text-slate-600 hover:text-white transition-all text-xs font-black uppercase tracking-[0.3em] py-2 flex flex-col items-center group"
+            className="w-full mt-8 text-text-secondary hover:text-white transition-all text-xs font-black uppercase tracking-[0.3em] py-2 flex flex-col items-center group"
           >
              <span className="opacity-40 group-hover:opacity-100 transition-opacity mb-1">{isLogin ? t('noIdentity') : t('alreadyAuthorized')}</span>
-             <span className="text-slate-400 group-hover:text-indigo-400 underline underline-offset-8 transition-all">{isLogin ? t('registerNew') : t('authenticateIdentity')}</span>
+             <span className="text-text-secondary group-hover:text-indigo-400 underline underline-offset-8 transition-all">{isLogin ? t('registerNew') : t('authenticateIdentity')}</span>
           </button>
         </div>
       </div>

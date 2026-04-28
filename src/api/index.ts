@@ -15,13 +15,18 @@ export class ApiService {
     const data = await r.json();
     if (!r.ok) {
       let errorMsg = data.error || data.message || 'API request failed';
+      if (typeof errorMsg === 'object') {
+        try { errorMsg = JSON.stringify(errorMsg); } catch(e) { errorMsg = 'Unknown Error Object'; }
+      }
       
       // --- Smart Error Translation ---
       if (typeof errorMsg === 'string' && (errorMsg.includes('Invalid OAuth access token') || errorMsg.includes('Error validating access token') || errorMsg.includes('code 190'))) {
          errorMsg = 'Lỗi Facebook Token: Access Token bị sai hoặc đã hết hạn! Vui lòng vào mục "Settings" -> sửa Fanpage và cấp lại chuỗi Token mới để tiếp tục đăng bài.';
       }
       
-      throw new Error(errorMsg);
+      const err = new Error(errorMsg);
+      (err as any).statusCode = r.status;
+      throw err;
     }
     return data;
   }
@@ -37,7 +42,7 @@ export class ApiService {
 
   // --- DASHBOARD OVERVIEW ---
   dashboard = {
-    getOverview: () => this.fetch('/api/dashboard').then(r => this.handleResponse(r)),
+    getOverview: (period: string = 'week') => this.fetch(`/api/dashboard?period=${period}`).then(r => this.handleResponse(r)),
   };
 
   // --- FANPAGES ---
@@ -101,5 +106,14 @@ export class ApiService {
     list: () => this.fetch('/api/facebook-apps').then(r => this.handleResponse(r)),
     create: (data: any) => this.fetch('/api/facebook-apps', { method: 'POST', body: JSON.stringify(data) }).then(r => this.handleResponse(r)),
     delete: (id: string) => this.fetch(`/api/facebook-apps/${id}`, { method: 'DELETE' }).then(r => this.handleResponse(r)),
+  };
+
+  // --- WORKFLOWS ---
+  workflows = {
+    list: async () => this.fetch('/api/workflows').then(r => this.handleResponse(r)),
+    get: async (id: string) => this.fetch(`/api/workflows/${id}`).then(r => this.handleResponse(r)),
+    save: async (data: { id?: string, name?: string, description?: string, nodesData: string, edgesData: string }) => 
+      this.fetch('/api/workflows', { method: 'POST', body: JSON.stringify(data) }).then(r => this.handleResponse(r)),
+    execute: async (id: string) => this.fetch(`/api/workflows/${id}/execute`, { method: 'POST' }).then(r => this.handleResponse(r)),
   };
 }

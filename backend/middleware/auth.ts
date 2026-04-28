@@ -5,7 +5,12 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
+const JWT_SECRET = process.env.JWT_SECRET;
+
+if (!JWT_SECRET) {
+  console.error('[SECURITY FATAL] JWT_SECRET is not defined in .env! Backend cannot start securely.');
+  process.exit(1);
+}
 
 export const authenticateToken = (req: any, res: Response, next: NextFunction) => {
   const authHeader = req.headers['authorization'];
