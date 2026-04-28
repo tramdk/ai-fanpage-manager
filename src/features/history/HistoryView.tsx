@@ -131,104 +131,157 @@ export const HistoryView = ({ api }: { api: ApiService }) => {
             <p className="text-sm font-bold text-text-muted uppercase tracking-widest">{t('noData')}</p>
           </div>
         ) : (
-          <div className="overflow-auto custom-scrollbar m-4 nm-inset rounded-[32px] flex-1">
-            <table className="w-full text-left border-collapse table-fixed relative">
-              <thead className="sticky top-0 z-20 bg-app-bg shadow-sm">
-                <tr className="text-text-muted text-xs font-bold uppercase tracking-widest border-b border-text-muted/5">
-                  {[
-                    { id: 'fanpage', label: t('fanpages'), icon: <Target size={14} className="text-soft-blue"/> },
-                    { id: 'topic', label: t('topicsKeywords'), icon: null },
-                    { id: 'date', label: t('lastSync'), icon: <Clock size={14} className="text-soft-blue"/> },
-                    { id: 'studio', label: t('creativeStudio'), icon: null },
-                    { id: 'logic', label: 'Instructional Logic', icon: null },
-                    { id: 'status', label: t('statusActive'), icon: null },
-                    { id: 'actions', label: t('quickActions'), icon: null, alignRight: true }
-                  ].map((col) => (
-                    <th 
-                      key={col.id} 
-                      style={{ width: columnWidths[col.id as keyof typeof columnWidths] }}
-                      className={`px-6 py-8 relative group/header ${col.alignRight ? 'text-right' : ''}`}
-                    >
-                      <div className={`flex items-center gap-3 ${col.alignRight ? 'justify-end' : ''}`}>
-                        {col.icon} {col.label}
-                      </div>
-                      <div 
-                        onMouseDown={() => setResizing(col.id)}
-                        className={`absolute right-0 top-0 bottom-0 w-1.5 cursor-col-resize hover:bg-soft-blue/30 transition-colors z-20 ${resizing === col.id ? 'bg-soft-blue/50' : ''}`}
-                      ></div>
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {posts.map((post) => (
-                  <tr key={post.id} className="group hover:bg-soft-blue/5 transition-all duration-500 border-b border-text-muted/5 last:border-0">
-                    <td className="px-6 py-6 truncate">
-                       <div className="text-sm font-bold text-text-primary truncate">{post.fanpageName || 'Neural Hub'}</div>
-                       <div className="text-[10px] font-semibold text-text-muted mt-1">NODE {post.id.substring(0, 8)}</div>
-                    </td>
-                    <td className="px-6 py-6">
-                      <span className="nm-flat px-3 py-1 rounded-lg text-xs font-bold text-soft-blue tracking-wide bg-white/20">
-                        {post.topic}
-                      </span>
-                    </td>
-                    <td className="px-6 py-6">
-                      <div className="text-sm font-bold text-text-primary font-mono">
-                        {new Date(post.createdAt).toLocaleDateString()}
-                      </div>
-                      <div className="text-[10px] text-text-muted font-semibold mt-1">
-                        {new Date(post.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                      </div>
-                    </td>
-                    <td className="px-6 py-6">
-                      {(() => {
-                        let parsed: any[] = [];
-                        if (post.imageUrl) {
-                          try {
-                            parsed = JSON.parse(post.imageUrl);
-                            if (!Array.isArray(parsed)) parsed = [{ data: post.imageUrl }];
-                          } catch (e) {
-                            parsed = [{ data: post.imageUrl }];
-                          }
-                        }
-                        return (
-                          <div className="w-12 h-12 nm-inset p-1.5 rounded-xl overflow-hidden relative group-hover:scale-110 transition-transform duration-700">
-                            {parsed.length > 0 ? (
-                               <img src={parsed[0].data} className="w-full h-full object-cover rounded-lg" />
-                            ) : (
-                               <div className="w-full h-full flex items-center justify-center text-[8px] font-black uppercase text-text-muted/20 italic">No Node</div>
-                            )}
-                          </div>
-                        );
-                      })()}
-                    </td>
-                    <td className="px-6 py-6 text-sm text-text-secondary font-medium italic opacity-80" title={post.content}>
-                      <div className="truncate">"{post.content || 'Empty automated generation'}"</div>
-                    </td>
-                    <td className="px-6 py-6">
-                       <div className="nm-flat px-4 py-2 rounded-xl flex items-center gap-3">
-                          <div className={`w-2 h-2 rounded-full shadow-lg ${post.status === 'published' ? 'bg-emerald-500 shadow-emerald-500/50' : post.status === 'failed' ? 'bg-soft-pink shadow-soft-pink/50' : 'bg-soft-blue animate-pulse shadow-soft-blue/50'}`}></div>
-                          <span className="text-[10px] font-bold uppercase tracking-wider text-text-muted">{post.status}</span>
-                       </div>
-                    </td>
-                    <td className="px-6 py-6 text-right">
-                      {post.status === 'queued' ? (
-                        <button
-                          onClick={() => setEditingPost(post)}
-                          className="nm-button px-5 py-2.5 rounded-xl text-xs font-bold text-text-muted hover:text-soft-blue transition-all active:scale-95"
-                        >
-                          {t('creativeStudio')}
-                        </button>
-                      ) : (
-                        <div className="nm-inset px-5 py-2.5 rounded-xl text-[10px] uppercase font-bold text-text-muted/30 tracking-widest inline-block">
-                          LOCKED
+          <div className="flex-1 flex flex-col min-h-0">
+            {/* Desktop Table View */}
+            <div className="hidden md:block overflow-auto custom-scrollbar m-4 nm-inset rounded-[32px] flex-1">
+              <table className="w-full text-left border-collapse table-fixed relative">
+                <thead className="sticky top-0 z-20 bg-app-bg shadow-sm">
+                  <tr className="text-text-muted text-xs font-bold uppercase tracking-widest border-b border-text-muted/5">
+                    {[
+                      { id: 'fanpage', label: t('fanpages'), icon: <Target size={14} className="text-soft-blue"/> },
+                      { id: 'topic', label: t('topicsKeywords'), icon: null },
+                      { id: 'date', label: t('lastSync'), icon: <Clock size={14} className="text-soft-blue"/> },
+                      { id: 'studio', label: t('creativeStudio'), icon: null },
+                      { id: 'logic', label: 'Instructional Logic', icon: null },
+                      { id: 'status', label: t('statusActive'), icon: null },
+                      { id: 'actions', label: t('quickActions'), icon: null, alignRight: true }
+                    ].map((col) => (
+                      <th 
+                        key={col.id} 
+                        style={{ width: columnWidths[col.id as keyof typeof columnWidths] }}
+                        className={`px-6 py-8 relative group/header ${col.alignRight ? 'text-right' : ''}`}
+                      >
+                        <div className={`flex items-center gap-3 ${col.alignRight ? 'justify-end' : ''}`}>
+                          {col.icon} {col.label}
                         </div>
-                      )}
-                    </td>
+                        <div 
+                          onMouseDown={() => setResizing(col.id)}
+                          className={`absolute right-0 top-0 bottom-0 w-1.5 cursor-col-resize hover:bg-soft-blue/30 transition-colors z-20 ${resizing === col.id ? 'bg-soft-blue/50' : ''}`}
+                        ></div>
+                      </th>
+                    ))}
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {posts.map((post) => (
+                    <tr key={post.id} className="group hover:bg-soft-blue/5 transition-all duration-500 border-b border-text-muted/5 last:border-0">
+                      <td className="px-6 py-6 truncate">
+                         <div className="text-sm font-bold text-text-primary truncate">{post.fanpageName || 'Neural Hub'}</div>
+                         <div className="text-[10px] font-semibold text-text-muted mt-1">NODE {post.id.substring(0, 8)}</div>
+                      </td>
+                      <td className="px-6 py-6">
+                        <span className="nm-flat px-3 py-1 rounded-lg text-xs font-bold text-soft-blue tracking-wide bg-white/20">
+                          {post.topic}
+                        </span>
+                      </td>
+                      <td className="px-6 py-6">
+                        <div className="text-sm font-bold text-text-primary font-mono">
+                          {new Date(post.createdAt).toLocaleDateString()}
+                        </div>
+                        <div className="text-[10px] text-text-muted font-semibold mt-1">
+                          {new Date(post.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        </div>
+                      </td>
+                      <td className="px-6 py-6">
+                        {(() => {
+                          let parsed: any[] = [];
+                          if (post.imageUrl) {
+                            try {
+                              parsed = JSON.parse(post.imageUrl);
+                              if (!Array.isArray(parsed)) parsed = [{ data: post.imageUrl }];
+                            } catch (e) {
+                              parsed = [{ data: post.imageUrl }];
+                            }
+                          }
+                          return (
+                            <div className="w-12 h-12 nm-inset p-1.5 rounded-xl overflow-hidden relative group-hover:scale-110 transition-transform duration-700">
+                              {parsed.length > 0 ? (
+                                 <img src={parsed[0].data} className="w-full h-full object-cover rounded-lg" />
+                              ) : (
+                                 <div className="w-full h-full flex items-center justify-center text-[8px] font-black uppercase text-text-muted/20 italic">No Node</div>
+                              )}
+                            </div>
+                          );
+                        })()}
+                      </td>
+                      <td className="px-6 py-6 text-sm text-text-secondary font-medium italic opacity-80" title={post.content}>
+                        <div className="truncate">"{post.content || 'Empty automated generation'}"</div>
+                      </td>
+                      <td className="px-6 py-6">
+                         <div className="nm-flat px-4 py-2 rounded-xl flex items-center gap-3">
+                            <div className={`w-2 h-2 rounded-full shadow-lg ${post.status === 'published' ? 'bg-emerald-500 shadow-emerald-500/50' : post.status === 'failed' ? 'bg-soft-pink shadow-soft-pink/50' : 'bg-soft-blue animate-pulse shadow-soft-blue/50'}`}></div>
+                            <span className="text-[10px] font-bold uppercase tracking-wider text-text-muted">{post.status}</span>
+                         </div>
+                      </td>
+                      <td className="px-6 py-6 text-right">
+                        {post.status === 'queued' ? (
+                          <button
+                            onClick={() => setEditingPost(post)}
+                            className="nm-button px-5 py-2.5 rounded-xl text-xs font-bold text-text-muted hover:text-soft-blue transition-all active:scale-95"
+                          >
+                            {t('creativeStudio')}
+                          </button>
+                        ) : (
+                          <div className="nm-inset px-5 py-2.5 rounded-xl text-[10px] uppercase font-bold text-text-muted/30 tracking-widest inline-block">
+                            LOCKED
+                          </div>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Mobile Card View */}
+            <div className="md:hidden overflow-y-auto custom-scrollbar p-4 space-y-6 flex-1">
+               {posts.map((post) => (
+                 <div key={post.id} className="nm-flat p-6 rounded-[32px] space-y-5 animate-in slide-in-from-bottom-4 duration-500">
+                    <div className="flex justify-between items-start">
+                       <div className="flex items-center gap-4">
+                          {(() => {
+                             let parsed: any[] = [];
+                             if (post.imageUrl) {
+                               try { parsed = JSON.parse(post.imageUrl); if (!Array.isArray(parsed)) parsed = [{ data: post.imageUrl }]; } 
+                               catch (e) { parsed = [{ data: post.imageUrl }]; }
+                             }
+                             return (
+                               <div className="w-14 h-14 nm-inset p-1 rounded-xl overflow-hidden flex-shrink-0">
+                                  {parsed.length > 0 ? <img src={parsed[0].data} className="w-full h-full object-cover rounded-lg" /> : <div className="w-full h-full bg-text-muted/5" />}
+                               </div>
+                             );
+                          })()}
+                          <div>
+                             <h4 className="text-sm font-black text-text-primary truncate max-w-[150px]">{post.fanpageName || 'Neural Hub'}</h4>
+                             <p className="text-[10px] font-bold text-text-muted uppercase tracking-widest mt-1">{new Date(post.createdAt).toLocaleDateString()} • {new Date(post.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
+                          </div>
+                       </div>
+                       <div className={`w-3 h-3 rounded-full shadow-lg ${post.status === 'published' ? 'bg-emerald-500 shadow-emerald-500/50' : post.status === 'failed' ? 'bg-soft-pink shadow-soft-pink/50' : 'bg-soft-blue animate-pulse shadow-soft-blue/50'}`}></div>
+                    </div>
+                    
+                    <div className="flex flex-wrap gap-2">
+                       <span className="nm-inset px-3 py-1 rounded-lg text-[9px] font-black text-soft-blue uppercase tracking-widest">{post.topic}</span>
+                       <span className="nm-inset px-3 py-1 rounded-lg text-[9px] font-black text-text-muted uppercase tracking-widest">Protocol {post.status}</span>
+                    </div>
+
+                    <p className="text-xs text-text-secondary font-medium leading-relaxed italic border-l-2 border-soft-blue/20 pl-4 py-1">
+                       "{post.content?.substring(0, 100)}{post.content?.length > 100 ? '...' : ''}"
+                    </p>
+
+                    <div className="pt-2 border-t border-text-muted/5 flex justify-between items-center">
+                       <span className="text-[9px] font-black text-text-muted uppercase tracking-widest opacity-40">Node ID: {post.id.substring(0, 8)}</span>
+                       {post.status === 'queued' && (
+                         <button 
+                           onClick={() => setEditingPost(post)}
+                           className="nm-button px-5 py-2 text-[10px] font-black uppercase text-soft-blue tracking-widest"
+                         >
+                            {t('creativeStudio')}
+                         </button>
+                       )}
+                    </div>
+                 </div>
+               ))}
+            </div>
           </div>
         )}
       </div>

@@ -20,51 +20,37 @@
 
 ---
 
-## ✨ Tính năng chính
+## ✨ Tính năng chính (Premium Upgrade)
 
-### 🏠 Dashboard
-- Tổng quan số liệu: tổng Fanpage, lịch trình đang hoạt động, bài đã đăng hôm nay, bài thất bại.
-- Hiển thị trạng thái hệ thống theo thời gian thực.
+### 🎨 TDK 
+- **Giao diện Tactile cao cấp**: Toàn bộ hệ thống được xây dựng trên ngôn ngữ thiết kế Soft UI hiện đại, mang lại cảm giác chiều sâu và tương tác vật lý chân thực.
+- **Dark Mode First**: Ưu tiên giao diện tối (Obsidian Dark) để bảo vệ mắt và tăng tính thẩm mỹ, hỗ trợ chuyển đổi Light/Dark linh hoạt.
+- **Hệ thống Design System nhất quán**: Sử dụng CSS variables cho toàn bộ màu sắc, đổ bóng và spacing, đảm bảo tính thẩm mỹ đồng bộ trên mọi module.
 
-### 📱 Quản lý Fanpage
-- Kết nối nhiều Facebook Fanpage thông qua Facebook Login OAuth.
-- Quản lý **Facebook App** (App ID / App Secret) theo từng tài khoản người dùng.
-- Cập nhật Access Token khi token hết hạn mà không mất cấu hình.
-- Xem trạng thái kết nối và thu hồi quyền truy cập bất kỳ lúc nào.
+### 🏠 Dashboard & Analytics (Responsive)
+- **Grid linh hoạt**: Dashboard tự động điều chỉnh layout (1/2/3 cột) dựa trên kích thước màn hình.
+- **Neural Stats Cards**: Hiển thị số liệu tổng quan với hiệu ứng hover động và scaling thông minh.
+- **Performance Trends**: Biểu đồ xu hướng dữ liệu với khả năng scale mượt mà trên cả tablet và desktop.
+
+### 🗺️ AI Strategy Workflow Architect
+- **Visual Node Builder**: Xây dựng chiến lược nội dung bằng bản đồ tư duy trực quan. Kéo thả các Neural Node để thiết kế kịch bản marketing.
+- **Theme-Aware Connectors**: Hệ thống dây nối thông minh tự động thay đổi độ sáng và màu sắc theo theme, hỗ trợ hiệu ứng glow khi hover.
+- **Protocol Settings Panel**: Panel cấu hình node chuyên sâu với hiệu ứng backdrop-blur và shadow định hướng, giúp tinh chỉnh chi tiết từng bước trong quy trình.
 
 ### 🤖 Social Discover Studio
-- Sinh bài viết Facebook từ chủ đề và từ khóa tùy chỉnh bằng Gemini AI.
-- **Tìm kiếm hình ảnh chất lượng cao** từ Unsplash, Pexels, LoremFlickr — tiết kiệm chi phí so với AI generation.
-- Ưu tiên tìm kiếm theo **Keywords** (từ Automation Settings); fallback sang **Topic Name** nếu không có keywords.
-- Chỉnh sửa nội dung, tìm lại ảnh mới trước khi đăng.
-- Đăng lên Fanpage trực tiếp hoặc lưu vào hàng đợi.
+- **Neural Draft Generator**: Sinh bài viết Facebook từ chủ đề và từ khóa tùy chỉnh bằng Gemini AI với giọng văn đa dạng.
+- **Media Asset Sourcing**: Tự động tìm kiếm hình ảnh chất lượng cao từ Unsplash, Pexels, LoremFlickr — tiết kiệm chi phí so với AI generation.
+- **Advanced Creative Editor**: Chỉnh sửa nội dung và media trong một không gian làm việc tập trung, hỗ trợ preview thời gian thực.
+
+### 📊 Hoạt động & Lịch sử (Advanced Grid)
+- **Resizable Columns**: Lưới dữ liệu cho phép người dùng **tùy chỉnh độ rộng cột** bằng cách kéo thả thủ công, tối ưu hóa không gian hiển thị thông tin.
+- **Sticky Strategic Header**: Tiêu đề bảng cố định khi cuộn, giúp theo dõi các cột dữ liệu trong danh sách dài một cách dễ dàng.
+- **Fluid Height Scroll**: Hệ thống lưới tự động scale theo chiều cao màn hình và cuộn nội dung bên trong, giữ cho UI luôn gọn gàng.
 
 ### 📅 Automation & Lập lịch
-- Tạo lịch đăng bài định kỳ: chọn Fanpage, chủ đề, giờ đăng, số lượng bài trong một lần chạy.
-- Hệ thống **Cron Job** tự động kích hoạt đúng giờ, sinh content và đăng lên Facebook.
-- Hỗ trợ **Automation Config** để tinh chỉnh giọng văn, từ khóa, chỉ dẫn bổ sung.
-- Quản lý trạng thái lịch trình: `active` / `suspended`.
-
-### 🗺️ AI Campaign Architect
-- Lập kế hoạch chiến dịch nội dung dài hạn theo phễu marketing **Hook → Narrative → Conversion**.
-- **Visual Journey Explorer**: bản đồ nội dung trực quan, hỗ trợ kéo thả để sắp xếp lại thứ tự bài viết.
-- Tự động sinh chuỗi bài viết có liên kết logic, phù hợp cho các chiến dịch ra mắt sản phẩm, thương hiệu, sự kiện.
-
-### 📊 Lịch sử bài đăng
-- Xem toàn bộ bài viết đã đăng theo Fanpage hoặc theo chiến dịch.
-- Lọc theo trạng thái: `published`, `failed`, `queued`.
-- Xem chi tiết nội dung, ảnh, thông tin lỗi (nếu có).
-
-### ⚙️ Cài đặt & Hồ sơ
-- Cập nhật thông tin cá nhân và mật khẩu.
-- Quản lý Facebook App credentials.
-- Hướng dẫn tích hợp (setup guide) tích hợp ngay trong UI.
-
-### 👑 Admin Panel
-- Quản lý toàn bộ người dùng trong hệ thống.
-- Kích hoạt / thu hồi quyền truy cập tài khoản.
-- Reset mật khẩu tạm thời cho người dùng.
-- Chỉ hiển thị với tài khoản có role `admin`.
+- **Cron Job Engine**: Tự động hóa việc đăng bài theo lịch trình chính xác.
+- **Advanced Prompting**: Tinh chỉnh AI cho từng lịch trình cụ thể (giọng văn, chỉ dẫn đặc biệt).
+- **Queue Management**: Quản lý hàng đợi bài viết với khả năng kéo thả sắp xếp lại thứ tự ưu tiên.
 
 ---
 

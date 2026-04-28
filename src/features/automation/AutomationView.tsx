@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, memo } from 'react';
-import { Clock, Sliders, X, Plus, Bot, RefreshCw, Trash2, Pause, Play, AlertCircle, Calendar, Zap, Layers } from 'lucide-react';
+import { Clock, Sliders, X, Plus, Bot, RefreshCw, Trash2, Pause, Play, AlertCircle, Calendar, Zap, Layers, Activity } from 'lucide-react';
 import { StatusBadge } from '../../components/StatusBadge';
 import { Fanpage, Schedule, Topic } from '../../types';
 import { AutomationSettings, AutomationConfig } from './AutomationSettings';
@@ -334,19 +334,27 @@ export const AutomationView = ({ fanpages, api, initialFanpageId }: { fanpages: 
         <div className="px-10 py-8 border-b border-text-muted/5 flex justify-between items-center">
           <h3 className="text-xs font-black text-text-primary uppercase tracking-widest">{t('activeSchedules')}</h3>
         </div>
-        <div className="overflow-x-auto custom-scrollbar">
+        {/* Desktop View */}
+        <div className="hidden md:block overflow-x-auto custom-scrollbar">
           <table className="w-full text-left">
             <thead>
               <tr className="text-text-muted text-[10px] font-black uppercase tracking-[0.2em]">
-                <th className="px-10 py-6">Target Topic</th>
-                <th className="px-10 py-6">Deployment Node</th>
-                <th className="px-10 py-6">Schedule Logic</th>
-                <th className="px-10 py-6 text-right">Operational Actions</th>
+                <th className="px-10 py-8">Topic/Category</th>
+                <th className="px-10 py-8">Fanpage Target</th>
+                <th className="px-10 py-8">Sync Protocol</th>
+                <th className="px-10 py-8 text-right">Strategic Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-text-muted/5">
               {schedules.length === 0 ? (
-                <tr><td colSpan={4} className="px-10 py-32 text-center text-text-muted font-black uppercase tracking-[0.3em] opacity-30">{t('noData')}</td></tr>
+                <tr>
+                  <td colSpan={4} className="py-24 text-center">
+                    <div className="nm-inset mx-auto w-16 h-16 rounded-full flex items-center justify-center text-text-muted/20 mb-6">
+                      <Activity size={32} />
+                    </div>
+                    <p className="text-xs font-black text-text-muted uppercase tracking-[0.3em]">{t('noData')}</p>
+                  </td>
+                </tr>
               ) : (
                 schedules.map((s) => (
                   <tr key={s.id} className="hover:bg-white/30 transition-colors group">
@@ -387,6 +395,61 @@ export const AutomationView = ({ fanpages, api, initialFanpageId }: { fanpages: 
               )}
             </tbody>
           </table>
+        </div>
+
+        {/* Mobile Card View */}
+        <div className="md:hidden p-4 space-y-6">
+           {schedules.length === 0 ? (
+             <div className="py-16 text-center nm-inset rounded-[32px]">
+                <p className="text-[10px] font-black text-text-muted uppercase tracking-widest">{t('noData')}</p>
+             </div>
+           ) : (
+             schedules.map((s) => (
+               <div key={s.id} className="nm-flat p-6 rounded-[32px] space-y-5">
+                  <div className="flex justify-between items-start">
+                     <div>
+                        <h4 className="text-sm font-black text-text-primary uppercase tracking-tight">{s.topic}</h4>
+                        <p className="text-[10px] font-bold text-text-muted uppercase tracking-widest mt-1">{s.fanpageName}</p>
+                     </div>
+                     <div className={`nm-inset px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest ${s.status === 'suspended' ? 'text-soft-pink' : 'text-emerald-500'}`}>
+                        {s.status === 'suspended' ? 'Suspended' : 'Active'}
+                     </div>
+                  </div>
+
+                  <div className="nm-inset p-4 rounded-2xl flex justify-between items-center">
+                     <div className="space-y-1">
+                        <p className="text-[8px] font-black text-text-muted uppercase tracking-[0.2em]">Daily Schedule</p>
+                        <p className="text-xs font-bold text-text-primary">{s.time}</p>
+                     </div>
+                     <div className="w-[1px] h-6 bg-text-muted/10" />
+                     <div className="space-y-1 text-right">
+                        <p className="text-[8px] font-black text-text-muted uppercase tracking-[0.2em]">Batch Count</p>
+                        <p className="text-xs font-bold text-text-primary">{s.runCount}X</p>
+                     </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                     <button 
+                       onClick={() => handleGenerateBatch(s)}
+                       disabled={isGeneratingBatchRecord[s.id] || s.status === 'suspended'}
+                       className="nm-button py-4 text-[9px] font-black uppercase tracking-widest text-soft-blue flex items-center justify-center gap-2"
+                     >
+                        <RefreshCw size={14} className={isGeneratingBatchRecord[s.id] ? 'animate-spin' : ''} />
+                        {isGeneratingBatchRecord[s.id] ? 'Gen...' : 'Batch'}
+                     </button>
+                     <button onClick={() => setSelectedScheduleForQueue(s)} className="nm-button py-4 text-[9px] font-black uppercase tracking-widest text-text-primary flex items-center justify-center gap-2">
+                        <Layers size={14} /> Queue
+                     </button>
+                     <button onClick={() => handleToggleSuspend(s)} className={`nm-button py-4 text-[9px] font-black uppercase tracking-widest flex items-center justify-center gap-2 ${s.status === 'suspended' ? 'text-emerald-500' : 'text-amber-500'}`}>
+                        {s.status === 'suspended' ? <><Play size={14} /> Resume</> : <><Pause size={14} /> Halt</>}
+                     </button>
+                     <button onClick={() => handleDeleteSchedule(s)} className="nm-button py-4 text-[9px] font-black uppercase tracking-widest text-soft-pink flex items-center justify-center gap-2">
+                        <Trash2 size={14} /> Terminate
+                     </button>
+                  </div>
+               </div>
+             ))
+           )}
         </div>
       </div>
 

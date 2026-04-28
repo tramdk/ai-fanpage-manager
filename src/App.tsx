@@ -44,8 +44,23 @@ export default function App() {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [isPending, startTransition] = useTransition(); // [rerender-transitions]
 
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(window.innerWidth > 1024);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [theme, setTheme] = useState<'light' | 'dark'>(() => (localStorage.getItem('theme') as any) || 'dark');
+  
+  // Handle resize for sidebar defaults
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth <= 1024) {
+        setIsSidebarOpen(false);
+      } else {
+        setIsSidebarOpen(true);
+      }
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   const [fanpages, setFanpages] = useState<Fanpage[]>([]);
   const [preSelectedFanpageId, setPreSelectedFanpageId] = useState<string | undefined>(undefined);
   const { language, setLanguage, t } = useLanguage();
@@ -203,63 +218,86 @@ export default function App() {
   }
 
   return (
-    <div className="h-screen overflow-hidden bg-app-bg flex font-sans selection:bg-soft-blue/30 p-4 sm:p-6 lg:p-8 gap-4 sm:gap-6 lg:gap-8">
+    <div className="h-screen overflow-hidden bg-app-bg flex font-sans selection:bg-soft-blue/30 p-2 sm:p-6 lg:p-8 gap-4 sm:gap-6 lg:gap-8 relative">
       <Toaster position="top-right" expand={true} richColors theme={theme === 'dark' ? 'dark' : 'light'} />
+      
+      {/* Mobile Sidebar Overlay */}
+      {isMobileMenuOpen && (
+        <div 
+          className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[90] lg:hidden animate-in fade-in duration-300"
+          onClick={() => setIsMobileMenuOpen(false)}
+        />
+      )}
 
-      {/* Sidebar - Auto-collapses on small heights/widths if possible, but keep current toggle logic */}
-      <aside className={`nm-sidebar h-full transition-all duration-500 z-[100] flex flex-col p-4 sm:p-6 ${isSidebarOpen ? 'w-72' : 'w-20'}`}>
-        <div className="h-16 sm:h-20 flex items-center px-2 sm:px-4 mb-6 sm:mb-10">
-          <div className="flex-shrink-0 w-10 h-10 sm:w-12 sm:h-12 bg-soft-blue rounded-xl sm:rounded-2xl flex items-center justify-center shadow-lg">
-            <Bot size={20} className="text-white" />
-          </div>
-          {isSidebarOpen && (
-            <div className="ml-4 truncate">
-              <h1 className="text-xl sm:text-2xl font-black text-text-primary leading-none tracking-tight truncate">TDK AI</h1>
-              <p className="text-[10px] font-semibold text-text-muted mt-1.5 truncate">Management Engine</p>
+      {/* Sidebar - Adaptive for Mobile/Desktop */}
+      <aside className={`
+        nm-sidebar h-[calc(100vh-16px)] sm:h-full transition-all duration-500 z-[100] flex flex-col overflow-hidden
+        ${isMobileMenuOpen 
+          ? 'fixed top-2 left-2 bottom-2 shadow-2xl translate-x-0 w-72 p-4 sm:p-6 flex' 
+          : 'fixed -translate-x-full lg:relative lg:translate-x-0 w-0 lg:w-72 p-0 lg:p-6 lg:flex invisible lg:visible opacity-0 lg:opacity-100'}
+        ${!isSidebarOpen && !isMobileMenuOpen ? 'lg:w-20' : ''}
+      `}>
+        <div className="h-16 sm:h-20 flex items-center justify-between px-2 sm:px-4 mb-6 sm:mb-10">
+          <div className="flex items-center">
+            <div className="flex-shrink-0 w-10 h-10 sm:w-12 sm:h-12 bg-soft-blue rounded-xl sm:rounded-2xl flex items-center justify-center shadow-lg">
+              <Bot size={20} className="text-white" />
             </div>
-          )}
+            {(isSidebarOpen || isMobileMenuOpen) && (
+              <div className="ml-4 truncate">
+                <h1 className="text-xl sm:text-2xl font-black text-text-primary leading-none tracking-tight truncate">TDK AI</h1>
+                <p className="text-[10px] font-semibold text-text-muted mt-1.5 truncate">Management Engine</p>
+              </div>
+            )}
+          </div>
+          <button onClick={() => { setIsMobileMenuOpen(false); setIsSidebarOpen(!isSidebarOpen); }} className="text-text-muted hover:text-soft-pink hidden lg:block">
+            <Menu size={20} />
+          </button>
         </div>
 
         <nav className="flex-1 space-y-2 sm:space-y-4 px-1 sm:px-2 overflow-y-auto custom-scrollbar">
           {navItems.map((item) => {
             const Icon = item.icon;
             const isActive = activeTab === item.id;
+            const showLabel = isSidebarOpen || isMobileMenuOpen;
             return (
               <button
                 key={item.id}
-                onClick={() => handleTabChange(item.id)}
+                onClick={() => {
+                  handleTabChange(item.id);
+                  setIsMobileMenuOpen(false);
+                }}
                 className={`w-full flex items-center transition-all duration-300 group relative p-3 sm:p-4 rounded-xl sm:rounded-2xl
                   ${isActive
                     ? 'nm-button-active text-soft-blue font-bold'
                     : 'text-text-secondary hover:text-text-primary'}
-                  ${!isSidebarOpen ? 'justify-center' : 'space-x-4 sm:space-x-5'}
+                  ${!showLabel ? 'justify-center' : 'space-x-4 sm:space-x-5'}
                 `}
               >
-                <Icon size={isSidebarOpen ? 20 : 22} />
-                {isSidebarOpen && <span className="text-sm font-semibold tracking-tight truncate">{item.label}</span>}
+                <Icon size={showLabel ? 20 : 22} />
+                {showLabel && <span className="text-sm font-semibold tracking-tight truncate">{item.label}</span>}
               </button>
             );
           })}
         </nav>
 
         <div className="pt-6 sm:pt-8 mt-auto border-t border-text-muted/10">
-          <button onClick={() => setLanguage(language === 'en' ? 'vi' : 'en')} className={`w-full flex items-center p-2.5 nm-flat-sm hover:scale-[1.02] transition-all mb-4 sm:mb-8 ${!isSidebarOpen ? 'justify-center' : 'space-x-3 sm:space-x-4'}`}>
+          <button onClick={() => setLanguage(language === 'en' ? 'vi' : 'en')} className={`w-full flex items-center p-2.5 nm-flat-sm hover:scale-[1.02] transition-all mb-4 sm:mb-8 ${!(isSidebarOpen || isMobileMenuOpen) ? 'justify-center' : 'space-x-3 sm:space-x-4'}`}>
             <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg sm:rounded-xl bg-app-bg nm-inset flex items-center justify-center text-base sm:text-lg">{language === 'en' ? '🇺🇸' : '🇻🇳'}</div>
-            {isSidebarOpen && <p className="text-[10px] font-bold text-text-primary uppercase tracking-widest">{language === 'en' ? 'English' : 'Tiếng Việt'}</p>}
+            {(isSidebarOpen || isMobileMenuOpen) && <p className="text-[10px] font-bold text-text-primary uppercase tracking-widest">{language === 'en' ? 'English' : 'Tiếng Việt'}</p>}
           </button>
-
+          
           <div className="nm-inset p-3 sm:p-5 space-y-3 sm:space-y-5 rounded-[20px] sm:rounded-[24px]">
             <div className="flex items-center gap-3 sm:gap-4">
               <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-app-bg nm-inset flex items-center justify-center text-soft-blue shadow-sm font-bold text-xs sm:text-base">{user?.name?.charAt(0) || 'U'}</div>
-              {isSidebarOpen && (
+              {(isSidebarOpen || isMobileMenuOpen) && (
                 <div className="flex-1 min-w-0">
                   <p className="text-xs sm:text-sm font-bold text-text-primary truncate">{user?.name || 'User'}</p>
                   <p className="text-[9px] font-semibold text-text-muted uppercase tracking-wider">Admin</p>
                 </div>
               )}
-              {isSidebarOpen && <button onClick={handleLogout} className="text-text-muted hover:text-soft-pink transition-colors"><LogOut size={16} /></button>}
+              {(isSidebarOpen || isMobileMenuOpen) && <button onClick={handleLogout} className="text-text-muted hover:text-soft-pink transition-colors"><LogOut size={16} /></button>}
             </div>
-            {isSidebarOpen && (
+            {(isSidebarOpen || isMobileMenuOpen) && (
               <button className="w-full bg-soft-blue text-white py-2.5 sm:py-3.5 rounded-lg sm:rounded-xl text-[10px] sm:text-xs font-bold tracking-wide shadow-lg hover:brightness-110 transition-all">
                 Upgrade
               </button>
@@ -269,33 +307,39 @@ export default function App() {
       </aside>
 
       {/* Main Content Area */}
-      <div className="flex-1 flex flex-col gap-4 sm:gap-8 min-w-0">
-        <header className="h-16 sm:h-24 flex items-center justify-between px-2 sm:px-4">
-          <div className="flex items-center gap-4 sm:gap-12 flex-1 min-w-0">
-            <div className="relative group w-full max-w-xl">
-              <Search className="absolute left-4 sm:left-6 top-1/2 -translate-y-1/2 text-text-muted w-4 h-4 sm:w-5 sm:h-5" />
+      <div className="flex-1 flex flex-col min-w-0 h-screen overflow-hidden">
+        <header className="h-16 sm:h-24 flex items-center justify-between px-4 sm:px-8 shrink-0">
+          <div className="flex items-center gap-3 sm:gap-12 flex-1 min-w-0">
+            <button 
+              onClick={() => setIsMobileMenuOpen(true)}
+              className="lg:hidden w-10 h-10 nm-button flex items-center justify-center text-text-secondary hover:text-soft-blue transition-all shrink-0"
+            >
+               <Menu size={20} />
+            </button>
+            <div className="relative group w-full max-w-sm sm:max-w-xl">
+              <Search className="absolute left-4 sm:left-6 top-1/2 -translate-y-1/2 text-text-muted w-3.5 h-3.5 sm:w-5 sm:h-5" />
               <input
                 type="text"
                 placeholder="Search..."
-                className="nm-input pl-10 sm:pl-16 py-2.5 sm:py-4 text-xs sm:text-sm font-medium text-text-primary"
+                className="nm-input pl-10 sm:pl-16 py-2 sm:py-4 text-[10px] sm:text-sm font-medium text-text-primary"
               />
             </div>
           </div>
 
-          <div className="flex items-center gap-3 sm:gap-8 ml-4">
+          <div className="flex items-center gap-2 sm:gap-8 ml-4 shrink-0">
             <button
               onClick={toggleTheme}
               className="w-10 h-10 sm:w-14 sm:h-14 nm-button flex items-center justify-center text-text-secondary hover:text-soft-blue transition-all"
             >
-              {theme === 'light' ? <Moon size={18} sm:size={22} /> : <Sun size={18} sm:size={22} />}
+              {theme === 'light' ? <Moon size={18} /> : <Sun size={18} />}
             </button>
             <button className="w-10 h-10 sm:w-14 sm:h-14 nm-button flex items-center justify-center text-text-secondary hover:text-soft-blue transition-all hidden xs:flex">
-              <Bell size={18} sm:size={22} />
+              <Bell size={18} />
             </button>
           </div>
         </header>
 
-        <div className={`flex-1 transition-all duration-500 overflow-y-auto custom-scrollbar pr-4 ${isPending ? 'opacity-50' : 'opacity-100'}`}>
+        <div className={`flex-1 transition-all duration-500 overflow-y-auto custom-scrollbar p-4 sm:p-0 ${isPending ? 'opacity-50' : 'opacity-100'}`}>
           {content}
         </div>
       </div>
