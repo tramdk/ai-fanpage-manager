@@ -45,16 +45,16 @@
   }
 }
 
-@layer components {
-  .glass-card {
-    background: var(--glass-bg);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
-    border: 1px solid var(--glass-border);
-    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.2);
-  }
+@utility glass-card {
+  background: var(--glass-bg);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--glass-border);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.2);
+}
 
-  /* Map old nm classes to glass for compatibility or update them */
+@layer components {
+  /* Map old nm classes to glass for compatibility */
   .nm-flat, .nm-sidebar, .nm-panel-right {
     @apply glass-card;
   }
