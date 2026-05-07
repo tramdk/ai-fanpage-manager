@@ -2,132 +2,114 @@
 @import "tailwindcss";
 
 :root {
-  --nm-bg: #1a1c20;
-  --nm-shadow-dark: #000000;
-  --nm-shadow-light: #2c3038;
+  --app-bg: #0a0b0d;
+  --glass-bg: rgba(255, 255, 255, 0.05);
+  --glass-border: rgba(255, 255, 255, 0.1);
   --text-primary: #ffffff;
   --text-secondary: #ecf0f1;
-  --text-muted: #bdc3c7;
+  --text-muted: #94a3b8;
+  --accent-blue: #3b82f6;
+  --accent-pink: #ec4899;
 }
 
 [data-theme='light'] {
-  --nm-bg: #e0e5ec;
-  --nm-shadow-dark: #a3b1c6;
-  --nm-shadow-light: #ffffff;
-  --text-primary: #0a0b0d;
-  --text-secondary: #2d3436;
-  --text-muted: #636e72;
+  --app-bg: #f8fafc;
+  --glass-bg: rgba(255, 255, 255, 0.7);
+  --glass-border: rgba(0, 0, 0, 0.05);
+  --text-primary: #0f172a;
+  --text-secondary: #334155;
+  --text-muted: #64748b;
 }
 
 @theme {
-  --color-app-bg: var(--nm-bg);
+  --color-app-bg: var(--app-bg);
   --color-text-primary: var(--text-primary);
   --color-text-secondary: var(--text-secondary);
   --color-text-muted: var(--text-muted);
-  --color-soft-blue: #3498db;
-  --color-soft-pink: #e84393;
+  --color-soft-blue: var(--accent-blue);
+  --color-soft-pink: var(--accent-pink);
   
-  --font-sans: 'Roboto', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  --font-heading: 'Roboto', 'Segoe UI', sans-serif;
+  --font-sans: 'Inter', 'Roboto', sans-serif;
   
   --radius-3xl: 32px;
-  --radius-4xl: 48px;
-  --radius-5xl: 64px;
+  --radius-4xl: 40px;
 }
 
 @layer base {
   body {
     @apply bg-app-bg text-text-primary font-sans antialiased overflow-hidden transition-colors duration-500;
-    font-size: 17px; /* Increased for better visibility */
-    line-height: 1.7;
-  }
-
-  h1, h2, h3, h4, h5, h6 {
-    @apply font-heading text-text-primary;
+    background-image: 
+      radial-gradient(circle at 0% 0%, rgba(59, 130, 246, 0.15) 0%, transparent 35%),
+      radial-gradient(circle at 100% 100%, rgba(236, 72, 153, 0.1) 0%, transparent 35%);
+    background-attachment: fixed;
   }
 }
 
 @layer components {
-  .nm-flat {
-    background: var(--nm-bg);
-    box-shadow: 12px 12px 24px var(--nm-shadow-dark), -12px -12px 24px var(--nm-shadow-light);
-    border-radius: 32px;
-    border: 1px solid rgba(255, 255, 255, 0.15);
+  .glass-card {
+    background: var(--glass-bg);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid var(--glass-border);
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.2);
+  }
+
+  /* Map old nm classes to glass for compatibility or update them */
+  .nm-flat, .nm-sidebar, .nm-panel-right {
+    @apply glass-card;
   }
 
   .nm-sidebar {
-    background: var(--nm-bg);
-    box-shadow: 20px 0 40px rgba(0, 0, 0, 0.4);
-    border-right: 1px solid rgba(255, 255, 255, 0.05);
-    border-top: 1px solid rgba(255, 255, 255, 0.05);
-    border-radius: 40px;
-  }
-
-  [data-theme='light'] .nm-sidebar {
-    box-shadow: 15px 0 30px var(--nm-shadow-dark), -5px 0 15px var(--nm-shadow-light);
-    border-right: 1px solid rgba(255, 255, 255, 0.2);
-    border-top: 1px solid rgba(255, 255, 255, 0.2);
-  }
-
-  .nm-panel-right {
-    background: var(--nm-bg);
-    box-shadow: -20px 0 40px rgba(0, 0, 0, 0.4);
-    border-left: 1px solid rgba(255, 255, 255, 0.05);
-    border-top: 1px solid rgba(255, 255, 255, 0.05);
-    border-radius: 40px 0 0 40px;
-  }
-
-  [data-theme='light'] .nm-panel-right {
-    box-shadow: -15px 0 30px var(--nm-shadow-dark), 5px 0 15px var(--nm-shadow-light);
-    border-left: 1px solid rgba(255, 255, 255, 0.2);
-    border-top: 1px solid rgba(255, 255, 255, 0.2);
+    @apply rounded-[32px] border-white/5;
+    box-shadow: 10px 0 30px rgba(0, 0, 0, 0.2);
   }
 
   .nm-inset {
-    background: var(--nm-bg);
-    box-shadow: inset 8px 8px 16px var(--nm-shadow-dark), inset -8px -8px 16px var(--nm-shadow-light);
-    border-radius: 32px;
-    border: 1px solid rgba(255, 255, 255, 0.05);
+    background: rgba(0, 0, 0, 0.2);
+    border: 1px solid var(--glass-border);
+    @apply rounded-2xl;
+  }
+
+  [data-theme='light'] .nm-inset {
+    background: rgba(255, 255, 255, 0.5);
   }
 
   .nm-button {
-    background: var(--nm-bg);
-    box-shadow: 6px 6px 12px var(--nm-shadow-dark), -6px -6px 12px var(--nm-shadow-light);
-    border-radius: 16px;
-    border: 1px solid rgba(255, 255, 255, 0.15);
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    color: var(--text-primary);
+    background: var(--glass-bg);
+    backdrop-filter: blur(8px);
+    border: 1px solid var(--glass-border);
+    @apply rounded-xl transition-all duration-300;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
   }
 
   .nm-button:hover {
-    box-shadow: 4px 4px 8px var(--nm-shadow-dark), -4px -4px 8px var(--nm-shadow-light);
-    transform: translateY(-1px);
+    @apply -translate-y-0.5 brightness-110;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
   }
 
   .nm-button:active, .nm-button-active {
-    box-shadow: inset 5px 5px 10px var(--nm-shadow-dark), inset -5px -5px 10px var(--nm-shadow-light);
-    transform: translateY(1px);
-    border-color: rgba(52, 152, 219, 0.3);
-    color: var(--color-soft-blue);
+    background: var(--accent-blue);
+    color: white;
+    @apply translate-y-0 shadow-inner;
   }
 
   .nm-input {
-    @apply w-full outline-none px-6 py-4 transition-all duration-300;
-    background: var(--nm-bg);
-    box-shadow: inset 5px 5px 10px var(--nm-shadow-dark), inset -5px -5px 10px var(--nm-shadow-light);
-    border-radius: 12px;
-    border: 1px solid rgba(255, 255, 255, 0.05);
+    @apply w-full outline-none px-6 py-3 transition-all duration-300 rounded-xl;
+    background: rgba(0, 0, 0, 0.2);
+    border: 1px solid var(--glass-border);
     color: var(--text-primary);
   }
 
-  .nm-input:focus {
-    border-color: rgba(52, 152, 219, 0.4);
+  [data-theme='light'] .nm-input {
+    background: rgba(255, 255, 255, 0.8);
   }
 
-  /* Scrollbar */
+  .nm-input:focus {
+    @apply ring-2 ring-soft-blue/30 border-soft-blue/50;
+  }
+
   .custom-scrollbar::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
+    width: 6px;
   }
 
   .custom-scrollbar::-webkit-scrollbar-track {
@@ -135,16 +117,11 @@
   }
 
   .custom-scrollbar::-webkit-scrollbar-thumb {
-    background: rgba(127, 140, 141, 0.2);
-    border-radius: 20px;
-    border: 2px solid transparent;
-    background-clip: padding-box;
-  }
-
-  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-    background: rgba(0, 0, 0, 0.15);
+    background: var(--text-muted);
+    @apply rounded-full opacity-30;
   }
 }
+
 
 /* Animations */
 @keyframes float {
