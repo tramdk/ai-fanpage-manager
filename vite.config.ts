@@ -6,7 +6,7 @@ import {defineConfig, loadEnv} from 'vite';
 export default defineConfig(({mode}) => {
   const env = loadEnv(mode, '.', '');
   return {
-    base: '/ai-fanpage-manager/',
+    base: '/',
     plugins: [react(), tailwindcss()],
     define: {},
     resolve: {
