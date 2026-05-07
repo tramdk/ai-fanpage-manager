@@ -36,7 +36,6 @@ export async function handleFacebookCallback(code: string, state: string) {
     throw new Error('Facebook App not configured in server secrets.');
   }
 
-  // Exchange code for short-lived token
   const backendUrl = (process.env.APP_URL || cleanOrigin).replace(/\/$/, '');
   const redirectUri = `${backendUrl}/auth/facebook/callback`;
   
@@ -44,9 +43,25 @@ export async function handleFacebookCallback(code: string, state: string) {
   
   const tokenUrl = `https://graph.facebook.com/v18.0/oauth/access_token?client_id=${appId}&redirect_uri=${encodeURIComponent(redirectUri)}&client_secret=${appSecret}&code=${code}`;
   
+  // Use native https for better diagnostics in some environments
+  const httpsRequest = (url: string): Promise<any> => {
+    return new Promise((resolve, reject) => {
+      const https = require('https');
+      https.get(url, (res: any) => {
+        let data = '';
+        res.on('data', (chunk: any) => data += chunk);
+        res.on('end', () => {
+          try { resolve(JSON.parse(data)); } catch (e) { reject(new Error(`Malformed JSON: ${data.substring(0, 100)}`)); }
+        });
+      }).on('error', (err: any) => {
+        console.error('[HTTPS_CORE_ERROR]', err);
+        reject(err);
+      });
+    });
+  };
+
   try {
-    const tRes = await fetch(tokenUrl, { signal: AbortSignal.timeout(15000) });
-    const tData = await tRes.json();
+    const tData = await httpsRequest(tokenUrl);
     
     if (tData.error) {
       console.error('[OAUTH] Facebook Token Error:', tData.error);
@@ -56,14 +71,14 @@ export async function handleFacebookCallback(code: string, state: string) {
     console.log('[OAUTH] Token exchange successful.');
 
     // Exchange for long-lived token
-    const lLRes = await fetch(`https://graph.facebook.com/v18.0/oauth/access_token?grant_type=fb_exchange_token&client_id=${appId}&client_secret=${appSecret}&fb_exchange_token=${tData.access_token}`);
-    const lLData = await lLRes.json();
+    const lLUrl = `https://graph.facebook.com/v18.0/oauth/access_token?grant_type=fb_exchange_token&client_id=${appId}&client_secret=${appSecret}&fb_exchange_token=${tData.access_token}`;
+    const lLData = await httpsRequest(lLUrl);
     const userAccessToken = lLData.access_token || tData.access_token;
     
     // Fetch managed pages
     console.log(`[OAUTH] Fetching managed pages for user: ${user.email}`);
-    const pRes = await fetch(`https://graph.facebook.com/v18.0/me/accounts?access_token=${userAccessToken}&limit=100`);
-    const pData = await pRes.json();
+    const pUrl = `https://graph.facebook.com/v18.0/me/accounts?access_token=${userAccessToken}&limit=100`;
+    const pData = await httpsRequest(pUrl);
     
     if (pData.error) {
       console.error('[OAUTH] Facebook API Error (me/accounts):', pData.error);
