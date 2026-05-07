@@ -23,6 +23,10 @@ const PROJECT_ROOT = path.resolve(__dirname, __filename ? '../' : './');
 
 const app = express();
 
+// Trust proxy for rate limiting (needed on Hugging Face Spaces)
+app.set('trust proxy', 1);
+
+
 app.use(helmet({
   contentSecurityPolicy: false, // Disabled for development/vite integration compatibility
   crossOriginEmbedderPolicy: false
