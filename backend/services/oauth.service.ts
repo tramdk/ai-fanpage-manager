@@ -18,38 +18,89 @@ export async function handleFacebookCallback(code: string, state: string) {
   let appId: string | undefined, appSecret: string | undefined;
   if (fbAppRecordId && fbAppRecordId !== 'legacy') {
     const appObj = await prisma.facebookApp.findUnique({ where: { id: fbAppRecordId, userId: user.id } });
-    if (appObj) { appId = decrypt(appObj.appId, user.email); appSecret = decrypt(appObj.appSecret, user.email); }
+    if (appObj) { 
+      appId = decrypt(appObj.appId, user.email); 
+      appSecret = decrypt(appObj.appSecret, user.email); 
+      console.log(`[OAUTH] Using user-provided App ID: ${appId?.substring(0, 5)}...`);
+    }
   }
+  
   if (!appId || !appSecret) {
     appId = user.facebookAppId ? decrypt(user.facebookAppId, user.email) : process.env.FACEBOOK_APP_ID;
     appSecret = user.facebookAppSecret ? decrypt(user.facebookAppSecret, user.email) : process.env.FACEBOOK_APP_SECRET;
+    console.log(`[OAUTH] Using system/legacy App ID: ${appId?.substring(0, 5)}...`);
+  }
+
+  if (!appId || !appSecret) {
+    console.error('[OAUTH] ERROR: Facebook App ID or Secret is missing.');
+    throw new Error('Facebook App not configured in server secrets.');
   }
 
   // Exchange code for short-lived token
   const backendUrl = (process.env.APP_URL || cleanOrigin).replace(/\/$/, '');
   const redirectUri = `${backendUrl}/auth/facebook/callback`;
-  const tRes = await fetch(`https://graph.facebook.com/v18.0/oauth/access_token?client_id=${appId}&redirect_uri=${redirectUri}&client_secret=${appSecret}&code=${code}`);
-  const tData = await tRes.json();
-  if (tData.error) throw new Error(tData.error.message);
+  
+  console.log(`[OAUTH] Exchanging code. Redirect URI: ${redirectUri}`);
+  
+  const tokenUrl = `https://graph.facebook.com/v18.0/oauth/access_token?client_id=${appId}&redirect_uri=${encodeURIComponent(redirectUri)}&client_secret=${appSecret}&code=${code}`;
+  
+  try {
+    const tRes = await fetch(tokenUrl, { signal: AbortSignal.timeout(15000) });
+    const tData = await tRes.json();
+    
+    if (tData.error) {
+      console.error('[OAUTH] Facebook Token Error:', tData.error);
+      throw new Error(tData.error.message);
+    }
+    
+    console.log('[OAUTH] Token exchange successful.');
 
-  // Exchange for long-lived token
-  const lLRes = await fetch(`https://graph.facebook.com/v18.0/oauth/access_token?grant_type=fb_exchange_token&client_id=${appId}&client_secret=${appSecret}&fb_exchange_token=${tData.access_token}`);
-  const lLData = await lLRes.json();
-  const userAccessToken = lLData.access_token || tData.access_token;
+    // Exchange for long-lived token
+    const lLRes = await fetch(`https://graph.facebook.com/v18.0/oauth/access_token?grant_type=fb_exchange_token&client_id=${appId}&client_secret=${appSecret}&fb_exchange_token=${tData.access_token}`);
+    const lLData = await lLRes.json();
+    const userAccessToken = lLData.access_token || tData.access_token;
+    
+    // Fetch managed pages
+    console.log(`[OAUTH] Fetching managed pages for user: ${user.email}`);
+    const pRes = await fetch(`https://graph.facebook.com/v18.0/me/accounts?access_token=${userAccessToken}&limit=100`);
+    const pData = await pRes.json();
+    
+    if (pData.error) {
+      console.error('[OAUTH] Facebook API Error (me/accounts):', pData.error);
+      throw new Error(pData.error.message);
+    }
 
-  // Fetch managed pages
-  const pRes = await fetch(`https://graph.facebook.com/v18.0/me/accounts?access_token=${userAccessToken}&limit=100`);
-  const pData = await pRes.json();
-  const pages = pData.data || [];
+    const pages = pData.data || [];
+    console.log(`[OAUTH] Found ${pages.length} managed pages.`);
 
-  // Sync to DB
-  for (const page of pages) {
-    await prisma.fanpage.upsert({
-      where: { pageId: page.id },
-      update: { name: page.name, accessToken: encrypt(page.access_token, user.email), status: 'active', userId: user.id },
-      create: { pageId: page.id, name: page.name, accessToken: encrypt(page.access_token, user.email), status: 'active', userId: user.id }
-    });
+    // Sync to DB
+    for (const page of pages) {
+      console.log(`[OAUTH] Syncing page: ${page.name} (${page.id})`);
+      await prisma.fanpage.upsert({
+        where: { pageId: page.id },
+        update: { 
+          name: page.name, 
+          accessToken: encrypt(page.access_token, user.email), 
+          status: 'active', 
+          userId: user.id 
+        },
+        create: { 
+          pageId: page.id, 
+          name: page.name, 
+          accessToken: encrypt(page.access_token, user.email), 
+          status: 'active', 
+          userId: user.id 
+        }
+      });
+    }
+
+    if (pages.length === 0) {
+      console.warn('[OAUTH] No pages found. Ensure permissions are granted.');
+    }
+
+    return pages;
+  } catch (err: any) {
+    console.error('[OAUTH_SERVICE] Fatal Error during exchange:', err.message);
+    throw err;
   }
-
-  return pages;
 }
