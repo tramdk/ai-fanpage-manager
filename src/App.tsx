@@ -131,16 +131,29 @@ export default function App() {
   // [OAUTH-OBSERVER] Listen for Facebook Auth results from popup
   useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
+      console.log('[App.tsx] Received postMessage:', event.data);
+      // Validate origin if needed, but for now we accept from our own popup
       if (event.data?.type === 'FACEBOOK_AUTH_SUCCESS') {
-        console.log('Facebook Connection Success:', event.data.payload);
+        console.log('🚀 Facebook Connection Success Message Received:', event.data.payload);
+        toast.success(t('connectSuccess') || 'Kết nối Fanpage thành công!');
         fetchData(); // Automatically refresh fanpages list
       } else if (event.data?.type === 'FACEBOOK_AUTH_ERROR') {
+        console.error('❌ Facebook Connection Error Message Received:', event.data.error);
         toast.error('Facebook Error: ' + event.data.error);
       }
     };
+    
+    // Fallback check for redirect-based success
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('auth_success') === 'true') {
+      toast.success('Authentication completed via redirect.');
+      fetchData();
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+
     window.addEventListener('message', handleMessage);
     return () => window.removeEventListener('message', handleMessage);
-  }, [fetchData]);
+  }, [fetchData, t]);
 
   const handleConnectFacebook = useCallback(async (fbAppRecordId?: string) => {
     try {

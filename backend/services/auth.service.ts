@@ -83,7 +83,7 @@ export async function getFacebookOAuthUrl(userId: string, token: string, origin:
     client_id: appId, 
     redirect_uri: `${backendUrl}/auth/facebook/callback`, 
     response_type: 'code', 
-    scope: 'pages_show_list,pages_read_engagement,pages_manage_posts', 
+    scope: 'public_profile,email,pages_show_list,pages_read_engagement,pages_manage_posts,business_management', 
     state: stateStr 
   });
 
