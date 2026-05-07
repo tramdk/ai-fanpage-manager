@@ -46,6 +46,7 @@ export default function App() {
 
   const [isSidebarOpen, setIsSidebarOpen] = useState(window.innerWidth > 1024);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isSidebarHovered, setIsSidebarHovered] = useState(false);
   const [theme, setTheme] = useState<'light' | 'dark'>(() => (localStorage.getItem('theme') as any) || 'dark');
   
   // Handle resize for sidebar defaults
@@ -230,26 +231,27 @@ export default function App() {
       )}
 
       {/* Sidebar - Adaptive for Mobile/Desktop */}
-      <aside className={`
+      <aside 
+        onMouseEnter={() => setIsSidebarHovered(true)}
+        onMouseLeave={() => setIsSidebarHovered(false)}
+        className={`
         nm-sidebar h-[calc(100vh-16px)] sm:h-full transition-all duration-500 z-[100] flex flex-col overflow-hidden
         ${isMobileMenuOpen 
           ? 'fixed top-2 left-2 bottom-2 shadow-2xl translate-x-0 w-72 p-4 sm:p-6 flex' 
-          : 'fixed -translate-x-full lg:relative lg:translate-x-0 w-0 lg:w-72 p-0 lg:p-6 lg:flex invisible lg:visible opacity-0 lg:opacity-100'}
-        ${!isSidebarOpen && !isMobileMenuOpen ? 'lg:w-20' : ''}
+          : `fixed -translate-x-full lg:relative lg:translate-x-0 w-0 lg:w-20 lg:py-6 lg:flex invisible lg:visible opacity-0 lg:opacity-100 ${isSidebarHovered ? 'lg:px-6' : 'lg:px-0'}`}
+        ${(isSidebarHovered && !isMobileMenuOpen) ? 'lg:w-72' : ''}
       `}>
-        <div className="h-16 sm:h-20 flex items-center justify-between px-2 sm:px-4 mb-6 sm:mb-10">
-          <div className="flex items-center">
+        <div className={`h-16 sm:h-20 flex items-center mb-6 sm:mb-10 transition-all duration-500 ${isSidebarHovered || isMobileMenuOpen ? 'justify-between px-2 sm:px-4' : 'justify-center px-0'}`}>
+          <div className="flex items-center min-w-0">
             <div className="flex-shrink-0 w-10 h-10 sm:w-12 sm:h-12 bg-soft-blue rounded-xl sm:rounded-2xl flex items-center justify-center shadow-lg">
               <Bot size={20} className="text-white" />
             </div>
-            {(isSidebarOpen || isMobileMenuOpen) && (
-              <div className="ml-4 truncate">
-                <h1 className="text-xl sm:text-2xl font-black text-text-primary leading-none tracking-tight truncate">TDK AI</h1>
-                <p className="text-[10px] font-semibold text-text-muted mt-1.5 truncate">Management Engine</p>
-              </div>
-            )}
+            <div className={`transition-all duration-500 overflow-hidden ${isSidebarHovered || isMobileMenuOpen ? 'w-48 opacity-100 ml-4' : 'w-0 opacity-0 ml-0'}`}>
+              <h1 className="text-xl sm:text-2xl font-black text-text-primary leading-none tracking-tight truncate">TDK AI</h1>
+              <p className="text-[10px] font-semibold text-text-muted mt-1.5 truncate">Management Engine</p>
+            </div>
           </div>
-          <button onClick={() => { setIsMobileMenuOpen(false); setIsSidebarOpen(!isSidebarOpen); }} className="text-text-muted hover:text-soft-pink hidden lg:block">
+          <button onClick={() => { setIsMobileMenuOpen(false); setIsSidebarOpen(!isSidebarOpen); }} className={`text-text-muted hover:text-soft-pink hidden lg:block transition-all duration-500 ${isSidebarHovered || isMobileMenuOpen ? 'opacity-100 scale-100' : 'opacity-0 scale-0 w-0'}`}>
             <Menu size={20} />
           </button>
         </div>
@@ -258,7 +260,7 @@ export default function App() {
           {navItems.map((item) => {
             const Icon = item.icon;
             const isActive = activeTab === item.id;
-            const showLabel = isSidebarOpen || isMobileMenuOpen;
+            const isExpanded = isSidebarHovered || isMobileMenuOpen;
             return (
               <button
                 key={item.id}
@@ -270,38 +272,42 @@ export default function App() {
                   ${isActive
                     ? 'nm-button-active text-soft-blue font-bold'
                     : 'text-text-secondary hover:text-text-primary'}
-                  ${!showLabel ? 'justify-center' : 'space-x-4 sm:space-x-5'}
+                  ${!isExpanded ? 'justify-center' : 'space-x-4 sm:space-x-5'}
                 `}
               >
-                <Icon size={showLabel ? 20 : 22} />
-                {showLabel && <span className="text-sm font-semibold tracking-tight truncate">{item.label}</span>}
+                <div className="flex-shrink-0">
+                  <Icon size={isExpanded ? 20 : 22} />
+                </div>
+                <div className={`transition-all duration-500 overflow-hidden whitespace-nowrap ${isExpanded ? 'w-48 opacity-100' : 'w-0 opacity-0'}`}>
+                  <span className="text-sm font-semibold tracking-tight">{item.label}</span>
+                </div>
               </button>
             );
           })}
         </nav>
 
         <div className="pt-6 sm:pt-8 mt-auto border-t border-text-muted/10">
-          <button onClick={() => setLanguage(language === 'en' ? 'vi' : 'en')} className={`w-full flex items-center p-2.5 nm-flat-sm hover:scale-[1.02] transition-all mb-4 sm:mb-8 ${!(isSidebarOpen || isMobileMenuOpen) ? 'justify-center' : 'space-x-3 sm:space-x-4'}`}>
-            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg sm:rounded-xl bg-app-bg nm-inset flex items-center justify-center text-base sm:text-lg">{language === 'en' ? '🇺🇸' : '🇻🇳'}</div>
-            {(isSidebarOpen || isMobileMenuOpen) && <p className="text-[10px] font-bold text-text-primary uppercase tracking-widest">{language === 'en' ? 'English' : 'Tiếng Việt'}</p>}
+          <button onClick={() => setLanguage(language === 'en' ? 'vi' : 'en')} className={`w-full flex items-center p-2.5 nm-flat-sm hover:scale-[1.02] transition-all mb-4 sm:mb-8 ${!(isSidebarHovered || isMobileMenuOpen) ? 'justify-center' : 'space-x-3 sm:space-x-4'}`}>
+            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg sm:rounded-xl bg-app-bg nm-inset flex items-center justify-center text-base sm:text-lg shrink-0">{language === 'en' ? '🇺🇸' : '🇻🇳'}</div>
+            <div className={`transition-all duration-500 overflow-hidden whitespace-nowrap ${isSidebarHovered || isMobileMenuOpen ? 'w-40 opacity-100 ml-3' : 'w-0 opacity-0 ml-0'}`}>
+              <p className="text-[10px] font-bold text-text-primary uppercase tracking-widest">{language === 'en' ? 'English' : 'Tiếng Việt'}</p>
+            </div>
           </button>
           
-          <div className="nm-inset p-3 sm:p-5 space-y-3 sm:space-y-5 rounded-[20px] sm:rounded-[24px]">
-            <div className="flex items-center gap-3 sm:gap-4">
-              <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-app-bg nm-inset flex items-center justify-center text-soft-blue shadow-sm font-bold text-xs sm:text-base">{user?.name?.charAt(0) || 'U'}</div>
-              {(isSidebarOpen || isMobileMenuOpen) && (
-                <div className="flex-1 min-w-0">
-                  <p className="text-xs sm:text-sm font-bold text-text-primary truncate">{user?.name || 'User'}</p>
-                  <p className="text-[9px] font-semibold text-text-muted uppercase tracking-wider">Admin</p>
-                </div>
-              )}
-              {(isSidebarOpen || isMobileMenuOpen) && <button onClick={handleLogout} className="text-text-muted hover:text-soft-pink transition-colors"><LogOut size={16} /></button>}
+          <div className={`nm-inset transition-all duration-500 rounded-[20px] sm:rounded-[24px] ${isSidebarHovered || isMobileMenuOpen ? 'p-3 sm:p-5 space-y-3 sm:space-y-5' : 'p-2 space-y-0'}`}>
+            <div className={`flex items-center transition-all duration-500 overflow-hidden ${isSidebarHovered || isMobileMenuOpen ? 'gap-3 sm:gap-4' : 'justify-center gap-0'}`}>
+              <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-app-bg nm-inset flex items-center justify-center text-soft-blue shadow-sm font-bold text-xs sm:text-base shrink-0">{user?.name?.charAt(0) || 'U'}</div>
+              <div className={`flex-1 min-w-0 transition-all duration-500 ${isSidebarHovered || isMobileMenuOpen ? 'opacity-100 max-w-full ml-1' : 'opacity-0 max-w-0 ml-0'}`}>
+                <p className="text-xs sm:text-sm font-bold text-text-primary truncate">{user?.name || 'User'}</p>
+                <p className="text-[9px] font-semibold text-text-muted uppercase tracking-wider">Admin</p>
+              </div>
+              {(isSidebarHovered || isMobileMenuOpen) && <button onClick={handleLogout} className="text-text-muted hover:text-soft-pink transition-colors shrink-0"><LogOut size={16} /></button>}
             </div>
-            {(isSidebarOpen || isMobileMenuOpen) && (
-              <button className="w-full bg-soft-blue text-white py-2.5 sm:py-3.5 rounded-lg sm:rounded-xl text-[10px] sm:text-xs font-bold tracking-wide shadow-lg hover:brightness-110 transition-all">
+            <div className={`transition-all duration-500 overflow-hidden ${isSidebarHovered || isMobileMenuOpen ? 'max-h-20 opacity-100' : 'max-h-0 opacity-0'}`}>
+              <button className="w-full bg-soft-blue text-white py-2.5 sm:py-3.5 rounded-lg sm:rounded-xl text-[10px] sm:text-xs font-bold tracking-wide shadow-lg hover:brightness-110 transition-all mt-2">
                 Upgrade
               </button>
-            )}
+            </div>
           </div>
         </div>
       </aside>

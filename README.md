@@ -1,4 +1,14 @@
+---
+title: Fanpage AI Manager
+emoji: 🤖
+colorFrom: indigo
+colorTo: blue
+sdk: docker
+pinned: false
+---
+
 # 🤖 Fanpage AI Manager
+
 
 > **Nền tảng quản lý & tự động hóa nội dung Facebook Fanpage bằng AI** — đăng bài thông minh, lập lịch tự động, sinh nội dung bằng Gemini AI & tìm kiếm hình ảnh chất lượng cao từ Internet.
 
