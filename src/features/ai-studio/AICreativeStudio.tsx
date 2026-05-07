@@ -1,12 +1,17 @@
 import React, { useState, useEffect, useCallback, useMemo, memo } from 'react';
-import { Bot, X, Info, Sliders, Sparkles, Loader2, Upload, ImageIcon } from 'lucide-react';
+import { History, X, Info, Sliders, Sparkles, Upload, Clock, Activity, Target, Layers, Video, Image as ImageIcon, Send, Bot, Loader2, Play } from 'lucide-react';
 import { ApiService } from '../../api';
 import { useLanguage } from '../../LanguageContext';
+import { MediaLibraryModal } from '../../components/MediaLibraryModal';
+import { VideoConfigModal } from './VideoConfigModal';
+import { VideoPlayerModal } from './VideoPlayerModal';
+import { AnimatePresence } from 'motion/react';
+import { toast } from 'sonner';
 
 interface AICreativeStudioProps {
   post: any;
   api: ApiService;
-  onSave: (data: { content: string, media: any[] }) => void;
+  onSave: (data: { content: string, media: any[] }, shouldPublish: boolean) => void;
   onClose: () => void;
   title?: string;
 }
@@ -19,6 +24,12 @@ export const AICreativeStudio: React.FC<AICreativeStudioProps> = memo(({ post, a
   const [isGeneratingImage, setIsGeneratingImage] = useState(false);
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [prompt, setPrompt] = useState(post.schedule?.advancedPrompt || '');
+  const [showMediaLibrary, setShowMediaLibrary] = useState(false);
+  const [isGeneratingVideo, setIsGeneratingVideo] = useState(false);
+  const [showVideoConfig, setShowVideoConfig] = useState(false);
+  const [videoResult, setVideoResult] = useState<{ videoId: string, url?: string, status: string } | null>(null);
+  const [showPlayer, setShowPlayer] = useState(false);
+  const [isPublishingVideo, setIsPublishingVideo] = useState(false);
   const { t } = useLanguage();
 
   // [js-early-exit] - Populate media once on mount
@@ -29,9 +40,14 @@ export const AICreativeStudio: React.FC<AICreativeStudioProps> = memo(({ post, a
     }
     try {
       const parsed = JSON.parse(post.imageUrl);
-      setMedia(Array.isArray(parsed) ? parsed : [{ type: 'image', data: post.imageUrl, id: Date.now().toString() }]);
+      const items = Array.isArray(parsed) ? parsed : [{ type: 'image', data: post.imageUrl }];
+      // Ensure every item has an ID for React keys
+      setMedia(items.map((item: any, idx: number) => ({
+        ...item,
+        id: item.id || `init_${idx}_${Date.now()}`
+      })));
     } catch (e) {
-      setMedia([{ type: 'image', data: post.imageUrl, id: Date.now().toString() }]);
+      setMedia([{ type: 'image', data: post.imageUrl, id: `err_${Date.now()}` }]);
     }
   }, [post.imageUrl]);
 
@@ -59,39 +75,96 @@ export const AICreativeStudio: React.FC<AICreativeStudioProps> = memo(({ post, a
         prompt: prompt 
       });
       if (data.imageUrl) {
-        setMedia(prev => [...prev, { type: 'image', data: data.imageUrl, id: Date.now().toString() }]);
+        setMedia(prev => [...prev, { type: 'image', data: data.imageUrl, id: `gen_${Math.random().toString(36).substring(7)}` }]);
       }
     } catch (err) {
        const keyword = post.topic?.split(' ')[0] || 'lifestyle';
        const mockUrl = `https://loremflickr.com/800/800/${encodeURIComponent(keyword)}?lock=${Date.now()}`;
-       setMedia(prev => [...prev, { type: 'image', data: mockUrl, id: Date.now().toString() }]);
+       setMedia(prev => [...prev, { type: 'image', data: mockUrl, id: `mock_${Math.random().toString(36).substring(7)}` }]);
     } finally {
       setIsGeneratingImage(false);
     }
   }, [post.topic, prompt, api]);
 
-  const handleFileUpload = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files) return;
-
-    Array.from(files).forEach((file: File) => {
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        if (event.target?.result) {
-          setMedia(prev => [...prev, {
-            type: file.type.startsWith('video/') ? 'video' : 'image',
-            data: event.target!.result as string,
-            id: Math.random().toString(36).substring(7)
-          }]);
-        }
-      };
-      reader.readAsDataURL(file);
-    });
-  }, []);
 
   const handleRemoveMedia = useCallback((id: string) => {
     setMedia(prev => prev.filter(i => i.id !== id));
   }, []);
+
+  const handleGenerateVideo = useCallback(async (videoConfig?: any) => {
+    if (!content.trim()) return;
+
+    if (!videoConfig) {
+      setShowVideoConfig(true);
+      return;
+    }
+
+    setShowVideoConfig(false);
+    setIsGeneratingVideo(true);
+    const tid = toast.loading('Synthesizing neural video...');
+    try {
+      const res = await api.ai.generateVideo(post.id, videoConfig);
+      if (res.alreadyExists) {
+        toast.dismiss();
+        toast.success('Using existing video from archive');
+        setVideoResult({ videoId: 'existing', url: res.videoUrl, status: 'ready' });
+        setShowPlayer(true);
+        // Also add to media list if not already there
+        setMedia(prev => {
+          if (prev.find(i => i.data === res.videoUrl)) return prev;
+          return [...prev, { type: 'video', data: res.videoUrl, id: `v_${Date.now()}` }];
+        });
+        return;
+      }
+
+      toast.dismiss();
+      toast.success('Synthesis started: ' + res.videoId);
+      setVideoResult({ videoId: res.videoId, status: 'processing' });
+      
+      const poll = setInterval(async () => {
+        try {
+          const status = await api.ai.getVideoStatus(res.videoId);
+          if (status.status === 'ready' || status.videoUrl) {
+            clearInterval(poll);
+            toast.success('Video synthesized successfully!');
+            setVideoResult({ videoId: res.videoId, url: status.videoUrl, status: 'ready' });
+            setMedia(prev => [...prev, { type: 'video', data: status.videoUrl, id: `v_${Date.now()}` }]);
+            setShowPlayer(true);
+          } else if (status.status === 'error') {
+            clearInterval(poll);
+            toast.error('Synthesis failed on server.');
+          }
+        } catch (e) { console.warn('Edit Modal Video Poll Failed', e); }
+      }, 5000);
+      setTimeout(() => clearInterval(poll), 300000);
+    } catch (err: any) {
+      toast.dismiss();
+      toast.error('Video generation failed: ' + err.message);
+    } finally {
+      setIsGeneratingVideo(false);
+    }
+  }, [post.id, api, content]);
+
+  const handlePublishVideo = async () => {
+    if (!videoResult?.url) return;
+    setIsPublishingVideo(true);
+    const tid = toast.loading('Publishing video to Fanpage...');
+    try {
+      // For standalone studio, we need a fanpage context if available, 
+      // but if not specified, we can't publish directly easily.
+      // However, AICreativeStudio usually has a post context which has a schedule -> fanpage
+      const fanpageId = post.schedule?.fanpageId;
+      if (!fanpageId) throw new Error('No target fanpage linked to this content.');
+
+      await api.ai.publishVideo(fanpageId, videoResult.url, content);
+      toast.success('Video published successfully!', { id: tid });
+      setShowPlayer(false);
+    } catch (err: any) {
+      toast.error('Publish failed: ' + err.message, { id: tid });
+    } finally {
+      setIsPublishingVideo(false);
+    }
+  };
 
   return (
     <div className="fixed inset-0 bg-app-bg/80 backdrop-blur-md flex items-center justify-center z-[200] p-4">
@@ -171,17 +244,30 @@ export const AICreativeStudio: React.FC<AICreativeStudioProps> = memo(({ post, a
                   >
                     <Sparkles size={14} className={`mr-1.5 inline ${isGeneratingImage ? 'animate-spin' : ''}`} /> {isGeneratingImage ? 'Sourcing...' : 'Find matching image'}
                   </button>
-                  <label className="cursor-pointer px-4 py-2 bg-slate-100 text-slate-950 rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-emerald-500 hover:text-white transition-all flex items-center gap-2">
+                  <button 
+                    onClick={() => setShowMediaLibrary(true)} 
+                    className="px-4 py-2 bg-slate-100 text-slate-950 rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-emerald-500 hover:text-white transition-all flex items-center gap-2"
+                  >
                     <Upload size={14} /> <span>Upload</span>
-                    <input type="file" multiple accept="image/*,video/*" className="hidden" onChange={handleFileUpload} />
-                  </label>
+                  </button>
                </div>
             </div>
             
             <div className="grid grid-cols-4 gap-6">
               {media.map(item => (
                 <div key={item.id} className="relative aspect-square rounded-2xl overflow-hidden bg-accent-bg border border-card-border group hover:border-emerald-500/50 transition-all duration-500">
-                  <img src={item.data} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
+                  {item.type === 'video' ? (
+                    <div className="w-full h-full bg-slate-900 flex items-center justify-center relative">
+                      <Video className="text-soft-blue opacity-40" size={32} />
+                      <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all">
+                        <button onClick={() => { setVideoResult({ videoId: 'preview', url: item.data, status: 'ready' }); setShowPlayer(true); }} className="nm-flat p-3 rounded-full text-soft-blue">
+                          <Play size={20} fill="currentColor" />
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <img src={item.data} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
+                  )}
                   <button onClick={() => handleRemoveMedia(item.id)} className="absolute top-3 right-3 bg-red-500 text-white p-2 rounded-lg opacity-0 group-hover:opacity-100 transition-all shadow-xl"><X size={16} /></button>
                 </div>
               ))}
@@ -202,15 +288,68 @@ export const AICreativeStudio: React.FC<AICreativeStudioProps> = memo(({ post, a
 
         {/* Footer */}
         <div className="px-8 py-6 border-t border-card-border flex justify-end items-center space-x-6 bg-card-bg/50 relative z-10">
-           <button onClick={onClose} className="text-[10px] font-black uppercase text-text-secondary hover:text-text-secondary tracking-widest transition-colors">Discard changes</button>
-           <button 
-             onClick={() => onSave({ content, media })} 
-             className="px-10 py-3.5 bg-emerald-500 text-white rounded-xl font-bold text-[11px] uppercase tracking-widest shadow-xl shadow-emerald-500/10 hover:bg-emerald-600 transition-all transform active:scale-95"
-           >
-             Save & Deploy Node
-           </button>
+            <button onClick={onClose} className="text-[10px] font-black uppercase text-text-secondary hover:text-text-primary tracking-widest transition-colors">Discard changes</button>
+            <div className="flex items-center gap-4">
+              <button 
+                onClick={handleGenerateVideo}
+                disabled={isGeneratingVideo || !content}
+                className="px-6 py-3.5 nm-button text-soft-blue flex items-center gap-3 text-[10px] font-black uppercase tracking-widest disabled:opacity-30 mr-2"
+              >
+                <Video size={18} className={isGeneratingVideo ? 'animate-bounce' : ''} />
+                <span>{isGeneratingVideo ? 'Synthesizing...' : 'Generate Video'}</span>
+              </button>
+              
+              <button 
+                onClick={() => onSave({ content, media }, false)} 
+                className="px-6 py-3.5 nm-button text-text-secondary hover:text-text-primary flex items-center gap-3 text-[10px] font-black uppercase tracking-widest"
+              >
+                Save Changes
+              </button>
+              <button 
+                onClick={() => onSave({ content, media }, true)} 
+                className="px-10 py-3.5 bg-gradient-to-r from-emerald-500 to-teal-600 text-white rounded-xl font-bold text-[11px] uppercase tracking-widest shadow-xl shadow-emerald-500/20 hover:brightness-110 transition-all transform active:scale-95 flex items-center gap-3"
+              >
+                <Send size={16} />
+                Publish Now
+              </button>
+            </div>
         </div>
       </div>
+
+      <AnimatePresence>
+        {showMediaLibrary && (
+          <MediaLibraryModal 
+            api={api}
+            onClose={() => setShowMediaLibrary(false)}
+            onSelect={(url) => {
+              setMedia(prev => [...prev, {
+                type: url.includes('/video/') || url.endsWith('.mp4') ? 'video' : 'image',
+                data: url,
+                id: Math.random().toString(36).substring(7)
+              }]);
+              setShowMediaLibrary(false);
+            }}
+          />
+        )}
+
+        {showVideoConfig && (
+          <VideoConfigModal 
+            api={api} 
+            onConfirm={handleGenerateVideo} 
+            onClose={() => setShowVideoConfig(false)} 
+          />
+        )}
+
+        {showPlayer && videoResult?.url && (
+          <VideoPlayerModal 
+            url={videoResult.url}
+            onClose={() => setShowPlayer(false)}
+            onPublish={handlePublishVideo}
+            isPublishing={isPublishingVideo}
+          />
+        )}
+      </AnimatePresence>
+
       <style>{`.custom-scrollbar::-webkit-scrollbar { width: 4px; height: 4px; } .custom-scrollbar::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 10px; } .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }`}</style>
     </div>
   );

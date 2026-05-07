@@ -13,6 +13,7 @@ import dashboardRoutes from './routes/dashboard.routes.js';
 import topicRoutes from './routes/topic.routes.js';
 import oauthRoutes from './routes/oauth.routes.js';
 import workflowRoutes from './routes/workflow.routes.js';
+import mediaRoutes from './routes/media.routes.js';
 import cors from 'cors';
 import helmet from 'helmet';
 import { rateLimit } from 'express-rate-limit';
@@ -23,7 +24,7 @@ const PROJECT_ROOT = path.resolve(__dirname, __filename ? '../' : './');
 
 const app = express();
 
-// Trust proxy for rate limiting (needed on Hugging Face Spaces)
+// Trust proxy for rate limiting
 app.set('trust proxy', 1);
 
 
@@ -42,10 +43,10 @@ const apiLimiter = rateLimit({
   message: { error: 'Too many requests, please try again later.' }
 });
 
-app.use('/api', apiLimiter);
+app.use(express.json({ limit: '100mb' }));
+app.use(express.urlencoded({ limit: '100mb', extended: true }));
 
-app.use(express.json({ limit: '20MB' }));
-app.use(express.urlencoded({ limit: '20MB', extended: true }));
+app.use('/api', apiLimiter);
 
 // Serve uploads
 app.use('/api/media', express.static(path.join(PROJECT_ROOT, 'public/uploads')));
@@ -69,7 +70,8 @@ app.use('/api/workflows', workflowRoutes);
 // Detailed Facebook/Fanpage routing
 app.use('/api/fanpages', fanpageRoutes);
 app.use('/api/facebook-apps', fbAppRoutes);
-app.use('/api/facebook', fanpageRoutes); // For /api/facebook/post and /api/facebook/exchange-token
+app.use('/api/facebook', fanpageRoutes); 
+app.use('/api/media-library', mediaRoutes); 
 
 // [OAUTH] Callback handler MUST be top-level or whatever redirect_uri is set to
 app.use('/auth', oauthRoutes);

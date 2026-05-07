@@ -2,14 +2,26 @@ import { prisma } from '../config/prisma.js';
 import { scheduleJob, activeCronJobs } from './cron.service.js';
 
 export async function listSchedules(userId: string) {
-    return prisma.schedule.findMany({
+    const schedules = await prisma.schedule.findMany({
         where: { userId },
-        include: { fanpage: { select: { name: true } } }
+        include: { 
+          fanpage: { select: { name: true } },
+          _count: {
+            select: { posts: { where: { status: 'queued' } } }
+          }
+        }
     });
+
+    // Flatten the _count to a simpler property if desired, or just use it as is.
+    return schedules.map(s => ({
+      ...s,
+      queuedCount: s._count.posts,
+      fanpageName: s.fanpage.name
+    }));
 }
 
 export async function createSchedule(userId: string, data: any) {
-    const { topic, time, advancedPrompt, runCount, fanpageId } = data;
+    const { topic, time, advancedPrompt, runCount, fanpageId, workflowId } = data;
     
     const schedule = await prisma.schedule.create({
         data: {
@@ -18,13 +30,37 @@ export async function createSchedule(userId: string, data: any) {
           advancedPrompt,
           runCount: parseInt(runCount?.toString() || '1'),
           fanpageId,
+          workflowId,
           userId,
           status: 'active'
         },
-        include: { fanpage: true }
+        include: { fanpage: true, workflow: true }
     });
 
     scheduleJob(schedule);
+    return schedule;
+}
+
+export async function updateSchedule(userId: string, id: string, data: any) {
+    const { topic, time, advancedPrompt, runCount, fanpageId, workflowId, status } = data;
+    
+    const schedule = await prisma.schedule.update({
+        where: { id, userId },
+        data: {
+          topic,
+          time,
+          advancedPrompt,
+          runCount: runCount !== undefined ? parseInt(runCount.toString()) : undefined,
+          fanpageId,
+          workflowId,
+          status: status || 'active'
+        },
+        include: { fanpage: true, workflow: true }
+    });
+
+    if (schedule.status === 'active') {
+        scheduleJob(schedule);
+    }
     return schedule;
 }
 

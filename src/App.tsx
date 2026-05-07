@@ -2,8 +2,9 @@ import React, { useState, useCallback, useEffect, useTransition, useMemo } from 
 import {
   LayoutDashboard, Facebook, Settings, Bell, Search, Menu,
   Activity, History, User as UserIcon, Clock, Bot, LogOut,
-  Plus, X, Sparkles, Loader2, Workflow, Sun, Moon
+  Plus, X, Sparkles, Loader2, Workflow, Sun, Moon, CheckCircle2, ListChecks
 } from 'lucide-react';
+import { Routes, Route, useNavigate, useLocation, Navigate } from 'react-router-dom';
 import { useLanguage } from './LanguageContext';
 import { CONFIG } from './config';
 import { useApiService } from './hooks/useApiService';
@@ -19,30 +20,41 @@ const AutomationView = React.lazy(() => import('./features/automation/Automation
 const AIContentView = React.lazy(() => import('./features/ai-studio/AIContentView').then(m => ({ default: m.AIContentView })));
 const HistoryView = React.lazy(() => import('./features/history/HistoryView').then(m => ({ default: m.HistoryView })));
 const AdminView = React.lazy(() => import('./features/admin/AdminView').then(m => ({ default: m.AdminView })));
+const ApprovalsView = React.lazy(() => import('./features/approvals/ApprovalsView').then(m => ({ default: m.ApprovalsView })));
 const SettingsView = React.lazy(() => import('./features/settings/SettingsView').then(m => ({ default: m.SettingsView })));
 const AuthView = React.lazy(() => import('./features/auth/AuthView').then(m => ({ default: m.AuthView })));
 const CampaignStudioView = React.lazy(() => import('./features/studio/CampaignStudioView').then(m => ({ default: m.CampaignStudioView })));
 const StrategyWorkflowView = React.lazy(() => import('./features/strategy/StrategyWorkflowView'));
 const ForcePasswordChangeView = React.lazy(() => import('./features/auth/ForcePasswordChangeView').then(m => ({ default: m.ForcePasswordChangeView })));
+const VideoQueueView = React.lazy(() => import('./features/ai-studio/VideoQueueView').then(m => ({ default: m.VideoQueueView })));
 
 // [rerender-memo-with-default-value] - Hoist static constants outside component
 const GET_NAV_ITEMS = (t: any, role?: string) => [
-  { id: 'dashboard', label: t('dashboard'), icon: LayoutDashboard },
-  { id: 'fanpages', label: t('fanpages'), icon: Facebook },
-  { id: 'automation', label: t('automation'), icon: Clock },
-  { id: 'studio', label: 'Campaign Studio', icon: Sparkles },
-  { id: 'strategy', label: 'Strategy Workflow', icon: Workflow },
-  { id: 'ai-content', label: t('aiContent'), icon: Bot },
-  { id: 'history', label: t('history'), icon: History },
-  ...(role === 'admin' ? [{ id: 'admin', label: t('admin'), icon: UserIcon }] : []),
-  { id: 'settings', label: t('settings'), icon: Settings },
+  { id: 'dashboard', label: t('dashboard'), icon: LayoutDashboard, path: '/dashboard' },
+  { id: 'fanpages', label: t('fanpages'), icon: Facebook, path: '/fanpages' },
+  { id: 'automation', label: t('automation'), icon: Clock, path: '/automation' },
+  { id: 'studio', label: t('studio'), icon: Sparkles, path: '/studio' },
+  { id: 'strategy', label: t('strategy'), icon: Workflow, path: '/strategy' },
+  { id: 'ai-content', label: t('aiContent'), icon: Bot, path: '/ai-content' },
+  { id: 'video-queue', label: 'Video Queue', icon: ListChecks, path: '/video-queue' },
+  { id: 'approvals', label: t('approvals'), icon: CheckCircle2, path: '/approvals' },
+  { id: 'history', label: t('history'), icon: History, path: '/history' },
+  ...(role === 'admin' ? [{ id: 'admin', label: t('admin'), icon: UserIcon, path: '/admin' }] : []),
+  { id: 'settings', label: t('settings'), icon: Settings, path: '/settings' },
 ];
 
 export default function App() {
   const [token, setToken] = useState<string | null>(localStorage.getItem('token'));
   const [user, setUser] = useState<User | null>(null);
-  const [activeTab, setActiveTab] = useState('dashboard');
-  const [isPending, startTransition] = useTransition(); // [rerender-transitions]
+  
+  const navigate = useNavigate();
+  const location = useLocation();
+  const activeTab = useMemo(() => {
+    const path = location.pathname.split('/')[1];
+    return path || 'dashboard';
+  }, [location.pathname]);
+
+  const [isPending, startTransition] = useTransition();
 
   const [isSidebarOpen, setIsSidebarOpen] = useState(window.innerWidth > 1024);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -159,7 +171,7 @@ export default function App() {
     try {
       // [REDIRECT-TO-SETTINGS] If no apps configured, go to settings instead of modal
       if (fbApps.length === 0) {
-        setActiveTab('settings');
+        navigate('/settings');
         return;
       }
 
@@ -188,11 +200,14 @@ export default function App() {
     } catch (err: any) { toast.error(err.message || 'Connect Error'); }
   }, [fbApps, token, authFetch]);
 
-  const handleTabChange = (tab: string) => {
-    startTransition(() => {
-      setActiveTab(tab);
-      setPreSelectedFanpageId(undefined);
-    });
+  const handleTabChange = (tabId: string) => {
+    const item = navItems.find(i => i.id === tabId);
+    if (item) {
+      startTransition(() => {
+        navigate(item.path);
+        setPreSelectedFanpageId(undefined);
+      });
+    }
   };
 
   // [rerender-memo] - Memoize view rendering
@@ -201,27 +216,28 @@ export default function App() {
       <React.Suspense fallback={
         <div className="flex flex-col items-center justify-center h-96 space-y-4 animate-pulse">
           <Loader2 className="w-12 h-12 text-indigo-500 animate-spin" />
-          <p className="text-[10px] font-black text-text-secondary uppercase tracking-[0.4em]">Optimizing Neural Bridge...</p>
+          <p className="text-[10px] font-black text-text-secondary uppercase tracking-[0.4em]">{t('optimizing')}</p>
         </div>
       }>
-        {(() => {
-          switch (activeTab) {
-            case 'dashboard': return <DashboardView api={api} onViewLog={() => handleTabChange('history')} />;
-            case 'fanpages': return <FanpageView fanpages={fanpages} onConnect={() => handleConnectFacebook()} onConfigure={(id) => { setPreSelectedFanpageId(id); handleTabChange('automation'); }} api={api} />;
-            case 'automation': return <AutomationView fanpages={fanpages} api={api} initialFanpageId={preSelectedFanpageId} />;
-            case 'ai-content': return <AIContentView fanpages={fanpages} api={api} />;
-            case 'history': return <HistoryView api={api} />;
-            case 'admin': return user?.role === 'admin' ? <AdminView api={api} /> : <DashboardView api={api} onViewLog={() => handleTabChange('history')} />;
-            case 'settings': return <SettingsView api={api} />;
-            case 'studio': return <CampaignStudioView api={api} />;
-            case 'planner': return <CampaignStudioView api={api} />;
-            case 'strategy': return <StrategyWorkflowView api={api} />;
-            default: return null;
-          }
-        })()}
+        <Routes>
+          <Route path="/" element={<Navigate to="/dashboard" replace />} />
+          <Route path="/dashboard" element={<DashboardView api={api} onViewLog={() => navigate('/history')} />} />
+          <Route path="/fanpages" element={<FanpageView fanpages={fanpages} onConnect={() => handleConnectFacebook()} onConfigure={(id) => { setPreSelectedFanpageId(id); navigate('/automation'); }} api={api} />} />
+          <Route path="/strategy" element={<StrategyWorkflowView api={api} fanpages={fanpages} />} />
+          <Route path="/automation" element={<AutomationView fanpages={fanpages} api={api} initialFanpageId={preSelectedFanpageId} />} />
+          <Route path="/ai-content" element={<AIContentView fanpages={fanpages} api={api} />} />
+          <Route path="/video-queue" element={<VideoQueueView api={api} />} />
+          <Route path="/approvals" element={<ApprovalsView api={api} />} />
+          <Route path="/history" element={<HistoryView api={api} />} />
+          <Route path="/admin" element={user?.role === 'admin' ? <AdminView api={api} /> : <Navigate to="/dashboard" replace />} />
+          <Route path="/settings" element={<SettingsView api={api} />} />
+          <Route path="/studio" element={<CampaignStudioView api={api} />} />
+          <Route path="/planner" element={<CampaignStudioView api={api} />} />
+          <Route path="*" element={<Navigate to="/dashboard" replace />} />
+        </Routes>
       </React.Suspense>
     );
-  }, [activeTab, api, fanpages, handleConnectFacebook, preSelectedFanpageId, user?.role]);
+  }, [api, fanpages, handleConnectFacebook, preSelectedFanpageId, user?.role, navigate, t]);
 
   const navItems = useMemo(() => GET_NAV_ITEMS(t, user?.role), [t, user?.role]);
 
@@ -232,7 +248,7 @@ export default function App() {
   }
 
   return (
-    <div className="h-screen overflow-hidden bg-app-bg flex font-sans selection:bg-soft-blue/30 p-2 sm:p-6 lg:p-8 gap-4 sm:gap-6 lg:gap-8 relative">
+    <div className="h-screen overflow-hidden bg-app-bg flex font-sans selection:bg-soft-blue/30 p-2 sm:p-4 lg:p-6 gap-4 relative">
       <Toaster position="top-right" expand={true} richColors theme={theme === 'dark' ? 'dark' : 'light'} />
       
       {/* Mobile Sidebar Overlay */}
@@ -248,17 +264,17 @@ export default function App() {
         className={`
         nm-sidebar h-[calc(100vh-16px)] sm:h-full transition-all duration-500 z-[100] flex flex-col overflow-hidden
         ${isMobileMenuOpen 
-          ? 'fixed top-2 left-2 bottom-2 shadow-2xl translate-x-0 w-72 p-4 sm:p-6 flex' 
-          : 'fixed -translate-x-full lg:relative lg:translate-x-0 w-0 lg:w-72 lg:p-6 lg:flex invisible lg:visible opacity-0 lg:opacity-100'}
+          ? 'fixed top-2 left-2 bottom-2 shadow-2xl translate-x-0 w-64 p-4 flex' 
+          : 'fixed -translate-x-full lg:relative lg:translate-x-0 w-0 lg:w-64 lg:p-4 lg:flex invisible lg:visible opacity-0 lg:opacity-100'}
       `}>
-        <div className="h-16 sm:h-20 flex items-center justify-between mb-6 sm:mb-10 px-2 sm:px-4">
+        <div className="h-16 flex items-center justify-between mb-6 px-2">
           <div className="flex items-center min-w-0">
             <div className="flex-shrink-0 w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-soft-blue to-indigo-600 rounded-xl sm:rounded-2xl flex items-center justify-center shadow-lg">
               <Bot size={20} className="text-white" />
             </div>
             <div className="w-48 ml-4 transition-all duration-500">
               <h1 className="text-xl sm:text-2xl font-black text-text-primary leading-none tracking-tight truncate">TDK AI</h1>
-              <p className="text-[10px] font-semibold text-text-muted mt-1.5 truncate">Management Engine</p>
+              <p className="text-[10px] font-semibold text-text-muted mt-1.5 truncate">AI Content Manager</p>
             </div>
           </div>
           <button onClick={() => setIsMobileMenuOpen(false)} className="text-text-muted hover:text-soft-pink lg:hidden">
@@ -278,11 +294,11 @@ export default function App() {
                   handleTabChange(item.id);
                   setIsMobileMenuOpen(false);
                 }}
-                className={`w-full flex items-center transition-all duration-300 group relative p-3 sm:p-4 rounded-xl sm:rounded-2xl
+                className={`w-full flex items-center transition-all duration-300 group relative p-3 rounded-xl
                   ${isActive
                     ? 'nm-button-active text-white font-bold'
                     : 'text-text-secondary hover:text-text-primary hover:bg-white/5'}
-                  space-x-4 sm:space-x-5
+                  space-x-3
                 `}
               >
                 <div className="flex-shrink-0">
@@ -297,8 +313,8 @@ export default function App() {
         </nav>
 
         <div className="pt-6 sm:pt-8 mt-auto border-t border-text-muted/10">
-          <button onClick={() => setLanguage(language === 'en' ? 'vi' : 'en')} className="w-full flex items-center p-2.5 bg-white/5 border border-white/10 rounded-xl hover:scale-[1.02] transition-all mb-4 sm:mb-8 space-x-3 sm:space-x-4">
-            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg sm:rounded-xl bg-app-bg flex items-center justify-center text-base sm:text-lg shrink-0 shadow-inner">{language === 'en' ? '🇺🇸' : '🇻🇳'}</div>
+          <button onClick={() => setLanguage(language === 'en' ? 'vi' : 'en')} className="w-full flex items-center p-2.5 bg-white/5 border border-white/10 rounded-xl hover:scale-[1.02] transition-all mb-4 space-x-3">
+            <div className="w-7 h-7 rounded-lg bg-app-bg flex items-center justify-center text-base shrink-0 shadow-inner">{language === 'en' ? '🇺🇸' : '🇻🇳'}</div>
             <div className="w-40 opacity-100 transition-all duration-500 overflow-hidden whitespace-nowrap">
               <p className="text-[10px] font-bold text-text-primary uppercase tracking-widest">{language === 'en' ? 'English' : 'Tiếng Việt'}</p>
             </div>
@@ -309,13 +325,13 @@ export default function App() {
               <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white shadow-lg font-bold text-xs sm:text-base shrink-0">{user?.name?.charAt(0) || 'U'}</div>
               <div className="flex-1 min-w-0 opacity-100 transition-all duration-500">
                 <p className="text-xs sm:text-sm font-bold text-text-primary truncate">{user?.name || 'User'}</p>
-                <p className="text-[9px] font-semibold text-text-muted uppercase tracking-wider">Admin</p>
+                <p className="text-[9px] font-semibold text-text-muted uppercase tracking-wider">{user?.role === 'admin' ? t('admin') : 'User'}</p>
               </div>
               <button onClick={handleLogout} className="text-text-muted hover:text-soft-pink transition-colors shrink-0"><LogOut size={16} /></button>
             </div>
             <div className="max-h-20 opacity-100 transition-all duration-500 overflow-hidden">
               <button className="w-full bg-gradient-to-r from-soft-blue to-indigo-600 text-white py-2.5 sm:py-3.5 rounded-lg sm:rounded-xl text-[10px] sm:text-xs font-bold tracking-wide shadow-lg hover:brightness-110 transition-all mt-2">
-                Upgrade
+                {t('upgrade')}
               </button>
             </div>
           </div>
@@ -336,7 +352,7 @@ export default function App() {
               <Search className="absolute left-4 sm:left-6 top-1/2 -translate-y-1/2 text-text-muted w-3.5 h-3.5 sm:w-5 sm:h-5" />
               <input
                 type="text"
-                placeholder="Search..."
+                placeholder={t('searching')}
                 className="nm-input pl-10 sm:pl-16 py-2 sm:py-4 text-[10px] sm:text-sm font-medium text-text-primary"
               />
             </div>
@@ -369,8 +385,8 @@ export default function App() {
               <div className="w-16 h-16 nm-flat text-soft-blue flex items-center justify-center mx-auto mb-6">
                 <Facebook size={32} />
               </div>
-              <h3 className="text-2xl font-black text-text-primary tracking-tight">Strategic Bridge</h3>
-              <p className="text-xs font-bold text-text-secondary mt-2">Connect your application endpoint</p>
+              <h3 className="text-2xl font-black text-text-primary tracking-tight">{t('connectNewPage')}</h3>
+              <p className="text-xs font-bold text-text-secondary mt-2">{t('chooseAppBridge')}</p>
             </div>
             <div className="space-y-4">
               {fbApps.map(app => (
@@ -381,7 +397,7 @@ export default function App() {
                 >
                   <div className="text-left">
                     <p className="text-[11px] font-black uppercase tracking-widest">{app.name}</p>
-                    <p className="text-[9px] text-text-secondary mt-1">ENDPOINT ID: {app.appId}</p>
+                    <p className="text-[9px] text-text-secondary mt-1">APP ID: {app.appId}</p>
                   </div>
                   <Plus size={18} className="group-hover:rotate-90 transition-transform" />
                 </button>

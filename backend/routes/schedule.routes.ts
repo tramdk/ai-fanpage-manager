@@ -22,6 +22,15 @@ router.post('/', authenticateToken, async (req: any, res) => {
     }
 });
 
+router.put('/:id', authenticateToken, async (req: any, res) => {
+    try {
+      const schedule = await scheduleService.updateSchedule(req.user.id, req.params.id, req.body);
+      res.json({ success: true, schedule });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+});
+
 router.get('/:id/posts', authenticateToken, async (req: any, res) => {
     try {
       const posts = await scheduleService.getSchedulePosts(req.user.id, req.params.id);

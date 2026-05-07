@@ -1,13 +1,23 @@
 import React, { useState, useEffect } from 'react';
-import { Facebook, CheckCircle2, Clock, Activity, TrendingUp, Users, DollarSign, BarChart3, ChevronRight, Zap, Target, Layers } from 'lucide-react';
+import { Facebook, CheckCircle2, Clock, Activity, TrendingUp, Users, DollarSign, BarChart3, ChevronRight, Zap, Target, Layers, Video } from 'lucide-react';
 import { StatusBadge } from '../../components/StatusBadge';
 import { Post } from '../../types';
 import { useLanguage } from '../../LanguageContext';
 import { ApiService } from '../../api';
 
 export const DashboardView = ({ api, onViewLog }: { api: ApiService, onViewLog?: () => void }) => {
-  const [stats, setStats] = useState({ totalFanpages: 0, totalPosts: 0, scheduledPosts: 0, totalWorkflows: 0, activeTopics: 0, growth: 0 });
-  const [trends, setTrends] = useState<number[]>([]);
+  const [stats, setStats] = useState({ 
+    totalFanpages: 0, 
+    totalPosts: 0, 
+    scheduledPosts: 0, 
+    errorPosts: 0,
+    totalSchedules: 0,
+    totalVideos: 0,
+    totalWorkflows: 0, 
+    activeTopics: 0, 
+    growth: 0 
+  });
+  const [trends, setTrends] = useState<{ label: string, created: number, published: number }[]>([]);
   const [period, setPeriod] = useState<'week' | 'month'>('week');
   const [recentPosts, setRecentPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
@@ -51,7 +61,7 @@ export const DashboardView = ({ api, onViewLog }: { api: ApiService, onViewLog?:
   }
 
   return (
-    <div className="space-y-16 pb-32 animate-in fade-in slide-in-from-bottom-6 duration-1000">
+    <div className="space-y-12 h-[calc(100vh-120px)] overflow-y-auto pr-4 custom-scrollbar pb-10 animate-in fade-in slide-in-from-bottom-6 duration-1000">
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-10">
         <div className="space-y-3">
           <h2 className="text-5xl font-black text-text-primary tracking-tighter leading-none">{t('workspaceOverview')}</h2>
@@ -65,11 +75,14 @@ export const DashboardView = ({ api, onViewLog }: { api: ApiService, onViewLog?:
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 sm:gap-12">
         {[
-          { label: 'Total Nodes', val: stats.totalFanpages, icon: <Users size={32} />, color: 'text-soft-blue', bg: 'bg-soft-blue/5', trend: `+${stats.growth}%`, since: 'last week' },
-          { label: 'Processed Data', val: stats.totalPosts, icon: <Zap size={32} />, color: 'text-soft-pink', bg: 'bg-soft-pink/5', trend: '+8.1%', since: 'last month' },
-          { label: 'Scheduled Ops', val: stats.scheduledPosts, icon: <Clock size={32} />, color: 'text-indigo-500', bg: 'bg-indigo-500/5', trend: '+2.4%', since: 'sync completed' }
+          { label: t('activeFanpages'), val: stats.totalFanpages, icon: <Target size={32} />, color: 'text-soft-blue', bg: 'bg-soft-blue/5', trend: `${stats.growth > 0 ? '+' : ''}${stats.growth}%`, since: t('growthComparison') },
+          { label: t('statusPublished'), val: stats.totalPosts, icon: <Zap size={32} />, color: 'text-soft-pink', bg: 'bg-soft-pink/5', trend: stats.errorPosts > 0 ? `-${stats.errorPosts} errors` : 'Stable', since: 'operational health' },
+          { label: t('aiInteractions'), val: stats.totalVideos, icon: <Video size={32} />, color: 'text-indigo-500', bg: 'bg-indigo-500/5', trend: `Active`, since: 'neural synthesis' },
+          { label: t('totalWorkflows'), val: stats.totalSchedules, icon: <Activity size={32} />, color: 'text-emerald-500', bg: 'bg-emerald-500/5', trend: 'Running', since: 'scheduled ops' },
+          { label: t('statusQueued'), val: stats.scheduledPosts, icon: <Clock size={32} />, color: 'text-amber-500', bg: 'bg-amber-500/5', trend: 'Queued', since: 'awaiting sync' },
+          { label: t('totalWorkflows'), val: stats.totalWorkflows, icon: <Layers size={32} />, color: 'text-purple-500', bg: 'bg-purple-500/5', trend: 'Active', since: 'system architecture' }
         ].map((s, idx) => (
-          <div key={idx} className="nm-flat p-6 sm:p-10 flex flex-col justify-between min-h-[220px] sm:h-64 group cursor-pointer hover:scale-[1.02] transition-all rounded-[32px] sm:rounded-[48px]">
+          <div key={idx} className="nm-flat p-6 sm:p-10 flex flex-col justify-between min-h-[200px] group cursor-pointer hover:scale-[1.02] transition-all rounded-[32px] sm:rounded-[40px]">
             <div className="flex justify-between items-start">
                <div>
                   <p className="text-[10px] sm:text-sm font-bold text-text-muted uppercase tracking-widest mb-1 sm:mb-2 opacity-60">{s.label}</p>
@@ -111,19 +124,35 @@ export const DashboardView = ({ api, onViewLog }: { api: ApiService, onViewLog?:
             </div>
           </div>
           
-          <div className="flex-1 flex items-end justify-between gap-2 sm:gap-8 px-2 sm:px-6 h-48 sm:h-72 mb-6 sm:mb-10">
-             {trends.length > 0 ? trends.map((count, i) => {
-               const max = Math.max(...trends, 1);
-               const height = Math.max((count / max) * 100, 8); 
-               const isActive = i === 3;
+          <div className="flex-1 flex items-end justify-between gap-2 sm:gap-6 px-2 sm:px-4 h-48 sm:h-60 mb-4 sm:mb-6">
+             {trends.length > 0 ? trends.map((item, i) => {
+               const max = Math.max(...trends.map(t => Math.max(t.created, t.published)), 1);
+               const createdHeight = (item.created / max) * 100;
+               const publishedHeight = (item.published / max) * 100;
+               
                return (
-                 <div key={i} className="flex-1 flex flex-col items-center gap-3 sm:gap-6">
-                    <div className="w-full relative group">
-                      <div className={`w-full rounded-lg sm:rounded-[24px] transition-all duration-1000 ${isActive ? 'bg-soft-blue shadow-[0_0_20px_rgba(59,130,246,0.3)]' : 'nm-flat bg-soft-blue/10'}`} style={{ height: `${height}%` }}>
-                         {isActive && <div className="absolute -top-10 left-1/2 -translate-x-1/2 nm-flat px-2 py-1 rounded-lg text-[8px] sm:text-[9px] font-black text-soft-blue">{count}</div>}
+                 <div key={i} className="flex-1 flex flex-col items-center justify-end h-full gap-3 sm:gap-6">
+                    <div className="w-full relative group flex items-end justify-center gap-1 sm:gap-2 h-[80%]">
+                      {/* Created Column */}
+                      <div 
+                        className="w-2 sm:w-6 bg-soft-blue/20 nm-flat rounded-t-md sm:rounded-t-xl transition-all duration-1000 relative group/bar" 
+                        style={{ height: `${Math.max(createdHeight, 4)}%` }}
+                      >
+                         <div className="absolute -top-10 left-1/2 -translate-x-1/2 bg-soft-blue text-white text-[10px] font-bold px-2 py-1 rounded opacity-0 group-hover/bar:opacity-100 transition-opacity z-20 whitespace-nowrap">
+                           Created: {item.created}
+                         </div>
+                      </div>
+                      {/* Published Column */}
+                      <div 
+                        className="w-2 sm:w-6 bg-emerald-500 rounded-t-md sm:rounded-t-xl shadow-[0_0_20px_rgba(16,185,129,0.3)] transition-all duration-1000 relative group/bar" 
+                        style={{ height: `${Math.max(publishedHeight, 4)}%` }}
+                      >
+                         <div className="absolute -top-10 left-1/2 -translate-x-1/2 bg-emerald-500 text-white text-[10px] font-bold px-2 py-1 rounded opacity-0 group-hover/bar:opacity-100 transition-opacity z-20 whitespace-nowrap">
+                           Pub: {item.published}
+                         </div>
                       </div>
                     </div>
-                    <span className="text-[8px] sm:text-[10px] font-black text-text-muted uppercase tracking-widest opacity-40">{['MON','TUE','WED','THU','FRI','SAT','SUN'][i]}</span>
+                    <span className="text-[9px] sm:text-[11px] font-black text-text-muted uppercase tracking-widest opacity-60">{item.label}</span>
                  </div>
                );
              }) : (
@@ -132,63 +161,62 @@ export const DashboardView = ({ api, onViewLog }: { api: ApiService, onViewLog?:
                </div>
              )}
           </div>
+
+          {/* Chart Legend */}
+          <div className="flex justify-center gap-8 pb-2">
+             <div className="flex items-center gap-3">
+                <div className="w-3 h-3 bg-soft-blue/40 rounded-sm"></div>
+                <span className="text-[10px] font-black text-text-muted uppercase tracking-widest">{t('nodesCreated')}</span>
+             </div>
+             <div className="flex items-center gap-3">
+                <div className="w-3 h-3 bg-emerald-500 rounded-sm shadow-[0_0_10px_rgba(16,185,129,0.3)]"></div>
+                <span className="text-[10px] font-black text-text-muted uppercase tracking-widest">{t('nodesPublished')}</span>
+             </div>
+          </div>
         </div>
 
-        {/* Right Column: Activity & Goals */}
-        <div className="space-y-6 sm:space-y-12">
-          <div className="nm-flat p-6 sm:p-10 flex flex-col h-[350px] sm:h-[450px] rounded-[40px] sm:rounded-[56px]">
-             <div className="flex items-center justify-between mb-10">
-               <div className="flex items-center gap-4">
-                  <Activity size={20} className="text-soft-blue" />
-                  <h3 className="text-xl font-black text-text-primary tracking-tight uppercase">{t('recentActivity')}</h3>
-               </div>
-               <button onClick={onViewLog} className="w-10 h-10 nm-button flex items-center justify-center text-soft-blue hover:scale-110 transition-all">
-                  <ChevronRight size={18} />
-               </button>
+        {/* Right Column: Activity Feed */}
+        <div className="nm-flat rounded-[48px] p-8 flex flex-col h-[450px]">
+          <div className="flex justify-between items-center mb-8">
+             <div className="flex items-center gap-6">
+                <div className="w-12 h-12 nm-flat flex items-center justify-center text-soft-blue">
+                   <Activity size={24} />
+                </div>
+                <h3 className="text-xl font-black text-text-primary uppercase tracking-tight">{t('recentActivity')}</h3>
              </div>
-             
-             <div className="space-y-8 flex-1 overflow-y-auto custom-scrollbar pr-4">
-                {recentPosts.slice(0, 6).map((post, idx) => (
-                  <div key={idx} className="flex items-center gap-6 group cursor-pointer hover:translate-x-2 transition-all">
-                    <div className="w-14 h-14 nm-flat flex items-center justify-center p-1 rounded-2xl">
-                       <div className="w-full h-full rounded-xl nm-inset flex items-center justify-center">
-                          <Layers size={16} className="text-soft-blue opacity-60 group-hover:opacity-100 transition-opacity" />
-                       </div>
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs font-black text-text-primary truncate uppercase tracking-tight group-hover:text-soft-blue transition-colors">{post.topic}</p>
-                      <div className="flex items-center gap-2 mt-1.5 opacity-50">
-                         <Clock size={10} />
-                         <p className="text-[9px] font-black text-text-muted uppercase">{new Date(post.createdAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</p>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-                {recentPosts.length === 0 && (
-                   <div className="flex flex-col items-center justify-center py-20 opacity-20">
-                      <Layers size={40} className="mb-4" />
-                      <p className="text-[10px] font-black text-text-muted uppercase tracking-widest text-center">No tactical feed available</p>
-                   </div>
-                )}
-             </div>
+             <button className="w-12 h-12 nm-button flex items-center justify-center text-text-muted hover:text-soft-blue transition-all">
+                <ChevronRight size={24} />
+             </button>
           </div>
 
-          <div className="nm-flat bg-soft-blue p-10 rounded-[56px] relative overflow-hidden group">
-            <div className="relative z-10">
-               <div className="flex items-center justify-between mb-8">
-                  <h4 className="text-2xl font-black tracking-tighter text-white uppercase">Neural Goal</h4>
-                  <div className="nm-flat bg-white/20 px-4 py-2 rounded-2xl">
-                     <span className="text-xs font-black text-white">82%</span>
+          <div className="flex-1 space-y-6 overflow-y-auto pr-2 custom-scrollbar">
+             {recentPosts.length > 0 ? recentPosts.map((post) => (
+               <div key={post.id} className="nm-inset p-6 rounded-[32px] flex items-center gap-6 group hover:scale-[1.02] transition-all">
+                  <div className="w-14 h-14 nm-flat flex items-center justify-center text-text-muted group-hover:text-soft-blue transition-colors rounded-2xl">
+                     {post.hasVideo ? <Video size={24} /> : <Layers size={24} />}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                     <h4 className="text-sm font-black text-text-primary uppercase tracking-tight truncate">{post.topic}</h4>
+                     <div className="flex items-center gap-4 mt-2">
+                        <span className="text-[10px] font-bold text-text-muted uppercase tracking-widest flex items-center gap-2">
+                           <Clock size={12} /> {new Date(post.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        </span>
+                        <div className="w-1 h-1 bg-text-muted/20 rounded-full"></div>
+                        <span className="text-[10px] font-bold text-soft-blue uppercase tracking-widest">{post.fanpageName}</span>
+                     </div>
                   </div>
                </div>
-               <p className="text-sm font-bold text-white/80 leading-relaxed mb-8">System performance has reached <span className="text-white">82%</span> of weekly tactical threshold.</p>
-               <div className="h-4 w-full nm-inset bg-black/10 rounded-full overflow-hidden p-1">
-                  <div className="h-full bg-white rounded-full transition-all duration-1000 shadow-[0_0_15px_rgba(255,255,255,0.6)]" style={{ width: '82%' }} />
+             )) : (
+               <div className="flex flex-col items-center justify-center py-20 opacity-20">
+                  <Activity size={48} className="mb-4" />
+                  <p className="text-xs font-black uppercase tracking-widest">{t('noData')}</p>
                </div>
-            </div>
-            <div className="absolute top-0 right-0 w-48 h-48 bg-white/10 blur-[80px] -mr-24 -mt-24 rounded-full group-hover:scale-150 transition-all duration-1000" />
-            <div className="absolute bottom-0 left-0 w-32 h-32 bg-black/5 blur-[60px] -ml-16 -mb-16 rounded-full" />
+             )}
           </div>
+
+          <button onClick={onViewLog} className="mt-6 w-full nm-button py-4 text-[10px] font-black text-text-muted hover:text-soft-blue uppercase tracking-widest transition-all">
+             {t('viewLog')}
+          </button>
         </div>
       </div>
       <style>{`

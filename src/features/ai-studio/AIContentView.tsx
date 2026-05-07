@@ -1,16 +1,21 @@
 import React, { useState, useEffect, useCallback, memo } from 'react';
-import { Plus, Sliders, Sparkles, Upload, X, Bot, FileText, CheckCircle, AlertCircle, Image as ImageIcon, Send, Loader2, RefreshCw } from 'lucide-react';
+import { AnimatePresence } from 'motion/react';
+import { Plus, Sliders, Sparkles, Upload, X, Bot, FileText, CheckCircle, AlertCircle, Image as ImageIcon, Send, Loader2, RefreshCw, Target, Video } from 'lucide-react';
 import { Fanpage, Topic } from '../../types';
 import { useLanguage } from '../../LanguageContext';
 import { ApiService } from '../../api';
 import { AutomationSettings, AutomationConfig } from '../automation/AutomationSettings';
+import { toast } from 'sonner';
+import { VideoConfigModal } from './VideoConfigModal';
+import { VideoPlayerModal } from './VideoPlayerModal';
+import { MediaLibraryModal } from '../../components/MediaLibraryModal';
 
 // [rerender-memo] - Ensure View component is memoized to avoid re-renders from parent
 export const AIContentView = memo(({ fanpages, api }: { fanpages: Fanpage[], api: ApiService }) => {
   const [topics, setTopics] = useState<Topic[]>([]);
   const [selectedTopic, setSelectedTopic] = useState('');
   const [generatedContent, setGeneratedContent] = useState('');
-  const [mediaItems, setMediaItems] = useState<{ type: 'image' | 'video', data: string, id: string, isAiGenerated?: boolean, file?: File }[]>([]);
+  const [mediaItems, setMediaItems] = useState<{ type: 'image' | 'video', data: string, id: string, isAiGenerated?: boolean }[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isGeneratingImage, setIsGeneratingImage] = useState(false);
   const [isGeneratingText, setIsGeneratingText] = useState(false);
@@ -18,6 +23,11 @@ export const AIContentView = memo(({ fanpages, api }: { fanpages: Fanpage[], api
 
   const [selectedFanpage, setSelectedFanpage] = useState(fanpages.find(p => p.status === 'active')?.id || '');
   const [isPosting, setIsPosting] = useState(false);
+  const [isGeneratingVideo, setIsGeneratingVideo] = useState(false);
+  const [showVideoConfig, setShowVideoConfig] = useState(false);
+  const [videoResult, setVideoResult] = useState<{ videoId: string, url?: string, status: string } | null>(null);
+  const [showPlayer, setShowPlayer] = useState(false);
+  const [isPublishingVideo, setIsPublishingVideo] = useState(false);
   const [postStatus, setPostStatus] = useState({ type: '', message: '' });
   const { t } = useLanguage();
 
@@ -30,6 +40,7 @@ export const AIContentView = memo(({ fanpages, api }: { fanpages: Fanpage[], api
     keywords: '',
     instructions: ''
   });
+  const [showMediaLibrary, setShowMediaLibrary] = useState(false);
 
   useEffect(() => {
     api.topics.list()
@@ -128,25 +139,6 @@ export const AIContentView = memo(({ fanpages, api }: { fanpages: Fanpage[], api
     }
   }, [selectedTopic, topics, handleGenerateText, handleGenerateImage]);
 
-  const handleFileUpload = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files) return;
-    Array.from(files).forEach((file: File) => {
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        if (event.target?.result) {
-          setMediaItems(prev => [...prev, {
-            type: file.type.startsWith('video/') ? 'video' : 'image',
-            data: event.target!.result as string,
-            id: Math.random().toString(36).substring(7),
-            isAiGenerated: false,
-            file
-          }]);
-        }
-      };
-      reader.readAsDataURL(file);
-    });
-  }, []);
 
   const handlePost = useCallback(async () => {
     if (!selectedFanpage || !generatedContent.trim()) return;
@@ -157,35 +149,13 @@ export const AIContentView = memo(({ fanpages, api }: { fanpages: Fanpage[], api
     setPostStatus({ type: '', message: '' });
 
     try {
-      const hasPhysicalFile = mediaItems.some(m => m.file);
-      let payload: any;
-      if (hasPhysicalFile) {
-        payload = new FormData();
-        payload.append('pageId', page.pageId);
-        payload.append('message', generatedContent);
-        payload.append('accessToken', page.accessToken);
-        payload.append('topic', topics.find(t => t.id === selectedTopic)?.name || 'Direct Content');
-
-        let stringMedia = [];
-        for (const item of mediaItems) {
-          if (item.file) {
-            payload.append('mediaFiles', item.file);
-          } else {
-            stringMedia.push({ type: item.type, data: item.data });
-          }
-        }
-        if (stringMedia.length > 0) {
-          payload.append('media', JSON.stringify(stringMedia));
-        }
-      } else {
-        payload = {
-          pageId: page.pageId,
-          message: generatedContent,
-          accessToken: page.accessToken,
-          media: mediaItems,
-          topic: topics.find(t => t.id === selectedTopic)?.name || 'Direct Content'
-        };
-      }
+      const payload = {
+        pageId: page.pageId,
+        message: generatedContent,
+        accessToken: page.accessToken,
+        media: mediaItems.map(m => ({ type: m.type, data: m.data })),
+        topic: topics.find(t => t.id === selectedTopic)?.name || 'Direct Content'
+      };
 
       await api.facebook.post(payload);
       setPostStatus({ type: 'success', message: 'Published Successful!' });
@@ -195,6 +165,123 @@ export const AIContentView = memo(({ fanpages, api }: { fanpages: Fanpage[], api
       setIsPosting(false);
     }
   }, [selectedFanpage, generatedContent, mediaItems, fanpages, topics, selectedTopic, api]);
+
+  const handleGenerateVideo = useCallback(async (videoConfig?: any) => {
+    if (!generatedContent.trim()) return;
+    
+    // Check if video already exists to prevent accidental re-render
+    if (videoResult?.url && !videoConfig) {
+      const reRender = window.confirm('A neural video has already been synthesized for this content. Do you want to re-configure and render a new version?');
+      if (!reRender) {
+        setShowPlayer(true);
+        return;
+      }
+    }
+
+    if (!videoConfig) {
+      setShowVideoConfig(true);
+      return;
+    }
+
+    setShowVideoConfig(false);
+    setIsGeneratingVideo(true);
+    try {
+      toast.loading('Saving draft & synthesizing video...');
+      
+      const topic = topics.find(t => t.id === selectedTopic);
+      const page = fanpages.find(p => p.id === selectedFanpage);
+      
+      const draftPost = await api.posts.queue({
+        topic: topic?.name || 'AI Generated',
+        content: generatedContent,
+        imageUrl: JSON.stringify(mediaItems.map(m => ({ type: m.type, data: m.data }))),
+        fanpageId: page?.pageId || undefined,
+      });
+
+      if (!draftPost.post?.id) throw new Error('Failed to create draft post');
+
+      const videoResultData = await api.ai.generateVideo(draftPost.post.id, videoConfig);
+      
+      if (videoResultData.alreadyExists) {
+        setVideoResult({ videoId: 'existing', url: videoResultData.videoUrl, status: 'ready' });
+        toast.dismiss();
+        toast.success('Using existing neural video found for this content.');
+        setShowPlayer(true);
+        return;
+      }
+
+      setVideoResult({ videoId: videoResultData.videoId, status: 'processing', url: undefined });
+      toast.dismiss();
+      toast.success(`Synthesis Protocol Complete: ${videoResultData.videoId}`);
+      
+      // Start polling for status
+      let failCount = 0;
+      const poll = setInterval(async () => {
+        try {
+          const status = await api.ai.getVideoStatus(videoResultData.videoId);
+          console.log('[POLL_STATUS]', status);
+
+          if (status && (status.status === 'ready' || status.status === 'completed' || status.videoUrl)) {
+            const videoUrl = status.videoUrl;
+            setVideoResult({ videoId: videoResultData.videoId, url: videoUrl, status: 'ready' });
+            
+            try {
+              const currentMedia = mediaItems || [];
+              const updatedMedia = [...currentMedia, { type: 'video', data: videoUrl, id: `v_${Date.now()}`, isAiGenerated: true }];
+              await api.posts.update(draftPost.post.id, {
+                imageUrl: JSON.stringify(updatedMedia)
+              });
+            } catch (saveErr) {
+              console.warn('Auto-save failed:', saveErr);
+            }
+
+            clearInterval(poll);
+            toast.success('Neural Video Synthesis Successful!');
+            setShowPlayer(true); 
+          } else if (status && status.status === 'error') {
+            clearInterval(poll);
+            toast.error('Synthesis Failed: Server-side error during rendering.');
+          }
+          failCount = 0; // Reset fail count on success
+        } catch (e: any) {
+          console.warn('Poll attempt failed:', e.message);
+          failCount++;
+          if (failCount > 10) { // Stop after 10 consecutive failures (approx 50s)
+            clearInterval(poll);
+            toast.error('Connection Lost: Synthesis monitoring suspended.');
+          }
+        }
+      }, 5000);
+
+      // Timeout poll after 5 mins
+      setTimeout(() => clearInterval(poll), 300000);
+    } catch (err: any) {
+      toast.dismiss();
+      toast.error('Synthesis Error: ' + err.message);
+    } finally {
+      setIsGeneratingVideo(false);
+    }
+  }, [generatedContent, selectedTopic, topics, selectedFanpage, mediaItems, api, fanpages]);
+
+  const handlePublishVideo = async () => {
+    if (!videoResult?.url || !selectedFanpage) {
+      toast.error('Synthesis Data Missing: Ensure fanpage is selected and video is ready.');
+      return;
+    }
+    setIsPublishingVideo(true);
+    toast.loading('Deploying neural video to Facebook...');
+    try {
+      await api.ai.publishVideo(selectedFanpage, videoResult.url, generatedContent);
+      toast.dismiss();
+      toast.success('Protocol Executed: Video published to Fanpage!');
+      setShowPlayer(false);
+    } catch (err: any) {
+      toast.dismiss();
+      toast.error('Deployment Failed: ' + err.message);
+    } finally {
+      setIsPublishingVideo(false);
+    }
+  };
 
   return (
     <div className="space-y-8 sm:space-y-12 max-w-6xl mx-auto animate-in fade-in slide-in-from-bottom-6 duration-700 pb-24 px-4 sm:px-6 lg:px-8">
@@ -209,8 +296,8 @@ export const AIContentView = memo(({ fanpages, api }: { fanpages: Fanpage[], api
               <Bot size={24} sm:size={32} />
             </div>
             <div>
-              <h3 className="text-lg sm:text-xl font-black text-text-primary tracking-tight uppercase leading-none">Neural Discover</h3>
-              <p className="text-[9px] sm:text-[10px] font-black text-text-muted uppercase tracking-[0.3em] mt-2 sm:mt-3">Autonomous Asset Sourcing</p>
+              <h3 className="text-lg sm:text-xl font-black text-text-primary tracking-tight uppercase leading-none">{t('aiGeneration')}</h3>
+              <p className="text-[9px] sm:text-[10px] font-black text-text-muted uppercase tracking-[0.3em] mt-2 sm:mt-3">AI Powered Content Engine</p>
             </div>
           </div>
           <button 
@@ -224,7 +311,7 @@ export const AIContentView = memo(({ fanpages, api }: { fanpages: Fanpage[], api
         {isAddingTopic && (
           <div className="mb-12 p-10 nm-inset rounded-[40px] animate-in zoom-in-95 duration-300">
             <div className="space-y-6">
-              <input type="text" placeholder="Protocol Alias (Name)" className="nm-input font-bold" value={newTopicName} onChange={e => setNewTopicName(e.target.value)} />
+              <input type="text" placeholder="Topic Name" className="nm-input font-bold" value={newTopicName} onChange={e => setNewTopicName(e.target.value)} />
               <input type="text" placeholder="Keywords (Comma separated)" className="nm-input font-bold" value={newTopicKeywords} onChange={e => setNewTopicKeywords(e.target.value)} />
               <div className="flex justify-end gap-6 pt-4">
                 <button onClick={() => setIsAddingTopic(false)} className="text-[10px] font-black uppercase text-text-muted hover:text-text-primary tracking-widest">{t('cancel')}</button>
@@ -237,15 +324,23 @@ export const AIContentView = memo(({ fanpages, api }: { fanpages: Fanpage[], api
         <div className="space-y-12 relative z-10">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
             <div className="space-y-4">
-              <label className="text-[10px] font-black text-text-muted uppercase tracking-widest block ml-4">{t('topicsKeywords')}</label>
-              <select 
-                className="nm-input font-black appearance-none" 
-                value={selectedTopic} 
-                onChange={e => setSelectedTopic(e.target.value)}
-              >
-                <option value="">-- {t('selectProtocol')} --</option>
-                {topics.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
-              </select>
+              <label className="text-[10px] font-black text-text-muted uppercase tracking-[0.2em] ml-4 flex items-center gap-2">
+                <Target size={12} className="text-soft-blue" />
+                {t('topicsKeywords')}
+              </label>
+              <div className="relative group">
+                <select 
+                  className="nm-input font-bold appearance-none cursor-pointer pr-12 text-text-primary" 
+                  value={selectedTopic} 
+                  onChange={e => setSelectedTopic(e.target.value)}
+                >
+                  <option value="">-- {t('selectProtocol')} --</option>
+                  {topics.map(t => <option key={t.id} value={t.id} className="bg-app-bg text-text-primary">{t.name}</option>)}
+                </select>
+                <div className="absolute right-5 top-1/2 -translate-y-1/2 pointer-events-none text-text-muted group-hover:text-soft-blue transition-colors">
+                  <Sliders size={16} />
+                </div>
+              </div>
             </div>
             <AutomationSettings
               config={automationConfig}
@@ -259,10 +354,10 @@ export const AIContentView = memo(({ fanpages, api }: { fanpages: Fanpage[], api
             <button 
               onClick={handleGenerate} 
               disabled={isGenerating || !selectedTopic} 
-              className="nm-button px-16 py-6 bg-soft-blue/5 text-soft-blue font-black uppercase text-[11px] tracking-[0.2em] flex items-center gap-6 disabled:opacity-30 group"
+              className="nm-button px-16 py-6 bg-gradient-to-r from-soft-blue/10 to-indigo-600/10 border-soft-blue/20 text-soft-blue font-black uppercase text-[11px] tracking-[0.3em] flex items-center gap-6 disabled:opacity-30 group hover:shadow-[0_0_30px_rgba(59,130,246,0.2)] transition-all"
             >
               <Sparkles className={`w-6 h-6 ${isGenerating ? 'animate-spin' : 'group-hover:rotate-12 transition-transform'}`} />
-              <span>{isGenerating ? t('loading') : 'Discover Protocol'}</span>
+              <span>{isGenerating ? t('loading') : t('generate')}</span>
             </button>
           </div>
         </div>
@@ -295,7 +390,7 @@ export const AIContentView = memo(({ fanpages, api }: { fanpages: Fanpage[], api
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-start">
             <div className="space-y-6">
               <div className="flex justify-between items-center px-4">
-                <label className="text-[10px] font-black text-text-muted uppercase tracking-widest">Neural Draft Output</label>
+                <label className="text-[10px] font-black text-text-muted uppercase tracking-widest">Draft Content Preview</label>
                 <button onClick={handleGenerateText} disabled={isGeneratingText} className="flex items-center gap-3 text-[10px] font-black uppercase text-soft-blue hover:opacity-70 transition-all disabled:opacity-30">
                   <RefreshCw size={14} className={isGeneratingText ? 'animate-spin' : ''} /> Regenerate
                 </button>
@@ -315,10 +410,12 @@ export const AIContentView = memo(({ fanpages, api }: { fanpages: Fanpage[], api
                   <button onClick={() => { const t = topics.find(t => t.id === selectedTopic); if (t) handleGenerateImage(t.name, t.keywords || [], true); }} disabled={isGeneratingImage} className="w-10 h-10 nm-button flex items-center justify-center text-text-muted hover:text-soft-blue transition-all">
                     <RefreshCw size={16} className={isGeneratingImage ? 'animate-spin' : ''} />
                   </button>
-                  <label className="nm-button px-6 py-2 flex items-center gap-3 cursor-pointer text-text-primary font-black uppercase text-[10px] tracking-widest hover:text-soft-blue">
+                  <button 
+                    onClick={() => setShowMediaLibrary(true)} 
+                    className="nm-button px-6 py-2 flex items-center gap-3 text-text-primary font-black uppercase text-[10px] tracking-widest hover:text-soft-blue"
+                  >
                     <Upload size={14} /> <span>Add</span>
-                    <input type="file" multiple accept="image/*,video/*" className="hidden" onChange={handleFileUpload} />
-                  </label>
+                  </button>
                 </div>
               </div>
 
@@ -331,7 +428,7 @@ export const AIContentView = memo(({ fanpages, api }: { fanpages: Fanpage[], api
                     </button>
                     {item.isAiGenerated && (
                       <div className="absolute bottom-4 left-4 nm-flat px-3 py-1.5 rounded-xl text-[8px] font-black text-soft-blue uppercase tracking-widest backdrop-blur-md bg-white/40">
-                        Neural Asset
+                        AI Image
                       </div>
                     )}
                   </div>
@@ -350,19 +447,63 @@ export const AIContentView = memo(({ fanpages, api }: { fanpages: Fanpage[], api
             </div>
           </div>
 
+          {videoResult && (
+            <div className="nm-inset p-8 rounded-[32px] border-l-4 border-soft-blue bg-soft-blue/5 animate-in slide-in-from-left-4 duration-500">
+              <div className="flex justify-between items-center">
+                <div className="flex items-center gap-6">
+                  <div className={`w-12 h-12 nm-flat flex items-center justify-center rounded-xl ${videoResult.status === 'ready' ? 'text-emerald-500' : 'text-soft-blue animate-pulse'}`}>
+                    <Video size={24} />
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-black text-text-primary uppercase tracking-tight">
+                      {videoResult.status === 'ready' ? 'Video Ready' : 'Processing Video...'}
+                    </h4>
+                    <p className="text-[10px] font-bold text-text-muted uppercase tracking-widest mt-1">
+                      ID: {videoResult.videoId}
+                    </p>
+                  </div>
+                </div>
+                {videoResult.url ? (
+                  <button 
+                    onClick={() => setShowPlayer(true)}
+                    className="nm-button px-8 py-3 text-[10px] font-black text-emerald-500 uppercase tracking-widest flex items-center gap-3"
+                  >
+                    <ImageIcon size={14} /> Preview Video
+                  </button>
+                ) : (
+                  <div className="flex items-center gap-3 text-[10px] font-black text-text-muted uppercase tracking-widest opacity-40">
+                    <Loader2 size={14} className="animate-spin" /> Rendering...
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
           <div className="flex flex-col md:flex-row items-center justify-between pt-12 border-t border-white/5 gap-10">
-            <select 
-              className="min-w-[320px] nm-input font-black appearance-none" 
-              value={selectedFanpage} 
-              onChange={e => setSelectedFanpage(e.target.value)}
-            >
-              <option value="">-- {t('selectProtocol')} --</option>
-              {fanpages.filter(p => p.status === 'active').map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-            </select>
+            <div className="flex flex-col sm:flex-row gap-6 w-full md:w-auto">
+              <select 
+                className="min-w-[280px] nm-input font-black appearance-none text-text-primary" 
+                value={selectedFanpage} 
+                onChange={e => setSelectedFanpage(e.target.value)}
+              >
+                <option value="">-- {t('selectProtocol')} --</option>
+                {fanpages.filter(p => p.status === 'active').map(p => <option key={p.id} value={p.id} className="bg-app-bg text-text-primary">{p.name}</option>)}
+              </select>
+              
+              <button 
+                onClick={() => handleGenerateVideo()}
+                disabled={isGeneratingVideo || !generatedContent}
+                className="nm-button px-8 py-6 text-soft-blue font-black uppercase text-[11px] tracking-widest flex items-center gap-3 hover:shadow-[0_0_20px_rgba(59,130,246,0.15)] disabled:opacity-30"
+              >
+                <Video size={18} className={isGeneratingVideo ? 'animate-bounce' : ''} />
+                <span>{isGeneratingVideo ? 'Processing...' : 'Generate Video'}</span>
+              </button>
+            </div>
+
             <button 
               onClick={handlePost} 
               disabled={isPosting || !selectedFanpage} 
-              className="nm-button px-20 py-6 text-text-primary font-black uppercase text-sm tracking-[0.3em] flex items-center gap-6 group hover:text-soft-blue"
+              className="nm-button px-16 sm:px-20 py-6 text-text-primary font-black uppercase text-sm tracking-[0.3em] flex items-center gap-6 group hover:text-soft-blue"
             >
               <Send className={`w-6 h-6 ${isPosting ? 'animate-pulse' : 'group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform'}`} />
               <span>{isPosting ? 'Deploying...' : t('publish')}</span>
@@ -370,6 +511,41 @@ export const AIContentView = memo(({ fanpages, api }: { fanpages: Fanpage[], api
           </div>
         </div>
       )}
+      {showVideoConfig && (
+        <VideoConfigModal 
+          api={api} 
+          onConfirm={handleGenerateVideo} 
+          onClose={() => setShowVideoConfig(false)} 
+        />
+      )}
+
+      {showPlayer && videoResult?.url && (
+        <VideoPlayerModal 
+          url={videoResult.url}
+          onClose={() => setShowPlayer(false)}
+          onPublish={handlePublishVideo}
+          isPublishing={isPublishingVideo}
+        />
+      )}
+      
+      <AnimatePresence>
+        {showMediaLibrary && (
+          <MediaLibraryModal 
+            api={api}
+            onClose={() => setShowMediaLibrary(false)}
+            onSelect={(url) => {
+              setMediaItems(prev => [...prev, {
+                type: url.includes('/video/') || url.endsWith('.mp4') ? 'video' : 'image',
+                data: url,
+                id: Math.random().toString(36).substring(7),
+                isAiGenerated: false
+              }]);
+              setShowMediaLibrary(false);
+            }}
+          />
+        )}
+      </AnimatePresence>
+
       <style>{`
         .custom-scrollbar::-webkit-scrollbar { width: 5px; height: 5px; } 
         .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.05); border-radius: 10px; }

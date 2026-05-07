@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { History, X, Info, Sliders, Sparkles, Upload, Clock, Activity, Target, Layers } from 'lucide-react';
+import { History, X, Info, Sliders, Sparkles, Upload, Clock, Activity, Target, Layers, Video } from 'lucide-react';
 import { StatusBadge } from '../../components/StatusBadge';
 import { AICreativeStudio } from '../ai-studio/AICreativeStudio';
 import { ApiService } from '../../api';
 import { Post } from '../../types';
 import { useLanguage } from '../../LanguageContext';
 import { toast } from 'sonner';
+import { VideoConfigModal } from '../ai-studio/VideoConfigModal';
+import { VideoPlayerModal } from '../ai-studio/VideoPlayerModal';
 
 export const HistoryView = ({ api }: { api: ApiService }) => {
   const [posts, setPosts] = useState<Post[]>([]);
@@ -13,6 +15,11 @@ export const HistoryView = ({ api }: { api: ApiService }) => {
   const [error, setError] = useState('');
   const { t } = useLanguage();
   const [editingPost, setEditingPost] = useState<Post | null>(null);
+  const [activePost, setActivePost] = useState<Post | null>(null);
+  const [showVideoConfig, setShowVideoConfig] = useState(false);
+  const [showVideoPlayer, setShowVideoPlayer] = useState(false);
+  const [isGeneratingVideo, setIsGeneratingVideo] = useState(false);
+  const [isPublishingVideo, setIsPublishingVideo] = useState(false);
 
   // Column Resizing Logic
   const [columnWidths, setColumnWidths] = useState({
@@ -61,8 +68,9 @@ export const HistoryView = ({ api }: { api: ApiService }) => {
     fetchPosts();
   }, [api]);
 
-  const handleSaveEdit = async (data: { content: string, media: any[] }) => {
+  const handleSaveEdit = async (data: { content: string, media: any[] }, shouldPublish: boolean = false) => {
     if (!editingPost) return;
+    const tid = toast.loading(shouldPublish ? 'Saving & Deploying...' : 'Saving changes...');
     try {
       const resp = await api.posts.update(editingPost.id, {
         content: data.content,
@@ -71,14 +79,130 @@ export const HistoryView = ({ api }: { api: ApiService }) => {
 
       if (resp.error) throw new Error(resp.error);
 
-      setPosts(posts.map(p => p.id === editingPost.id ? { 
-        ...p, 
+      const updatedPost = { 
+        ...editingPost, 
         content: data.content, 
         imageUrl: data.media.length > 0 ? JSON.stringify(data.media) : null 
-      } : p));
+      };
+
+      setPosts(posts.map(p => p.id === editingPost.id ? updatedPost : p));
       setEditingPost(null);
+      
+      toast.dismiss(tid);
+      
+      if (shouldPublish) {
+        setActivePost(updatedPost);
+        // We need to wait for state update or use a direct call
+        setTimeout(() => {
+          handlePublishVideo();
+        }, 100);
+      } else {
+        toast.success('Draft updated successfully.');
+      }
     } catch (err: any) {
+      toast.dismiss(tid);
       toast.error(err.message);
+    }
+  };
+
+  const handleVideoAction = (post: Post) => {
+    let cleanUrl = post.imageUrl || '';
+    
+    // Attempt to parse if it's a JSON string
+    if (cleanUrl.startsWith('[') || cleanUrl.startsWith('{')) {
+      try {
+        const parsed = JSON.parse(cleanUrl);
+        const items = Array.isArray(parsed) ? parsed : [parsed];
+        
+        // Strategy: Find the first item that looks like a video
+        const videoItem = items.find(item => {
+          const val = item.data || item.url || '';
+          return val.includes('/video/') || val.endsWith('.mp4') || val.endsWith('.webm') || val.includes('autoreels_videos');
+        });
+
+        if (videoItem) {
+          cleanUrl = videoItem.data || videoItem.url;
+        } else if (items.length > 0) {
+          // Fallback to first item if no video found
+          cleanUrl = items[0].data || items[0].url || '';
+        }
+      } catch (e) {
+        console.warn('Failed to parse imageUrl as JSON, using raw string');
+      }
+    }
+
+    setActivePost({ ...post, imageUrl: cleanUrl });
+    
+    // Check if it's actually a video link (must contain video keywords or extensions)
+    const isVideo = cleanUrl.includes('/video/') || cleanUrl.includes('autoreels_videos') || cleanUrl.endsWith('.mp4') || cleanUrl.endsWith('.webm');
+    
+    if (isVideo) {
+      setShowVideoPlayer(true);
+    } else {
+      setShowVideoConfig(true);
+    }
+  };
+
+  const handleGenerateVideo = async (config: any) => {
+    if (!activePost) return;
+    setShowVideoConfig(false);
+    setIsGeneratingVideo(true);
+    toast.loading('Initiating neural synthesis...');
+    
+    try {
+      const res = await api.ai.generateVideo(activePost.id, config);
+      
+      if (res.alreadyExists) {
+        toast.dismiss();
+        toast.success('Protocol: Existing video recovered from neural archive.');
+        setPosts(prev => prev.map(p => p.id === activePost.id ? { ...p, imageUrl: res.videoUrl } : p));
+        setActivePost({ ...activePost, imageUrl: res.videoUrl });
+        setShowVideoPlayer(true);
+        return;
+      }
+
+      toast.dismiss();
+      toast.success('Synthesis Protocol Active: ' + res.videoId);
+
+      // Simple Polling
+      const poll = setInterval(async () => {
+        try {
+          const status = await api.ai.getVideoStatus(res.videoId);
+          if (status.status === 'ready' || status.videoUrl) {
+            clearInterval(poll);
+            toast.success('Synthesis Successful!');
+            // Update local post state
+            setPosts(prev => prev.map(p => p.id === activePost.id ? { ...p, imageUrl: status.videoUrl } : p));
+            setActivePost({ ...activePost, imageUrl: status.videoUrl });
+            setShowVideoPlayer(true);
+          }
+        } catch (e) { console.warn('History poll fail', e); }
+      }, 5000);
+      setTimeout(() => clearInterval(poll), 300000);
+
+    } catch (err: any) {
+      toast.dismiss();
+      toast.error('Synthesis Failed: ' + err.message);
+    } finally {
+      setIsGeneratingVideo(false);
+    }
+  };
+
+  const handlePublishVideo = async () => {
+    if (!activePost?.imageUrl || !activePost.fanpageId) return;
+    setIsPublishingVideo(true);
+    toast.loading('Deploying to Facebook...');
+    try {
+      await api.ai.publishVideo(activePost.fanpageId, activePost.imageUrl, activePost.content);
+      toast.dismiss();
+      toast.success('Deployed: Video published to Fanpage!');
+      setPosts(prev => prev.map(p => p.id === activePost.id ? { ...p, fbPostId: 'published', status: 'published' } : p));
+      setShowVideoPlayer(false);
+    } catch (err: any) {
+      toast.dismiss();
+      toast.error('Deployment Error: ' + err.message);
+    } finally {
+      setIsPublishingVideo(false);
     }
   };
 
@@ -214,18 +338,27 @@ export const HistoryView = ({ api }: { api: ApiService }) => {
                          </div>
                       </td>
                       <td className="px-6 py-6 text-right">
-                        {post.status === 'queued' ? (
+                        <div className="flex justify-end gap-3">
                           <button
-                            onClick={() => setEditingPost(post)}
-                            className="nm-button px-5 py-2.5 rounded-xl text-xs font-bold text-text-muted hover:text-soft-blue transition-all active:scale-95"
+                            onClick={() => handleVideoAction(post)}
+                            className="nm-button p-2.5 rounded-xl text-soft-blue hover:scale-110 transition-all active:scale-95"
+                            title={post.imageUrl?.includes('cloudinary') ? "View/Publish Video" : "Generate AI Video"}
                           >
-                            {t('creativeStudio')}
+                            <Video size={18} className={isGeneratingVideo && activePost?.id === post.id ? 'animate-bounce' : ''} />
                           </button>
-                        ) : (
-                          <div className="nm-inset px-5 py-2.5 rounded-xl text-[10px] uppercase font-bold text-text-muted/30 tracking-widest inline-block">
-                            LOCKED
-                          </div>
-                        )}
+                          {post.status === 'queued' ? (
+                            <button
+                              onClick={() => setEditingPost(post)}
+                              className="nm-button px-5 py-2.5 rounded-xl text-xs font-bold text-text-muted hover:text-soft-blue transition-all active:scale-95"
+                            >
+                              {t('creativeStudio')}
+                            </button>
+                          ) : (
+                            <div className="nm-inset px-5 py-2.5 rounded-xl text-[10px] uppercase font-bold text-text-muted/30 tracking-widest inline-block">
+                              LOCKED
+                            </div>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -270,14 +403,22 @@ export const HistoryView = ({ api }: { api: ApiService }) => {
 
                     <div className="pt-2 border-t border-text-muted/5 flex justify-between items-center">
                        <span className="text-[9px] font-black text-text-muted uppercase tracking-widest opacity-40">Node ID: {post.id.substring(0, 8)}</span>
-                       {post.status === 'queued' && (
-                         <button 
-                           onClick={() => setEditingPost(post)}
-                           className="nm-button px-5 py-2 text-[10px] font-black uppercase text-soft-blue tracking-widest"
-                         >
-                            {t('creativeStudio')}
-                         </button>
-                       )}
+                       <div className="flex gap-2">
+                          <button
+                            onClick={() => handleVideoAction(post)}
+                            className="nm-button p-2.5 rounded-xl text-soft-blue"
+                          >
+                            <Video size={16} />
+                          </button>
+                         {post.status === 'queued' && (
+                           <button 
+                             onClick={() => setEditingPost(post)}
+                             className="nm-button px-5 py-2 text-[10px] font-black uppercase text-soft-blue tracking-widest"
+                           >
+                              {t('creativeStudio')}
+                           </button>
+                         )}
+                       </div>
                     </div>
                  </div>
                ))}
@@ -292,6 +433,24 @@ export const HistoryView = ({ api }: { api: ApiService }) => {
           onSave={handleSaveEdit} 
           onClose={() => setEditingPost(null)} 
           title="History Override Protocol"
+        />
+      )}
+
+      {showVideoConfig && (
+        <VideoConfigModal 
+          api={api} 
+          onConfirm={handleGenerateVideo} 
+          onClose={() => setShowVideoConfig(false)} 
+        />
+      )}
+
+      {showVideoPlayer && activePost?.imageUrl && (
+        <VideoPlayerModal 
+          url={activePost.imageUrl}
+          onClose={() => setShowVideoPlayer(false)}
+          onPublish={handlePublishVideo}
+          isPublishing={isPublishingVideo}
+          isPublished={!!activePost.fbPostId}
         />
       )}
       <style>{`

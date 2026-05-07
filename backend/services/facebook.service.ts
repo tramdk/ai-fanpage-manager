@@ -43,10 +43,17 @@ export async function postToFacebook(queuedPost: any, fanpage: any, decryptedTok
               formData.append('url', item.data);
            }
         } else {
-           formData.append('url', item.data);
+           if (item.type === 'video') {
+             formData.append('file_url', item.data);
+             // Also add description for videos
+             formData.append('description', queuedPost.content || '');
+           } else {
+             formData.append('url', item.data);
+           }
         }
         
-        fbRes = await fetch(`https://graph.facebook.com/v18.0/${fanpage.pageId}/photos`, {
+        const endpoint = item.type === 'video' ? 'videos' : 'photos';
+        fbRes = await fetch(`https://graph.facebook.com/v18.0/${fanpage.pageId}/${endpoint}`, {
           method: 'POST',
           body: formData
         });

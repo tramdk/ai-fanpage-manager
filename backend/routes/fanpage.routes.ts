@@ -40,18 +40,12 @@ router.delete('/:id', authenticateToken, async (req: any, res) => {
     }
 });
 
-router.post('/post', authenticateToken, upload.array('mediaFiles'), async (req: any, res) => {
-    const { pageId, message } = req.body;
-    let media = [];
+router.post('/post', authenticateToken, async (req: any, res) => {
+    const { pageId, message, media } = req.body;
+    
     try {
-      if (req.body.media) media = JSON.parse(req.body.media);
-    } catch {
-      media = req.body.media ? (Array.isArray(req.body.media) ? req.body.media : [req.body.media]) : [];
-    }
-
-    try {
-      const result = await fanpageService.postDirectly(req.user.id, pageId, message, media, req.files as any[]);
-      res.json({ success: true, fbId: result.id });
+      const result = await fanpageService.postDirectly(req.user.id, pageId, message, media);
+      res.json({ success: true, fbId: result.id || result.post_id });
     } catch (error: any) {
       res.status(500).json({ error: error.message });
     }

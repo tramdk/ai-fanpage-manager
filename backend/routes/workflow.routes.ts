@@ -87,18 +87,41 @@ router.post('/:id/execute', authenticateToken, async (req: any, res) => {
     const nodes = JSON.parse(workflow.nodesData || '[]');
     const edges = JSON.parse(workflow.edgesData || '[]');
 
-    const engine = new WorkflowEngine(req.user.id, nodes, edges);
-    
-    // Pass execution parameters from body if any
-    const result = await engine.run(req.body);
+    const batchCount = parseInt(req.body.batchCount as string) || 1;
+    const postsToRequestVideos: { postId: string, options: any }[] = [];
+    const executionResults = [];
+
+    // Phase 1: Generate all content (Text/Images) and create posts
+    for (let i = 0; i < batchCount; i++) {
+      const engine = new WorkflowEngine(req.user.id, nodes, edges);
+      const result = await engine.run(req.body);
+      
+      // If the workflow generated a video request, collect it for bulk sending
+      if (result.currentPostId && result.needsVideo) {
+        postsToRequestVideos.push({
+          postId: result.currentPostId,
+          options: result.videoOptions
+        });
+      }
+
+      executionResults.push({
+        postId: result.currentPostId,
+        textGenerated: !!result.lastText,
+        imageGenerated: !!result.lastImage
+      });
+    }
+
+    // Phase 2: Send Bulk Video Request if needed
+    if (postsToRequestVideos.length > 0) {
+      console.log(`[WORKFLOW BATCH] Sending bulk video request for ${postsToRequestVideos.length} posts`);
+      const autoreelsService = await import('../services/autoreels.service.js');
+      await autoreelsService.generateVideoBatch(postsToRequestVideos);
+    }
 
     res.json({ 
       success: true, 
-      message: 'Workflow executed successfully', 
-      result: {
-        textGenerated: !!result.lastText,
-        imageGenerated: !!result.lastImage
-      }
+      message: batchCount > 1 ? `Batch of ${batchCount} processed (Bulk Video Sync enabled)` : 'Workflow executed successfully', 
+      results: executionResults
     });
   } catch (error: any) {
     console.error('[WORKFLOW ROUTE ERROR]', error);

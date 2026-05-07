@@ -6,6 +6,7 @@ import {
 import { ApiService } from '../../api';
 import { Post, Schedule, Fanpage } from '../../types';
 import { AICreativeStudio } from '../ai-studio/AICreativeStudio';
+import { toast } from 'sonner';
 
 // [rendering-memo] - Ensure performance for many list items
 const PostPreviewCard = memo(({ post, onEdit }: { post: any; onEdit: (post: any) => void }) => {
@@ -124,13 +125,38 @@ const CampaignPlannerView: React.FC<{ api: ApiService }> = ({ api }) => {
     allPosts.filter(p => p.scheduleId === selectedCampaignForMap).sort((a, b) => a.orderIndex - b.orderIndex), 
   [allPosts, selectedCampaignForMap]);
 
-  const handleUpdateStrategicPost = useCallback(async (data: any) => {
+  const handleUpdateStrategicPost = useCallback(async (data: any, shouldPublish: boolean = false) => {
     if (!editingPost) return;
+    const tid = toast.loading(shouldPublish ? 'Deploying to Neural Hub...' : 'Updating logic...');
     try {
-      await api.posts.update(editingPost.id, { content: data.content, imageUrl: data.media.length > 0 ? JSON.stringify(data.media) : null });
-      setEditingPost(null); fetchPlannerData();
-    } catch (err) { alert("Deployment Failed"); }
-  }, [editingPost, api, fetchPlannerData]);
+      await api.posts.update(editingPost.id, { 
+        content: data.content, 
+        imageUrl: data.media.length > 0 ? JSON.stringify(data.media) : null 
+      });
+
+      if (shouldPublish) {
+        // Find the fanpage for this post
+        const fanpageId = selectedFanpage; 
+        if (fanpageId) {
+          // Priority: Video > Image
+          const videoItem = data.media.find((m: any) => m.type === 'video');
+          const mediaUrl = videoItem ? videoItem.data : (data.media.length > 0 ? data.media[0].data : null);
+          
+          await api.ai.publishVideo(fanpageId, mediaUrl, data.content);
+          toast.success('Deployed: Node published successfully!', { id: tid });
+        } else {
+          toast.success('Updated: Node saved (No fanpage selected for instant deploy)', { id: tid });
+        }
+      } else {
+        toast.success('Strategic node updated.', { id: tid });
+      }
+
+      setEditingPost(null); 
+      fetchPlannerData();
+    } catch (err: any) { 
+      toast.error("Deployment Failure: " + err.message, { id: tid }); 
+    }
+  }, [editingPost, api, fetchPlannerData, selectedFanpage]);
 
   const handleTabChange = useCallback((tab: string) => {
     startTransition(() => { setActiveTab(tab); });

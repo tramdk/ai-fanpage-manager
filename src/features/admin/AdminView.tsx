@@ -38,7 +38,7 @@ export const AdminView = ({ api }: { api: ApiService }) => {
   };
 
   const handleRevoke = async (id: string) => {
-    if (!window.confirm('Are you sure you want to revoke all credentials for this user? This is a high-security administrative action.')) return;
+    if (!window.confirm('Are you sure you want to delete all access for this user? This action cannot be undone.')) return;
     try {
       await api.admin.revokeCredentials(id);
       fetchUsers();
@@ -89,7 +89,7 @@ export const AdminView = ({ api }: { api: ApiService }) => {
         <div className="hidden md:flex items-center gap-6">
            <div className="nm-inset px-8 py-4 flex items-center gap-3">
               <User size={16} className="text-soft-blue" />
-              <span className="text-xs font-black text-text-primary uppercase">Active Nodes: {users.length}</span>
+              <span className="text-xs font-black text-text-primary uppercase">Active Users: {users.length}</span>
            </div>
            <button onClick={fetchUsers} className="w-14 h-14 nm-button flex items-center justify-center text-soft-blue">
              <RefreshCw size={20} />
@@ -113,10 +113,10 @@ export const AdminView = ({ api }: { api: ApiService }) => {
             <table className="w-full text-left">
               <thead>
                 <tr className="text-text-muted text-[10px] font-black uppercase tracking-[0.2em] border-b border-text-muted/5">
-                  <th className="px-10 py-10">Unit Identification</th>
-                  <th className="px-10 py-10">Access Credentials</th>
-                  <th className="px-10 py-10">Protocol Status</th>
-                  <th className="px-10 py-10 text-right">Admin Override</th>
+                  <th className="px-10 py-10">User Info</th>
+                  <th className="px-10 py-10">Email / Role</th>
+                  <th className="px-10 py-10">Status</th>
+                  <th className="px-10 py-10 text-right">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-text-muted/5">
@@ -129,15 +129,13 @@ export const AdminView = ({ api }: { api: ApiService }) => {
                         </div>
                         <div>
                           <h3 className="text-base font-black text-text-primary uppercase tracking-tight leading-tight">{u.name}</h3>
-                          <p className="text-[10px] font-black text-text-muted uppercase tracking-widest mt-2">UNIT_ID: {u.id.substring(0, 8)}</p>
+                          <p className="text-[10px] font-black text-text-muted uppercase tracking-widest mt-2">USER_ID: {u.id.substring(0, 8)}</p>
                         </div>
                       </div>
                     </td>
                     <td className="px-10 py-10">
                       <div className="text-sm font-black text-text-primary mb-1">{u.email}</div>
-                      <div className={`text-[9px] font-black uppercase tracking-widest ${u.role === 'admin' ? 'text-soft-blue' : 'text-text-muted'}`}>
-                        {u.role === 'admin' ? 'COMMAND_AUTH' : 'Standard Logic'}
-                      </div>
+                        {u.role === 'admin' ? 'ADMIN' : 'User'}
                     </td>
                     <td className="px-10 py-10">
                       <div className={`nm-inset px-5 py-2.5 rounded-2xl inline-flex items-center gap-3 text-[10px] font-black uppercase tracking-widest ${u.status === 'suspended' ? 'text-soft-pink' : 'text-emerald-500'}`}>
@@ -168,7 +166,7 @@ export const AdminView = ({ api }: { api: ApiService }) => {
                             onClick={() => handleRevoke(u.id)}
                             className="px-6 py-3 nm-button bg-soft-pink text-white text-[10px] font-black uppercase tracking-widest shadow-xl hover:brightness-110"
                           >
-                            Revoke Access
+                            Delete Access
                           </button>
                         )}
                       </div>
@@ -199,7 +197,7 @@ export const AdminView = ({ api }: { api: ApiService }) => {
                   </div>
 
                   <div className="nm-inset p-4 rounded-2xl">
-                     <p className="text-[8px] font-black text-text-muted uppercase tracking-[0.2em] mb-1">Access Credential</p>
+                     <p className="text-[8px] font-black text-text-muted uppercase tracking-[0.2em] mb-1">Email</p>
                      <p className="text-xs font-bold text-text-primary truncate">{u.email}</p>
                   </div>
 
@@ -221,7 +219,7 @@ export const AdminView = ({ api }: { api: ApiService }) => {
                          onClick={() => handleRevoke(u.id)}
                          className="col-span-2 nm-button py-4 bg-soft-pink text-white text-[9px] font-black uppercase tracking-widest flex items-center justify-center gap-2 shadow-lg"
                        >
-                          <Trash2 size={14} /> Revoke access protocol
+                          <Trash2 size={14} /> Delete access
                        </button>
                      )}
                   </div>
@@ -232,7 +230,7 @@ export const AdminView = ({ api }: { api: ApiService }) => {
           {users.length === 0 && (
             <div className="p-20 text-center text-text-muted">
                <User size={48} className="mx-auto mb-6 opacity-20" />
-               <p className="text-[11px] font-black uppercase tracking-[0.2em]">No neural units registered</p>
+               <p className="text-[11px] font-black uppercase tracking-[0.2em]">No users registered</p>
             </div>
           )}
         </div>

@@ -138,7 +138,7 @@ export const FanpageView = ({ fanpages, onConnect, onConfigure, api }: { fanpage
                     <h3 className={`text-xl font-black uppercase tracking-tight truncate ${isExpired ? 'text-text-muted line-through opacity-50' : 'text-text-primary'}`}>
                       {page.name}
                     </h3>
-                    <p className="text-[10px] font-black text-text-muted uppercase tracking-widest mt-2">Node ID: {page.pageId}</p>
+                    <p className="text-[10px] font-black text-text-muted uppercase tracking-widest mt-2">Page ID: {page.pageId}</p>
                   </div>
                 </div>
 
@@ -179,7 +179,7 @@ export const FanpageView = ({ fanpages, onConnect, onConfigure, api }: { fanpage
                         className="col-span-2 nm-button p-4 flex items-center justify-center text-soft-blue text-[10px] font-black uppercase tracking-widest gap-3"
                       >
                         <Key size={16} />
-                        <span>Update Security Token</span>
+                        <span>Update Access Token</span>
                       </button>
                     </>
                   )}
@@ -201,8 +201,8 @@ export const FanpageView = ({ fanpages, onConnect, onConfigure, api }: { fanpage
               <thead>
                 <tr className="text-text-muted text-[10px] font-black uppercase tracking-[0.2em]">
                   <th className="px-10 py-8">{t('fanpages')}</th>
-                  <th className="px-10 py-8">Connection Health</th>
-                  <th className="px-10 py-8">Neural Status</th>
+                  <th className="px-10 py-8">Last Sync</th>
+                  <th className="px-10 py-8">Status</th>
                   <th className="px-10 py-8 text-right">{t('actions')}</th>
                 </tr>
               </thead>
@@ -222,7 +222,7 @@ export const FanpageView = ({ fanpages, onConnect, onConfigure, api }: { fanpage
                     </td>
                     <td className="px-10 py-8">
                       <div className="text-xs font-black text-text-primary italic">{new Date(page.connectedAt).toLocaleDateString()}</div>
-                      <div className="text-[9px] text-text-muted font-black uppercase tracking-widest mt-1">LAST SYNC PROTOCOL</div>
+                      <div className="text-[9px] text-text-muted font-black uppercase tracking-widest mt-1">LAST SYNC</div>
                     </td>
                     <td className="px-10 py-8">
                       <div className={`nm-inset px-5 py-2 rounded-2xl inline-flex items-center gap-3 text-[10px] font-black uppercase tracking-widest ${page.status === 'expired' ? 'text-soft-pink' : 'text-emerald-500'}`}>
@@ -264,8 +264,8 @@ export const FanpageView = ({ fanpages, onConnect, onConfigure, api }: { fanpage
                   <ShieldCheck size={32} />
                </div>
                <div>
-                  <h3 className="text-2xl font-black text-text-primary uppercase tracking-tight leading-none">Security Protocol</h3>
-                  <p className="text-[10px] font-black text-text-secondary uppercase tracking-widest mt-2">Node Access Update: {targetPage?.name}</p>
+                  <h3 className="text-2xl font-black text-text-primary uppercase tracking-tight leading-none">Update Access Token</h3>
+                  <p className="text-[10px] font-black text-text-secondary uppercase tracking-widest mt-2">Updating Access: {targetPage?.name}</p>
                </div>
             </div>
 
@@ -273,15 +273,15 @@ export const FanpageView = ({ fanpages, onConnect, onConfigure, api }: { fanpage
               <div className="nm-inset p-8 rounded-[40px] space-y-6">
                 <div className="flex items-center gap-3 text-soft-blue">
                   <Info size={18} />
-                  <span className="text-[10px] font-black uppercase tracking-[0.2em]">Persistent Token Protocol</span>
+                  <span className="text-[10px] font-black uppercase tracking-[0.2em]">Update Instructions</span>
                 </div>
 
                 <div className="space-y-4">
                   {[
                     "Access Meta Developers & Graph API Explorer.",
                     "Authorize: pages_manage_posts, pages_read_engagement.",
-                    "Select tactical Fanpage node.",
-                    "Deploy long-lived User Token to generate Perpetual Page Token."
+                    "Select Fanpage.",
+                    "Copy the long-lived Page Access Token."
                   ].map((step, i) => (
                     <div key={i} className="flex items-start gap-4">
                       <div className="w-6 h-6 rounded-lg nm-flat flex flex-shrink-0 items-center justify-center text-[10px] font-black text-soft-blue">{i + 1}</div>
@@ -309,7 +309,7 @@ export const FanpageView = ({ fanpages, onConnect, onConfigure, api }: { fanpage
                     onClick={() => setShowTokenModal(false)}
                     className="flex-1 nm-button py-5 text-[10px] font-black uppercase tracking-widest"
                   >
-                    Abort
+                    Cancel
                   </button>
                   <button
                     type="submit"
@@ -317,7 +317,7 @@ export const FanpageView = ({ fanpages, onConnect, onConfigure, api }: { fanpage
                     className="flex-[2] bg-soft-blue text-white py-5 rounded-3xl font-black uppercase tracking-widest text-[11px] shadow-xl hover:brightness-110 transition-all flex items-center justify-center gap-4 disabled:opacity-30"
                   >
                     {isUpdatingToken ? <RefreshCw className="w-5 h-5 animate-spin" /> : <CheckCircle2 size={20} />}
-                    <span>{isUpdatingToken ? 'SYCHRONIZING...' : 'UPDATE PROTOCOL'}</span>
+                    <span>{isUpdatingToken ? 'SAVING...' : 'UPDATE TOKEN'}</span>
                   </button>
                 </div>
               </form>

@@ -33,32 +33,37 @@ export const AutomationSettings: React.FC<AutomationSettingsProps> = ({ config, 
       </button>
 
       {show && (
-        <div className="nm-inset p-10 animate-in slide-in-from-top-4 duration-500 space-y-10 rounded-[48px]">
+        <div className="nm-inset p-8 sm:p-12 animate-in slide-in-from-top-4 duration-500 space-y-10 rounded-[40px] sm:rounded-[48px]">
            <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
              {/* Tone */}
              <div className="space-y-4">
-                <label className="text-[10px] font-black text-text-muted uppercase tracking-widest block ml-4">Neural Tone / Ngữ điệu</label>
-                <select 
-                  className="nm-input font-bold" 
-                  value={config.tone} 
-                  onChange={e => onChange({ ...config, tone: e.target.value })}
-                >
-                   <option value="professional and elegant">Professional & Elegant</option>
-                   <option value="fun and energetic">Fun & Energetic</option>
-                   <option value="storytelling">Storytelling</option>
-                   <option value="direct and promotional">Direct & Promotional</option>
-                   <option value="urgent and compelling">Urgent & Compelling</option>
-                   <option value="empathetic">Empathetic / Sâu lắng</option>
-                </select>
+                <label className="text-[10px] font-black text-text-muted uppercase tracking-[0.2em] block ml-4">Neural Tone / Ngữ điệu</label>
+                <div className="relative group">
+                  <select 
+                    className="nm-input font-bold appearance-none cursor-pointer text-text-primary pr-12" 
+                    value={config.tone} 
+                    onChange={e => onChange({ ...config, tone: e.target.value })}
+                  >
+                     <option value="professional and elegant" className="bg-app-bg text-text-primary">Professional & Elegant</option>
+                     <option value="fun and energetic" className="bg-app-bg text-text-primary">Fun & Energetic</option>
+                     <option value="storytelling" className="bg-app-bg text-text-primary">Storytelling</option>
+                     <option value="direct and promotional" className="bg-app-bg text-text-primary">Direct & Promotional</option>
+                     <option value="urgent and compelling" className="bg-app-bg text-text-primary">Urgent & Compelling</option>
+                     <option value="empathetic" className="bg-app-bg text-text-primary">Empathetic / Sâu lắng</option>
+                  </select>
+                  <div className="absolute right-5 top-1/2 -translate-y-1/2 pointer-events-none text-text-muted group-hover:text-soft-blue transition-colors">
+                    <Sliders size={16} />
+                  </div>
+                </div>
              </div>
              
              {/* Keywords */}
              <div className="space-y-4">
-                <label className="text-[10px] font-black text-text-muted uppercase tracking-widest block ml-4">Neural Keywords / Từ khóa</label>
+                <label className="text-[10px] font-black text-text-muted uppercase tracking-[0.2em] block ml-4">Neural Keywords / Từ khóa</label>
                 <input 
                   type="text"
                   placeholder="e.g. sale, premium, summer..."
-                  className="nm-input font-bold placeholder:text-text-muted/30" 
+                  className="nm-input font-bold text-text-primary" 
                   value={config.keywords} 
                   onChange={e => onChange({ ...config, keywords: e.target.value })}
                 />
@@ -67,9 +72,9 @@ export const AutomationSettings: React.FC<AutomationSettingsProps> = ({ config, 
 
            {/* Instructions */}
            <div className="space-y-4">
-              <label className="text-[10px] font-black text-text-muted uppercase tracking-widest block ml-4">Strategic Instructions / Chỉ dẫn phụ</label>
+              <label className="text-[10px] font-black text-text-muted uppercase tracking-[0.2em] block ml-4">Strategic Instructions / Chỉ dẫn phụ</label>
               <textarea 
-                className="nm-input font-bold resize-none min-h-[120px] pt-4" 
+                className="nm-input font-bold text-text-primary resize-none min-h-[140px] pt-4" 
                 rows={3}
                 placeholder="e.g. Hãy thêm call to action (kêu gọi hành động) ở cuối bài, sử dụng nhiều emoji..."
                 value={config.instructions} 

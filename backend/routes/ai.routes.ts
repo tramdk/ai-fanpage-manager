@@ -1,8 +1,79 @@
 import { Router } from 'express';
 import { authenticateToken } from '../middleware/auth.js';
 import * as aiService from '../services/ai.service.js';
+import * as autoreelsService from '../services/autoreels.service.js';
+import { publishVideoUrl } from '../services/fanpage.service.js';
 
 const router = Router();
+
+router.post('/publish-video', authenticateToken, async (req: any, res) => {
+  const { videoUrl, fanpageId, content } = req.body;
+  if (!videoUrl || !fanpageId) return res.status(400).json({ error: 'Video URL and Fanpage ID are required' });
+
+  try {
+    const result = await publishVideoUrl(req.user.id, fanpageId, videoUrl, content);
+    res.json(result);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.get('/video-options', authenticateToken, async (req: any, res) => {
+  try {
+    const options = await autoreelsService.getAutoReelsOptions();
+    res.json(options);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.get('/video-status/:videoId', authenticateToken, async (req: any, res) => {
+  try {
+    const status = await autoreelsService.getVideoStatus(req.params.videoId);
+    res.json(status);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.post('/video-status-batch', authenticateToken, async (req: any, res) => {
+  try {
+    const { videoIds } = req.body;
+    if (!videoIds || !Array.isArray(videoIds)) return res.status(400).json({ error: 'videoIds array required' });
+    const statuses = await autoreelsService.getVideoStatusBatch(videoIds);
+    res.json(statuses);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.get('/video-queue', authenticateToken, async (req: any, res) => {
+  try {
+    const queue = await prisma.videoQueue.findMany({
+      orderBy: { createdAt: 'desc' }
+    });
+    res.json(queue);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.post('/generate-video', authenticateToken, async (req: any, res) => {
+  const { postId, templateId, ttsProvider, ttsVoiceId, bgmAssetId } = req.body;
+  if (!postId) return res.status(400).json({ error: 'Post ID is required' });
+
+  try {
+    const result = await autoreelsService.generateVideoFromPost(postId, {
+      templateId,
+      ttsProvider,
+      ttsVoiceId,
+      bgmAssetId
+    });
+    res.json(result);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
 
 router.post('/generate-text', authenticateToken, async (req: any, res) => {
   const { prompt: directPrompt, topic, instructions, tone, language } = req.body;

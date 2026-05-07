@@ -57,6 +57,7 @@ export class ApiService {
   schedules = {
     list: () => this.fetch('/api/schedules').then(r => this.handleResponse(r)) as Promise<Schedule[]>,
     create: (data: any) => this.fetch('/api/schedules', { method: 'POST', body: JSON.stringify(data) }).then(r => this.handleResponse(r)),
+    update: (id: string, data: any) => this.fetch(`/api/schedules/${id}`, { method: 'PUT', body: JSON.stringify(data) }).then(r => this.handleResponse(r)),
     delete: (id: string) => this.fetch(`/api/schedules/${id}`, { method: 'DELETE' }).then(r => this.handleResponse(r)),
     updateStatus: (id: string, status: string) => this.fetch(`/api/schedules/${id}/status`, { method: 'PATCH', body: JSON.stringify({ status }) }).then(r => this.handleResponse(r)),
     getPosts: (id: string) => this.fetch(`/api/schedules/${id}/posts`).then(r => this.handleResponse(r)),
@@ -83,6 +84,7 @@ export class ApiService {
   posts = {
     list: () => this.fetch('/api/posts').then(r => this.handleResponse(r)),
     update: (id: string, data: any) => this.fetch(`/api/posts/${id}`, { method: 'PUT', body: JSON.stringify(data) }).then(r => this.handleResponse(r)),
+    queue: (data: any) => this.fetch('/api/posts/queue', { method: 'POST', body: JSON.stringify(data) }).then(r => this.handleResponse(r)),
   };
 
   // --- ADMIN ---
@@ -99,6 +101,15 @@ export class ApiService {
       const payload = typeof data === 'string' ? { topic: data } : data;
       return this.fetch('/api/ai/generate-image', { method: 'POST', body: JSON.stringify(payload) }).then(r => this.handleResponse(r));
     },
+    generateVideo: (postId: string, options?: { templateId?: string, ttsProvider?: string, ttsVoiceId?: string, bgmAssetId?: string }) => 
+      this.fetch('/api/ai/generate-video', { method: 'POST', body: JSON.stringify({ postId, ...options }) }).then(r => this.handleResponse(r)),
+    getVideoOptions: () => this.fetch('/api/ai/video-options').then(r => this.handleResponse(r)),
+    getVideoStatus: (videoId: string) => this.fetch(`/api/ai/video-status/${videoId}`).then(r => this.handleResponse(r)),
+    getVideoStatusBatch: (videoIds: string[]) => 
+      this.fetch('/api/ai/video-status-batch', { method: 'POST', body: JSON.stringify({ videoIds }) }).then(r => this.handleResponse(r)),
+    getVideoQueue: () => this.fetch('/api/ai/video-queue').then(r => this.handleResponse(r)),
+    publishVideo: (fanpageId: string, videoUrl: string, content?: string) => 
+      this.fetch('/api/ai/publish-video', { method: 'POST', body: JSON.stringify({ fanpageId, videoUrl, content }) }).then(r => this.handleResponse(r)),
   };
 
   // --- FACEBOOK APPS ---
@@ -114,6 +125,26 @@ export class ApiService {
     get: async (id: string) => this.fetch(`/api/workflows/${id}`).then(r => this.handleResponse(r)),
     save: async (data: { id?: string, name?: string, description?: string, nodesData: string, edgesData: string }) => 
       this.fetch('/api/workflows', { method: 'POST', body: JSON.stringify(data) }).then(r => this.handleResponse(r)),
-    execute: async (id: string) => this.fetch(`/api/workflows/${id}/execute`, { method: 'POST' }).then(r => this.handleResponse(r)),
+    execute: async (id: string, data: any = {}) => 
+      this.fetch(`/api/workflows/${id}/execute`, { method: 'POST', body: JSON.stringify(data) }).then(r => this.handleResponse(r)),
   };
+
+  // --- MEDIA MANAGEMENT ---
+  media = {
+    list: () => this.fetch('/api/media-library').then(r => this.handleResponse(r)),
+    upload: (file: File) => {
+      const formData = new FormData();
+      formData.append('file', file);
+      return this.fetch('/api/media-library/upload', {
+        method: 'POST',
+        body: formData,
+        // No Content-Type header - let the browser set the boundary
+      }).then(r => this.handleResponse(r));
+    }
+  };
+
+  // --- SETTINGS & CONFIG ---
+  getVoices = () => this.fetch('/api/ai/voices').then(r => this.handleResponse(r));
+  getBgmPresets = () => this.fetch('/api/ai/bgm-presets').then(r => this.handleResponse(r));
+  getSetting = (key: string) => this.fetch(`/api/settings/${key}`).then(r => this.handleResponse(r));
 }
