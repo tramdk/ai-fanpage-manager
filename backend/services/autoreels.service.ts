@@ -9,7 +9,7 @@ const eb = new EventBusClient();
  * Based on c:\Users\T\.gemini\antigravity\scratch\autoreels\API_GUIDE.md
  */
 
-const AUTOREELS_URL = (process.env.AUTOREELS_URL || 'http://localhost:3000').replace(/\/$/, '');
+const AUTOREELS_URL = (process.env.AUTOREELS_URL || 'http://localhost:3003').replace(/\/$/, '');
 const AUTOREELS_TOKEN = process.env.AUTOREELS_TOKEN || 'autoreels-default-token';
 
 /**
@@ -33,18 +33,27 @@ export async function getAutoReelsOptions() {
 
     // Fetch voices, providers, bgm, and all settings in parallel
     const [voicesRes, providersRes, bgmRes, settingsRes] = await Promise.all([
-      fetch(`${AUTOREELS_URL}/api/voices`, { headers }),
-      fetch(`${AUTOREELS_URL}/api/voices/providers`, { headers }),
-      fetch(`${AUTOREELS_URL}/api/videos/bgm-presets`, { headers }),
-      fetch(`${AUTOREELS_URL}/api/settings`, { headers })
+      fetch(`${AUTOREELS_URL}/api/voices`, { headers, cache: 'no-store' }),
+      fetch(`${AUTOREELS_URL}/api/voices/providers`, { headers, cache: 'no-store' }),
+      fetch(`${AUTOREELS_URL}/api/videos/bgm-presets`, { headers, cache: 'no-store' }),
+      fetch(`${AUTOREELS_URL}/api/settings`, { headers, cache: 'no-store' })
     ]);
 
-    const [voices, providers, bgm, settings] = await Promise.all([
-      voicesRes.json(),
-      providersRes.json(),
-      bgmRes.json(),
-      settingsRes.json()
+    // Log failures for debugging
+    if (!voicesRes.ok) console.warn(`[AUTOREELS] Failed to fetch voices: ${voicesRes.status} ${voicesRes.statusText}`);
+    if (!providersRes.ok) console.warn(`[AUTOREELS] Failed to fetch providers: ${providersRes.status} ${providersRes.statusText}`);
+    if (!bgmRes.ok) console.warn(`[AUTOREELS] Failed to fetch BGM: ${bgmRes.status} ${bgmRes.statusText}`);
+    if (!settingsRes.ok) console.warn(`[AUTOREELS] Failed to fetch settings: ${settingsRes.status} ${settingsRes.statusText}`);
+
+    // Validate responses before parsing JSON
+    const results = await Promise.all([
+      voicesRes.ok ? voicesRes.json() : Promise.resolve([]),
+      providersRes.ok ? providersRes.json() : Promise.resolve([]),
+      bgmRes.ok ? bgmRes.json() : Promise.resolve([]),
+      settingsRes.ok ? settingsRes.json() : Promise.resolve({})
     ]);
+
+    const [voices, providers, bgm, settings] = results;
 
     // Extract templates from settings (keys starting with video_template_)
     const templates = Object.keys(settings)
