@@ -24,10 +24,14 @@ WORKDIR /app
 RUN apt-get update && apt-get install -y openssl && rm -rf /var/lib/apt/lists/*
 
 COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/public ./public
 COPY --from=builder /app/package*.json ./
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/start.sh ./start.sh
+
+# Ensure uploads directory exists
+RUN mkdir -p public/uploads && chmod -R 777 public/uploads
 
 # Set permissions
 RUN chmod +x start.sh

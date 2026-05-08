@@ -65,7 +65,10 @@ async function startServer() {
     // Prod: serve built dist
     const distPath = path.resolve(PROJECT_ROOT, 'dist');
     
-    // SPA catch-all for client-side routing
+    // 1. Serve static files from dist
+    app.use(express.static(distPath));
+
+    // 2. SPA catch-all for client-side routing
     app.get('*', (req, res, next) => {
       if (req.path.startsWith('/api')) return next();
       res.sendFile(path.resolve(distPath, 'index.html'));
