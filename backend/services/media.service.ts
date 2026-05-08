@@ -5,9 +5,9 @@ import crypto from 'crypto';
 import { fileURLToPath } from 'url';
 import { prisma } from '../config/prisma.js';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const UPLOADS_DIR = path.resolve(__dirname, '../../public/uploads');
+const __filename = typeof import.meta.url !== 'undefined' ? fileURLToPath(import.meta.url) : '';
+const __dirname = __filename ? path.dirname(__filename) : process.cwd();
+const UPLOADS_DIR = path.resolve(__dirname, __filename ? '../../public/uploads' : 'public/uploads');
 
 // Ensure directory exists
 if (!fs.existsSync(UPLOADS_DIR)) {

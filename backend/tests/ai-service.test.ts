@@ -4,9 +4,9 @@ import { fileURLToPath } from 'url';
 import { generateImage, generateText } from '../services/ai.service.js';
 
 // Setup environment
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-dotenv.config({ path: path.join(__dirname, '../../.env') });
+const __filename = typeof import.meta.url !== 'undefined' ? fileURLToPath(import.meta.url) : '';
+const __dirname = __filename ? path.dirname(__filename) : process.cwd();
+dotenv.config({ path: path.join(__dirname, __filename ? '../../.env' : '.env') });
 
 async function runTests() {
   console.log('🚀 STARTING AI SERVICE TESTS\n');
