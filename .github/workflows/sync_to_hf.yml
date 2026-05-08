@@ -15,4 +15,4 @@ jobs:
       - name: Push to hub
         run: |
           git lfs install
-          git push --force https://tramdk:${{ secrets.HF_TOKEN }}@huggingface.co/spaces/tramdk/ai-fanpage-manager main
+          git push --force https://tramdk:${{ secrets.HF_TOKEN }}@huggingface.co/spaces/tramdk/fanpage-manager main
