@@ -33,8 +33,8 @@ COPY --from=builder /app/start.sh ./start.sh
 # Ensure uploads directory exists
 RUN mkdir -p public/uploads && chmod -R 777 public/uploads
 
-# Set permissions
-RUN chmod +x start.sh
+# Fix potential Windows line endings in start.sh
+RUN sed -i 's/\r$//' start.sh && chmod +x start.sh
 
 # Environment variables
 ENV NODE_ENV=production
