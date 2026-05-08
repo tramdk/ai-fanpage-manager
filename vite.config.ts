@@ -26,7 +26,7 @@ export default defineConfig(({mode}) => {
             'vendor-react': ['react', 'react-dom'],
             'vendor-icons': ['lucide-react'],
             'vendor-motion': ['motion'],
-            'feature-ai': ['./src/features/ai-studio/AIContentView.tsx', './src/features/ai-studio/AICreativeStudio.tsx'],
+            'feature-ai': ['./src/features/ai-studio/AIContentView.tsx', './src/features/ai-studio/AICreativeStudio.tsx', './src/features/ai-studio/VideoQueueView.tsx'],
             'feature-planner': ['./src/features/planner/CampaignPlannerView.tsx'],
           }
         }

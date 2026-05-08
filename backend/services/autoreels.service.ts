@@ -1,4 +1,8 @@
 import { prisma } from '../config/prisma.js';
+import { EventBusClient } from './EventBusClient.js';
+import crypto from 'crypto';
+
+const eb = new EventBusClient();
 
 /**
  * Service to integrate with AutoReels API
@@ -168,48 +172,41 @@ export async function generateVideoFromPost(postId: string, options: {
   const payloadStr = JSON.stringify(payload);
   console.log(`[AUTOREELS] Payload ready. Scenes: ${scenes.length}, Images: ${allImages.length}`);
 
-  const scriptRes = await fetch(`${AUTOREELS_URL}/api/articles/manual-script`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'X-API-Key': AUTOREELS_TOKEN },
-    body: payloadStr
+  const videoId = crypto.randomUUID();
+
+  // 3. Publish to Event Bus
+  await eb.publish('REEL_REQUESTED', {
+    reelId: videoId,
+    articleId: postId,
+    title,
+    templateId: options.templateId || 'classic',
+    content: cleanContent,
+    script: JSON.stringify({ 
+      scenes,
+      suggestedImages: allImages.length > 0 ? allImages.slice(0, 5) : []
+    }),
+    imageUrl: allImages[0] || null,
+    ttsProvider: options.ttsProvider || 'edge',
+    ttsVoiceId: options.ttsVoiceId || 'vi-VN-HoaiMyNeural',
+    bgmAssetId: options.bgmAssetId || 'none',
+    bgmVolume: 0.15,
+    source: 'manager'
   });
-
-  const scriptData = await scriptRes.json();
-  if (!scriptRes.ok) throw new Error(scriptData.error || 'Failed to create script');
-
-  const articleId = scriptData.id;
-
-  // 2. Trigger Render with dynamic options
-  const renderRes = await fetch(`${AUTOREELS_URL}/api/videos/generate`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'X-API-Key': AUTOREELS_TOKEN },
-    body: JSON.stringify({
-      articleId,
-      templateId: options.templateId || 'modern',
-      ttsProvider: options.ttsProvider || 'edge',
-      ttsVoiceId: options.ttsVoiceId || 'vi-VN-HoaiMyNeural',
-      bgmAssetId: options.bgmAssetId || 'none',
-      bgmVolume: 0.15
-    })
-  });
-
-  const renderData = await renderRes.json();
-  if (!renderRes.ok) throw new Error(renderData.error || 'AutoReels request failed');
 
   // Persist the videoId to the local database immediately
   await prisma.post.update({
     where: { id: postId },
-    data: { videoId: renderData.videoId }
+    data: { videoId: videoId }
   });
 
   // Track in the dedicated high-performance queue
   await prisma.videoQueue.upsert({
     where: { postId: postId },
-    update: { videoId: renderData.videoId, status: 'processing' },
-    create: { postId: postId, videoId: renderData.videoId, status: 'processing' }
+    update: { videoId: videoId, status: 'processing' },
+    create: { postId: postId, videoId: videoId, status: 'processing' }
   }).catch(err => console.error('[AUTOREELS] Failed to add to VideoQueue:', err));
 
-  return { success: true, videoId: renderData.videoId, articleId };
+  return { success: true, videoId: videoId };
 }
 export async function getVideoStatus(videoId: string) {
   if (!videoId || videoId === 'undefined' || videoId === 'existing' || videoId === 'null') {
@@ -304,48 +301,41 @@ export async function generateVideoBatch(items: { postId: string, options: any }
       };
     }));
 
-    // 2. Chunking logic: Send in groups of 20 to avoid large payloads/timeouts
-    const CHUNK_SIZE = 20;
-    const allResults = [];
-
-    for (let i = 0; i < batchData.length; i += CHUNK_SIZE) {
-      const chunk = batchData.slice(i, i + CHUNK_SIZE);
-      const chunkItems = items.slice(i, i + CHUNK_SIZE);
-
-      console.log(`[AUTOREELS BATCH] Sending chunk ${Math.floor(i / CHUNK_SIZE) + 1}/${Math.ceil(batchData.length / CHUNK_SIZE)} (${chunk.length} items)`);
-
-      const res = await fetch(`${AUTOREELS_URL}/api/videos/bulk-generate`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-API-Key': AUTOREELS_TOKEN
-        },
-        body: JSON.stringify({ items: chunk })
+    // 2. Send each item to Event Bus
+    const results = [];
+    for (const data of batchData) {
+      const videoId = crypto.randomUUID();
+      
+      await eb.publish('REEL_REQUESTED', {
+        reelId: videoId,
+        articleId: data.articleId,
+        title: data.content?.substring(0, 50) || 'Batch Video',
+        templateId: data.templateId || 'classic',
+        content: data.content,
+        imageUrl: data.imageUrl,
+        ttsProvider: data.ttsProvider,
+        ttsVoiceId: data.ttsVoiceId,
+        bgmAssetId: data.bgmAssetId,
+        source: 'manager'
       });
 
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Bulk generation chunk failed');
+      // Update local DB
+      await Promise.all([
+        prisma.post.update({
+          where: { id: data.articleId },
+          data: { videoId: videoId }
+        }),
+        prisma.videoQueue.upsert({
+          where: { postId: data.articleId },
+          update: { videoId: videoId, status: 'processing' },
+          create: { postId: data.articleId, videoId: videoId, status: 'processing' }
+        })
+      ]);
 
-      // 3. Update VideoQueue and Post for this chunk
-      const queueTasks = data.videos.map((v: any, index: number) => {
-        return Promise.all([
-          prisma.post.update({
-            where: { id: chunkItems[index].postId },
-            data: { videoId: v.videoId }
-          }),
-          prisma.videoQueue.upsert({
-            where: { postId: chunkItems[index].postId },
-            update: { videoId: v.videoId, status: 'processing' },
-            create: { postId: chunkItems[index].postId, videoId: v.videoId, status: 'processing' }
-          })
-        ]);
-      });
-
-      await Promise.all(queueTasks);
-      allResults.push(...data.videos);
+      results.push({ videoId, status: 'pending' });
     }
 
-    return allResults;
+    return results;
   } catch (error) {
     console.error('[AUTOREELS BATCH ERROR]', error);
     throw error;

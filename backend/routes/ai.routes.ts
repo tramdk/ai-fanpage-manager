@@ -3,6 +3,7 @@ import { authenticateToken } from '../middleware/auth.js';
 import * as aiService from '../services/ai.service.js';
 import * as autoreelsService from '../services/autoreels.service.js';
 import { publishVideoUrl } from '../services/fanpage.service.js';
+import { prisma } from '../config/prisma.js';
 
 const router = Router();
 
@@ -54,6 +55,7 @@ router.get('/video-queue', authenticateToken, async (req: any, res) => {
     });
     res.json(queue);
   } catch (error: any) {
+    console.error('❌ [BACKEND ERROR] /api/ai/video-queue:', error);
     res.status(500).json({ error: error.message });
   }
 });

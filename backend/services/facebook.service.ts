@@ -4,6 +4,9 @@ import { fileURLToPath } from 'url';
 import { Buffer } from 'buffer';
 import { prisma } from '../config/prisma.js';
 import { decrypt } from '../utils/encryption.js';
+import { EventBusClient } from './EventBusClient.js';
+
+const eb = new EventBusClient();
 
 const __filename = typeof import.meta.url !== 'undefined' ? fileURLToPath(import.meta.url) : '';
 const __dirname = __filename ? path.dirname(__filename) : process.cwd();
@@ -142,5 +145,17 @@ export async function postToFacebook(queuedPost: any, fanpage: any, decryptedTok
 
   const data = await fbRes.json();
   if (data.error) throw new Error(data.error.message);
+
+  // Notify Event Bus that the reel has been published
+  if (queuedPost.videoId) {
+    eb.publish('REEL_PUBLISHED', {
+      reelId: queuedPost.videoId,
+      postId: queuedPost.id,
+      fbPostId: data.id,
+      fanpageId: fanpage.pageId,
+      platform: 'facebook'
+    }).catch(err => console.error('[EVENT BUS] Failed to publish REEL_PUBLISHED event:', err));
+  }
+
   return data;
 }

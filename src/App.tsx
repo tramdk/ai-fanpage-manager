@@ -26,7 +26,7 @@ const AuthView = React.lazy(() => import('./features/auth/AuthView').then(m => (
 const CampaignStudioView = React.lazy(() => import('./features/studio/CampaignStudioView').then(m => ({ default: m.CampaignStudioView })));
 const StrategyWorkflowView = React.lazy(() => import('./features/strategy/StrategyWorkflowView'));
 const ForcePasswordChangeView = React.lazy(() => import('./features/auth/ForcePasswordChangeView').then(m => ({ default: m.ForcePasswordChangeView })));
-const VideoQueueView = React.lazy(() => import('./features/ai-studio/VideoQueueView').then(m => ({ default: m.VideoQueueView })));
+const VideoQueueView = React.lazy(() => import('./features/ai-studio/VideoQueueView'));
 
 // [rerender-memo-with-default-value] - Hoist static constants outside component
 const GET_NAV_ITEMS = (t: any, role?: string) => [

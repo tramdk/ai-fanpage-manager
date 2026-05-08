@@ -68,13 +68,11 @@ async function executeImmediate(schedule: any) {
 
     // Handle video render check
     if (queuedPost.videoId) {
-      const videoStatus = await autoreelsService.getVideoStatus(queuedPost.videoId);
-      if (videoStatus.status !== 'ready' && videoStatus.status !== 'completed' && !videoStatus.videoUrl) {
-        console.log(`[CRON-CATCHUP] Video not ready for catchup, skipping. Regular cron will pick it up or retry.`);
+      // With Pub/Sub, the EventBusWorker updates imageUrl as soon as it's ready.
+      // If imageUrl is still empty, it means rendering is in progress or failed.
+      if (!queuedPost.imageUrl || (!queuedPost.imageUrl.includes('.mp4') && !queuedPost.imageUrl.includes('autoreels_videos'))) {
+        console.log(`[CRON-CATCHUP] Video ${queuedPost.videoId} not ready yet (handled by Pub/Sub). Skipping...`);
         return;
-      }
-      if (videoStatus.videoUrl) {
-        queuedPost.imageUrl = JSON.stringify([{ type: 'video', data: videoStatus.videoUrl, id: 'v1' }]);
       }
     }
 
@@ -144,34 +142,10 @@ export function scheduleJob(schedule: any) {
 
       // Handle Video Rendering Status
       if (queuedPost.videoId) {
-        try {
-          const videoStatus = await autoreelsService.getVideoStatus(queuedPost.videoId);
-
-          if (videoStatus.status !== 'ready' && videoStatus.status !== 'completed' && !videoStatus.videoUrl) {
-            console.log(`[CRON] Video ${queuedPost.videoId} is still ${videoStatus.status || 'rendering'}. Rescheduling in 15 minutes...`);
-
-            // Reschedule for 15 minutes later
-            const retryDate = new Date();
-            retryDate.setMinutes(retryDate.getMinutes() + 15);
-            const retryTime = `${retryDate.getHours().toString().padStart(2, '0')}:${retryDate.getMinutes().toString().padStart(2, '0')}`;
-
-            // Create a temporary one-off schedule or just wait for next cycle?
-            // Since this is a daily cron, we should probably set a timeout for this specific execution.
-            setTimeout(() => {
-              console.log(`[CRON-RETRY] Retrying post ${queuedPost.id} after delay...`);
-              scheduleJob({ ...schedule, time: retryTime }); // This is a bit hacky but works for retrying
-            }, 15 * 60 * 1000);
-
-            return;
-          }
-
-          // Video is ready, ensure we have the URL
-          if (videoStatus.videoUrl) {
-            queuedPost.imageUrl = JSON.stringify([{ type: 'video', data: videoStatus.videoUrl, id: 'v1' }]);
-          }
-        } catch (vErr) {
-          console.error(`[CRON] Video status check failed for ${queuedPost.videoId}:`, vErr);
-          // If status check fails, we might want to wait as well
+        // Pub/Sub worker updates imageUrl when finished.
+        // If not ready, we wait for the next cron cycle or for the EventBusWorker to trigger immediate publish.
+        if (!queuedPost.imageUrl || (!queuedPost.imageUrl.includes('.mp4') && !queuedPost.imageUrl.includes('autoreels_videos'))) {
+          console.log(`[CRON] Video ${queuedPost.videoId} is not ready yet. Waiting for Pub/Sub update...`);
           return;
         }
       }

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { 
   Loader2, 
   Clock, 
@@ -20,7 +20,7 @@ interface QueueItem {
   updatedAt: string;
 }
 
-export function VideoQueueView({ api }: { api: any }) {
+export default function VideoQueueView({ api }: { api: any }) {
   const [items, setItems] = useState<QueueItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);

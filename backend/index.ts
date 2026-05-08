@@ -2,6 +2,7 @@ import express from 'express';
 import app from './app.js';
 import { prisma } from './config/prisma.js';
 import { scheduleJob, processMissedSchedules, syncVideoStatuses } from './services/cron.service.js';
+import { startEventBusWorker } from './services/eventBusWorker.js';
 import nodeCron from 'node-cron';
 import bcrypt from 'bcryptjs';
 import dotenv from 'dotenv';
@@ -52,6 +53,9 @@ async function startServer() {
     await syncVideoStatuses();
   });
   console.log('[BOOT] Background Video Sync Worker started (Every 5 min)');
+  
+  // 3.5 Start Event Bus Subscriber
+  startEventBusWorker();
 
   // 3. Vite Integration (SSR for development, serve static in prod)
   const isProd = process.env.NODE_ENV === 'production';
