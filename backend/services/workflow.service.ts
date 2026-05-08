@@ -54,18 +54,19 @@ export class WorkflowEngine {
         throw new Error('Vui lòng chọn Fanpage trong Node Publish trước khi chạy Workflow.');
       }
 
+      const runCount = Number(triggerNode.config.runCount) || 1;
       const schedule = await prisma.schedule.create({
         data: {
           topic: `[WF] ${topic}`,
           time: triggerNode.config.time || '10:00',
-          runCount: 1,
+          runCount: runCount,
           fanpageId, // This should match pageId in Fanpage model
           userId: this.userId,
           status: 'active'
         }
       });
       this.executionState.scheduleId = schedule.id;
-      console.log(`[ENGINE] Created new execution schedule: ${schedule.id}`);
+      console.log(`[ENGINE] Created new execution schedule: ${schedule.id} with runCount: ${runCount}`);
     }
 
     await this.executeNode(triggerNode);
@@ -85,9 +86,14 @@ export class WorkflowEngine {
           const tone = node.config.tone || 'professional and elegant';
           const instructions = node.config.instructions || '';
           
+          // Add iteration index to prompt for variety in batch runs
+          const variationHint = this.executionState.iterationIndex !== undefined 
+            ? `\nĐây là bài viết số ${this.executionState.iterationIndex + 1} trong chuỗi bài. Hãy viết nội dung khác biệt so với các bài trước.`
+            : '';
+
           const textPrompt = node.config.prompt || `Hãy viết một bài đăng Facebook chất lượng cao về chủ đề: ${topic}. 
             Tông giọng: ${tone}. 
-            ${instructions ? `Hướng dẫn bổ sung: ${instructions}` : ''}
+            ${instructions ? `Hướng dẫn bổ sung: ${instructions}` : ''}${variationHint}
             Lưu ý: Viết hoàn toàn bằng tiếng Việt, thu hút và phù hợp với người dùng Facebook Việt Nam. 
             Chỉ trả về nội dung bài viết.`;
             
@@ -143,6 +149,7 @@ export class WorkflowEngine {
             videoId: this.executionState.lastVideoId,
             fanpageId: pageId,
             scheduleId: this.executionState.scheduleId,
+            orderIndex: this.executionState.iterationIndex || 0,
             status: 'queued'
           };
 

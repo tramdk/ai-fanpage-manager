@@ -407,7 +407,7 @@ export const AutomationView = ({ fanpages, api, initialFanpageId }: { fanpages: 
                     <td className="px-10 py-8">
                        <div className="flex items-center gap-3">
                          <div className={`nm-inset px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest ${s.status === 'suspended' ? 'text-soft-pink' : 'text-emerald-500'}`}>
-                           DAILY {s.time} • {s.runCount}X
+                           {s.time} • {s.runCount} POSTS TOTAL (1/DAY)
                          </div>
                          {s.queuedCount > 0 && (
                            <div className="text-[8px] font-black text-emerald-500 bg-emerald-500/5 px-3 py-1 rounded-lg border border-emerald-500/10 uppercase tracking-widest flex items-center gap-2">
@@ -467,12 +467,12 @@ export const AutomationView = ({ fanpages, api, initialFanpageId }: { fanpages: 
 
                   <div className="nm-inset p-4 rounded-2xl flex justify-between items-center">
                      <div className="space-y-1">
-                        <p className="text-[8px] font-black text-text-muted uppercase tracking-[0.2em]">Daily Schedule</p>
+                        <p className="text-[8px] font-black text-text-muted uppercase tracking-[0.2em]">Post Time</p>
                         <p className="text-xs font-bold text-text-primary">{s.time}</p>
                      </div>
                      <div className="w-[1px] h-6 bg-text-muted/10" />
                      <div className="space-y-1 text-right">
-                        <p className="text-[8px] font-black text-text-muted uppercase tracking-[0.2em]">Batch Count</p>
+                        <p className="text-[8px] font-black text-text-muted uppercase tracking-[0.2em]">Total Posts</p>
                         <p className="text-xs font-bold text-text-primary">{s.runCount}X</p>
                      </div>
                   </div>

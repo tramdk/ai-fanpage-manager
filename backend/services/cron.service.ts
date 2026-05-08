@@ -70,8 +70,8 @@ async function executeImmediate(schedule: any) {
     if (queuedPost.videoId) {
       const videoStatus = await autoreelsService.getVideoStatus(queuedPost.videoId);
       if (videoStatus.status !== 'ready' && videoStatus.status !== 'completed' && !videoStatus.videoUrl) {
-         console.log(`[CRON-CATCHUP] Video not ready for catchup, skipping. Regular cron will pick it up or retry.`);
-         return; 
+        console.log(`[CRON-CATCHUP] Video not ready for catchup, skipping. Regular cron will pick it up or retry.`);
+        return;
       }
       if (videoStatus.videoUrl) {
         queuedPost.imageUrl = JSON.stringify([{ type: 'video', data: videoStatus.videoUrl, id: 'v1' }]);
@@ -95,7 +95,7 @@ async function executeImmediate(schedule: any) {
         where: { id: schedule.id },
         data: { status: 'suspended' }
       });
-      
+
       const job = activeCronJobs.get(schedule.id);
       if (job) {
         job.stop();
@@ -146,20 +146,20 @@ export function scheduleJob(schedule: any) {
       if (queuedPost.videoId) {
         try {
           const videoStatus = await autoreelsService.getVideoStatus(queuedPost.videoId);
-          
+
           if (videoStatus.status !== 'ready' && videoStatus.status !== 'completed' && !videoStatus.videoUrl) {
             console.log(`[CRON] Video ${queuedPost.videoId} is still ${videoStatus.status || 'rendering'}. Rescheduling in 15 minutes...`);
-            
+
             // Reschedule for 15 minutes later
             const retryDate = new Date();
             retryDate.setMinutes(retryDate.getMinutes() + 15);
             const retryTime = `${retryDate.getHours().toString().padStart(2, '0')}:${retryDate.getMinutes().toString().padStart(2, '0')}`;
-            
+
             // Create a temporary one-off schedule or just wait for next cycle?
             // Since this is a daily cron, we should probably set a timeout for this specific execution.
             setTimeout(() => {
-               console.log(`[CRON-RETRY] Retrying post ${queuedPost.id} after delay...`);
-               scheduleJob({ ...schedule, time: retryTime }); // This is a bit hacky but works for retrying
+              console.log(`[CRON-RETRY] Retrying post ${queuedPost.id} after delay...`);
+              scheduleJob({ ...schedule, time: retryTime }); // This is a bit hacky but works for retrying
             }, 15 * 60 * 1000);
 
             return;
@@ -194,7 +194,7 @@ export function scheduleJob(schedule: any) {
           where: { id: schedule.id },
           data: { status: 'suspended' }
         });
-        
+
         const job = activeCronJobs.get(schedule.id);
         if (job) {
           job.stop();
@@ -251,46 +251,104 @@ export async function syncVideoStatuses() {
 
     const videoIds = queueItems.map(q => q.videoId);
     console.log(`[CRON-SYNC] Batch polling status for ${videoIds.length} queue items...`);
-    
+
     const autoreelsService = await import('./autoreels.service.js');
     const statuses = await autoreelsService.getVideoStatusBatch(videoIds);
+    
+    if (!Array.isArray(statuses)) {
+      console.error('[CRON-SYNC] Statuses response is not an array:', statuses);
+      return;
+    }
+
+    console.log(`[CRON-SYNC DEBUG] Received ${statuses.length} status updates from Autoreels.`);
 
     for (const videoInfo of statuses) {
+      console.log(`[CRON-SYNC DEBUG] Checking item ID: ${videoInfo.id}, Status: ${videoInfo.status}`);
+      
       // If video is finished (ready) or failed (not_found/error)
       if (videoInfo.status === 'ready' || videoInfo.status === 'completed' || videoInfo.videoUrl || videoInfo.status === 'not_found' || videoInfo.status === 'error') {
         const queueItem = queueItems.find(q => q.videoId === videoInfo.id);
-        if (!queueItem) continue;
+        if (!queueItem) {
+          console.warn(`[CRON-SYNC DEBUG] No local QueueItem found for videoId: ${videoInfo.id}`);
+          continue;
+        }
 
         const post = await prisma.post.findUnique({ where: { id: queueItem.postId } });
         if (!post) {
-           await prisma.videoQueue.delete({ where: { id: queueItem.id } });
-           continue;
+          console.warn(`[CRON-SYNC DEBUG] No local Post found for postId: ${queueItem.postId}`);
+          await prisma.videoQueue.delete({ where: { id: queueItem.id } });
+          continue;
         }
 
-        if (videoInfo.status === 'ready' || videoInfo.status === 'completed' || videoInfo.videoUrl) {
-          console.log(`[CRON-SYNC] -> Video READY for post ${post.id}. Updating post and clearing queue...`);
+        if (videoInfo.status === 'ready' || videoInfo.status === 'completed' || videoInfo.videoUrl || videoInfo.data) {
+          // Debug log to see the actual structure from Autoreels
+          console.log(`[CRON-SYNC DEBUG] videoInfo for post ${post.id}:`, JSON.stringify(videoInfo, null, 2));
+
+          // Aggressive extraction of the video URL
+          const videoUrl = videoInfo.data || videoInfo.videoUrl || videoInfo.url || (videoInfo.video && (videoInfo.video.videoUrl || videoInfo.video.url));
           
-          let mediaItems = [];
-          try {
-            mediaItems = JSON.parse(post.imageUrl || '[]');
-            if (!Array.isArray(mediaItems)) mediaItems = [];
-          } catch (e) {
-            if (post.imageUrl) mediaItems = [{ type: 'image', data: post.imageUrl, id: 'base' }];
+          if (!videoUrl) {
+            console.error(`[CRON-SYNC] Could not find video URL in Autoreels response for post ${post.id}`);
+            continue;
           }
 
-          const videoUrl = videoInfo.videoUrl || videoInfo.url;
-          const updatedMedia = [...mediaItems, { type: 'video', data: videoUrl, id: `v_${Date.now()}`, isAiGenerated: true }];
+          console.log(`[CRON-SYNC] -> Updating post ${post.id} with raw video URL: ${videoUrl}`);
 
           await prisma.post.update({
             where: { id: post.id },
-            data: { imageUrl: JSON.stringify(updatedMedia) }
+            data: { imageUrl: videoUrl }
           });
+        } else if (videoInfo.status === 'error' || videoInfo.status === 'not_found') {
+          console.log(`[CRON-SYNC] -> Video FAILED or NOT FOUND for post ${post.id}.`);
         } else {
-          console.log(`[CRON-SYNC] -> Video FAILED or NOT FOUND for post ${post.id}. Removing from queue.`);
+          // Still processing, skip queue removal
+          continue;
         }
 
         // Always remove from queue if it reached a terminal state
         await prisma.videoQueue.delete({ where: { id: queueItem.id } });
+
+        // Optimization: If the video just became ready, check if we should publish it IMMEDIATELY
+        // (e.g. if the scheduled time for today has already passed)
+        if (videoInfo.status === 'ready' || videoInfo.status === 'completed' || videoInfo.videoUrl) {
+          const schedule = await prisma.schedule.findUnique({ where: { id: post.scheduleId || '' } });
+          if (schedule && schedule.status === 'active') {
+            const [sHour, sMin] = schedule.time.split(':').map(Number);
+            const now = new Date();
+            const scheduledToday = new Date();
+            scheduledToday.setHours(sHour, sMin, 0, 0);
+
+            if (now > scheduledToday) {
+              // Check if this is the FIRST queued post (to maintain order)
+              const firstPost = await prisma.post.findFirst({
+                where: { scheduleId: schedule.id, status: 'queued' },
+                orderBy: { orderIndex: 'asc' }
+              });
+
+              if (firstPost && firstPost.id === post.id) {
+                console.log(`[CRON-SYNC] Scheduled time ${schedule.time} has passed. Publishing post ${post.id} IMMEDIATELY.`);
+                const fanpage = await prisma.fanpage.findUnique({ where: { pageId: schedule.fanpageId }, include: { user: true } });
+                if (fanpage && fanpage.accessToken && fanpage.user) {
+                  const { decrypt } = await import('../utils/encryption.js');
+                  const { postToFacebook } = await import('./facebook.service.js');
+                  const decryptedToken = decrypt(fanpage.accessToken, fanpage.user.email);
+                  await postToFacebook(post, fanpage, decryptedToken);
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+
+
+    // Fast-follow: if any items were processed, check again soon
+    if (statuses.length > 0) {
+      const anyFinished = statuses.some(v => v.status === 'ready' || v.status === 'completed' || v.videoUrl || v.status === 'not_found' || v.status === 'error');
+      if (anyFinished) {
+        setTimeout(() => {
+          syncVideoStatuses().catch(() => { });
+        }, 10000); // 10 seconds fast-follow
       }
     }
   } catch (err) {

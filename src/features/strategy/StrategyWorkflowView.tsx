@@ -46,6 +46,7 @@ const WorkflowNode = memo(({
   onSelect, 
   isSelected,
   onDragStart,
+  onPortMouseDown,
   onPortMouseUp,
   isActiveSource,
   fanpages = []
@@ -267,26 +268,28 @@ export const StrategyWorkflowView: React.FC<{ api: ApiService; fanpages: any[] }
       const existingSchedule = allSchedules.find((s: any) => s.workflowId === currentWfId);
 
       if (triggerNode && triggerNode.config.topic && triggerNode.config.pageId) {
+        const runCount = Number(triggerNode.config.runCount) || 1;
         if (!existingSchedule) {
           // Create new campaign
           await api.schedules.create({
             topic: triggerNode.config.topic,
             time: triggerNode.config.time || '10:00',
             fanpageId: triggerNode.config.pageId,
-            runCount: 1,
+            runCount: runCount,
             workflowId: currentWfId,
             status: 'active'
           });
-          toast.success('Campaign created and activated!');
+          toast.success(`Campaign created with ${runCount} total posts!`);
         } else {
           // Update existing campaign with latest workflow config
           await api.schedules.update(existingSchedule.id, {
             topic: triggerNode.config.topic,
             time: triggerNode.config.time || '10:00',
             fanpageId: triggerNode.config.pageId,
+            runCount: runCount,
             status: 'active'
           });
-          toast.success('Campaign updated and reactivated!');
+          toast.success(`Campaign updated to ${runCount} total posts!`);
         }
       }
 

@@ -87,14 +87,24 @@ router.post('/:id/execute', authenticateToken, async (req: any, res) => {
     const nodes = JSON.parse(workflow.nodesData || '[]');
     const edges = JSON.parse(workflow.edgesData || '[]');
 
-    const batchCount = parseInt(req.body.batchCount as string) || 1;
+    const batchCount = parseInt(req.body.runCount as string) || parseInt(req.body.batchCount as string) || 1;
     const postsToRequestVideos: { postId: string, options: any }[] = [];
     const executionResults = [];
+    let currentScheduleId = req.body.scheduleId;
 
     // Phase 1: Generate all content (Text/Images) and create posts
     for (let i = 0; i < batchCount; i++) {
+      console.log(`[WORKFLOW EXECUTE] Run ${i + 1}/${batchCount}`);
       const engine = new WorkflowEngine(req.user.id, nodes, edges);
-      const result = await engine.run(req.body);
+      
+      // Merge currentScheduleId into the payload for subsequent runs
+      const runPayload = { ...req.body, scheduleId: currentScheduleId, iterationIndex: i };
+      const result = await engine.run(runPayload);
+      
+      // Capture scheduleId from first run if it wasn't provided
+      if (!currentScheduleId && result.scheduleId) {
+        currentScheduleId = result.scheduleId;
+      }
       
       // If the workflow generated a video request, collect it for bulk sending
       if (result.currentPostId && result.needsVideo) {
