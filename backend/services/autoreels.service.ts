@@ -69,7 +69,11 @@ export async function getAutoReelsOptions() {
         { id: 'modern', name: 'Modern' },
         { id: 'bold', name: 'Bold' },
         { id: 'classic', name: 'Classic' },
-        { id: 'cinematic', name: 'Cinematic' }
+        { id: 'cinematic', name: 'Cinematic' },
+        { id: 'cyberpunk', name: 'Cyberpunk' },
+        { id: 'glassmorphism', name: 'Glassmorphism' },
+        { id: 'minimal', name: 'Minimal' },
+        { id: 'y2k', name: 'Y2K' }
       );
     }
 
