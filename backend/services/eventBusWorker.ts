@@ -15,15 +15,22 @@ const CONSUMER_NAME = `manager_${Math.random().toString(36).substring(7)}`;
 export async function startEventBusWorker() {
   console.log(`📡 [EVENT BUS] Manager Worker ${CONSUMER_NAME} starting...`);
 
-  // 1. Create Consumer Group if it doesn't exist
-  try {
-    await redis.xgroup('CREATE', STREAM_NAME, GROUP_NAME, '0', 'MKSTREAM');
-    console.log(`📡 [EVENT BUS] Created consumer group: ${GROUP_NAME}`);
-  } catch (err: any) {
-    if (!err.message.includes('BUSYGROUP')) {
+  // Helper to create group
+  const createGroup = async () => {
+    try {
+      await redis.xgroup('CREATE', STREAM_NAME, GROUP_NAME, '0', 'MKSTREAM');
+      console.log(`📡 [EVENT BUS] Created consumer group: ${GROUP_NAME}`);
+    } catch (err: any) {
+      if (err.message.includes('BUSYGROUP')) {
+        // Group already exists, this is fine
+        return;
+      }
       console.error('❌ [EVENT BUS] Error creating group:', err.message);
     }
-  }
+  };
+
+  // 1. Initial attempt to create Consumer Group
+  await createGroup();
 
   // 2. Loop to read messages
   while (true) {
@@ -56,8 +63,16 @@ export async function startEventBusWorker() {
         // Acknowledge message
         await redis.xack(STREAM_NAME, GROUP_NAME, messageId);
       }
-    } catch (err) {
-      console.error('❌ [EVENT BUS] Error in manager worker loop:', err);
+    } catch (err: any) {
+      // If the group is missing (can happen if Redis was wiped or stream was deleted/recreated)
+      if (err.message.includes('NOGROUP')) {
+        console.warn(`⚠️ [EVENT BUS] Consumer group ${GROUP_NAME} missing. Re-creating...`);
+        await createGroup();
+      } else {
+        console.error('❌ [EVENT BUS] Error in manager worker loop:', err);
+      }
+      
+      // Wait before retrying to avoid spamming
       await new Promise(resolve => setTimeout(resolve, 5000));
     }
   }
