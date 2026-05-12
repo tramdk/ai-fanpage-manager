@@ -337,6 +337,7 @@ export const StrategyWorkflowView: React.FC<{ api: ApiService; fanpages: any[] }
       type,
       title: NODE_TYPES[type].title,
       description: NODE_TYPES[type].description,
+      icon: NODE_TYPES[type].icon,
       status: 'idle',
       config: {},
       x: 300 + Math.random() * 200,

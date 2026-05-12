@@ -60,11 +60,7 @@ export async function generateText(prompt: string) {
     const text = result.text;
     
     if (!text) {
-      // Check if blocked by safety (some SDKs return empty text when blocked)
-      if (result.status === 'blocked') {
-        throw new Error('GOOGLE_API_SAFETY_BLOCK: Content was blocked due to safety settings.');
-      }
-      throw new Error('GOOGLE_API_EMPTY_RESPONSE: Gemini returned an empty response.');
+      throw new Error('GOOGLE_API_EMPTY_RESPONSE: Gemini returned an empty response. It might have been blocked due to safety settings.');
     }
 
     return cleanAIResult(text);

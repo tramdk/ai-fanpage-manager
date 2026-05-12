@@ -91,11 +91,38 @@ export class WorkflowEngine {
             ? `\nĐây là bài viết số ${this.executionState.iterationIndex + 1} trong chuỗi bài. Hãy viết nội dung khác biệt so với các bài trước.`
             : '';
 
-          const textPrompt = node.config.prompt || `Hãy viết một bài đăng Facebook chất lượng cao về chủ đề: ${topic}. 
-            Tông giọng: ${tone}. 
-            ${instructions ? `Hướng dẫn bổ sung: ${instructions}` : ''}${variationHint}
-            Lưu ý: Viết hoàn toàn bằng tiếng Việt, thu hút và phù hợp với người dùng Facebook Việt Nam. 
-            Chỉ trả về nội dung bài viết.`;
+          const textPrompt = node.config.prompt || `Đóng vai một chuyên gia Content Marketing và Copywriter đa năng, hãy viết một bài đăng mạng xã hội chất lượng cao, mang tính viral và tối ưu chuyển đổi về chủ đề: "${topic}".
+            
+            Tông giọng: ${tone}.
+            ${instructions ? `Yêu cầu đặc biệt: ${instructions}` : ''}${variationHint}
+            
+            HƯỚNG DẪN LẬP DÀN Ý TỰ ĐỘNG (HÃY TỰ PHÂN TÍCH CHỦ ĐỀ ĐỂ CHỌN 1 TRONG 3 FORMAT SAU):
+
+            1. NẾU CHỦ ĐỀ LÀ KIẾN THỨC, HỌC THUẬT, LÝ THUYẾT (Educational / Value-driven):
+               - Tiêu đề (Hook): Khơi gợi sự tò mò hoặc đặt câu hỏi về một kiến thức/sự thật thú vị.
+               - Dẫn dắt: Nhấn mạnh tầm quan trọng của kiến thức này.
+               - Nội dung cốt lõi: Diễn giải lý thuyết một cách ĐƠN GIẢN, DỄ HIỂU nhất (dùng ví dụ thực tế hoặc ẩn dụ).
+               - Ứng dụng: Kiến thức này giúp ích gì trong đời sống/công việc?
+               - CTA: Khuyến khích lưu (save) bài viết, chia sẻ quan điểm hoặc đón đọc kỳ sau.
+
+            2. NẾU CHỦ ĐỀ LÀ BÁN HÀNG, KHUYẾN MÃI, PROMO (Sales / Promotional):
+               - Tiêu đề (Hook): Đánh thẳng vào lợi ích lớn nhất, chương trình ưu đãi, hoặc nỗi đau của khách hàng.
+               - Vấn đề (Pain point): Khơi gợi lại khó khăn khách hàng đang gặp phải.
+               - Giải pháp & Lợi ích (Solution/Benefits): Đưa ra sản phẩm/dịch vụ như một cứu cánh, làm nổi bật tính năng vượt trội (USP) và ưu đãi.
+               - Cảm giác khan hiếm (Urgency): Đưa ra giới hạn thời gian/số lượng để thúc đẩy hành động nhanh.
+               - CTA: Kêu gọi hành động mạnh mẽ, rõ ràng (Inbox ngay, Click link, Comment nhận tư vấn).
+
+            3. NẾU CHỦ ĐỀ LÀ CÂU CHUYỆN, CHIA SẺ TRẢI NGHIỆM (Storytelling / Engagement):
+               - Tiêu đề (Hook): Mở đầu bằng một câu nói ấn tượng, một cú sốc, hoặc một sự thật gây bất ngờ.
+               - Diễn biến: Kể lại quá trình diễn ra sự việc (có khó khăn, có cao trào, có giải quyết).
+               - Bài học đúc kết (Takeaway): Giá trị sâu sắc người đọc có thể học được.
+               - CTA: Kêu gọi mọi người kể lại trải nghiệm tương tự của họ dưới phần bình luận.
+
+            YÊU CẦU CHUNG QUAN TRỌNG:
+            - Văn phong tự nhiên, gần gũi, nắm bắt đúng Insight người dùng Facebook Việt Nam.
+            - Trình bày bài viết mạch lạc, ngắt đoạn ngắn gọn để dễ đọc trên thiết bị di động.
+            - Cuối bài luôn có 3-5 hashtag phù hợp.
+            - KHÔNG giải thích, KHÔNG xác nhận kiểu "Dưới đây là nội dung...", CHỈ TRẢ VỀ DUY NHẤT nội dung bài đăng.`;
             
           const generatedText = await aiService.generateText(textPrompt);
           this.executionState.lastText = generatedText;

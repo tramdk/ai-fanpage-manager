@@ -25,6 +25,8 @@ export interface Schedule {
   status: 'active' | 'suspended';
   fanpageId: string;
   fanpageName?: string;
+  workflowId?: string | null;
+  queuedCount?: number;
   createdAt: string;
   userId: string;
 }

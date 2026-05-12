@@ -82,11 +82,22 @@ router.post('/generate-text', authenticateToken, async (req: any, res) => {
 
   let finalPrompt = directPrompt;
   if (!finalPrompt && topic) {
-    finalPrompt = `Create a high-quality Facebook post about: ${topic}.
-      Tone: ${tone || 'Professional, engaging, and persuasive'}.
-      Language: ${language || 'Vietnamese'}.
-      Instructions: ${instructions || 'No specific instructions.'}
-      Only return the body content of the post. No hashtags unless specified.`;
+    finalPrompt = `Đóng vai một chuyên gia Marketing và Copywriter hàng đầu, hãy viết một bài đăng mạng xã hội chất lượng cao, mang tính viral và có tỷ lệ chuyển đổi cao về chủ đề: "${topic}".
+      Tông giọng: ${tone || 'Chuyên nghiệp, thu hút và thuyết phục'}.
+      Ngôn ngữ: ${language || 'Tiếng Việt'}.
+      Yêu cầu đặc biệt: ${instructions || 'Không có'}
+      
+      Yêu cầu bài viết phải tuân thủ cấu trúc chuẩn Marketing sau:
+      1. Tiêu đề (Hook): Giật tít, thu hút sự chú ý ngay trong 3 giây đầu tiên (sử dụng icon phù hợp).
+      2. Nỗi đau / Vấn đề (Pain point): Chạm vào vấn đề mà khách hàng mục tiêu đang gặp phải.
+      3. Giải pháp / Giá trị (Solution/Value): Đưa ra thông tin hữu ích hoặc giải quyết vấn đề một cách thuyết phục.
+      4. Kêu gọi hành động (CTA): Khuyến khích tương tác (like, share, comment, tag bạn bè, hoặc click link) một cách tự nhiên.
+      5. Hashtag: Thêm 3-5 hashtag liên quan và thịnh hành.
+
+      Lưu ý quan trọng:
+      - Văn phong tự nhiên, gần gũi, nắm bắt đúng Insight người dùng mạng xã hội.
+      - Trình bày mạch lạc, ngắt đoạn ngắn gọn để dễ đọc trên thiết bị di động.
+      - CHỈ trả về duy nhất nội dung bài đăng, KHÔNG kèm theo lời giải thích hay bất kỳ câu chào hỏi nào khác.`;
   }
 
   if (!finalPrompt) return res.status(400).json({ error: 'Topic or Prompt is required' });

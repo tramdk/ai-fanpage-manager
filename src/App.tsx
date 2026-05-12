@@ -186,7 +186,7 @@ export default function App() {
       const data = await res.json();
 
       if (!res.ok) {
-        if (data.requires_config) { setActiveTab('settings'); return; }
+        if (data.requires_config) { navigate('/settings'); return; }
         throw new Error(data.error);
       }
 

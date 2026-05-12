@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { X, Upload, Image as ImageIcon, Search, History as HistoryIcon, Loader2, Cloud, Check } from 'lucide-react';
+import { X, Upload, Image as ImageIcon, Search, History as HistoryIcon, Loader2, Cloud, Check, Play } from 'lucide-react';
 import { ApiService } from '../api';
 import { toast } from 'sonner';
 
