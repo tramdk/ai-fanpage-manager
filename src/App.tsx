@@ -241,10 +241,20 @@ export default function App() {
 
   const navItems = useMemo(() => GET_NAV_ITEMS(t, user?.role), [t, user?.role]);
 
-  if (!token) return <AuthView onLogin={handleLogin} />;
+  if (!token) return (
+    <>
+      <Toaster position="top-right" expand={true} richColors theme={theme === 'dark' ? 'dark' : 'light'} />
+      <AuthView onLogin={handleLogin} />
+    </>
+  );
 
   if (user?.requirePasswordChange) {
-    return <ForcePasswordChangeView api={api} user={user} onSuccess={(updatedUser) => setUser(updatedUser)} />;
+    return (
+      <>
+        <Toaster position="top-right" expand={true} richColors theme={theme === 'dark' ? 'dark' : 'light'} />
+        <ForcePasswordChangeView api={api} user={user} onSuccess={(updatedUser) => setUser(updatedUser)} />
+      </>
+    );
   }
 
   return (

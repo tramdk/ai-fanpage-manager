@@ -6,6 +6,7 @@ import { AutomationSettings, AutomationConfig } from './AutomationSettings';
 import { useLanguage } from '../../LanguageContext';
 import { CONFIG } from '../../config';
 import { ApiService } from '../../api';
+import { toast } from 'sonner';
 
 // [rerender-no-inline-components] - Move QueueModal out of main view and memoize
 const QueueModal = memo(({
@@ -199,6 +200,7 @@ export const AutomationView = ({ fanpages, api, initialFanpageId }: { fanpages: 
     let advancedPrompt = showAdvanced ? `Tone: ${automationConfig.tone}\nMust include: ${automationConfig.keywords}\nAdditional: ${automationConfig.instructions}` : '';
     setIsGeneratingBatch(true);
     setPostStatus({ type: '', message: '' });
+    const tid = toast.loading('Đang khởi tạo lịch đăng bài...');
     try {
       const data = await api.schedules.create({ 
         topic, 
@@ -214,9 +216,11 @@ export const AutomationView = ({ fanpages, api, initialFanpageId }: { fanpages: 
         setSchedules(prev => [...prev, data.schedule]);
         setShowAdvanced(false);
         setPostStatus({ type: 'success', message: 'Schedule launched successfully' });
+        toast.success('Đã thiết lập lịch đăng bài thành công!', { id: tid });
       }
     } catch (err) { 
       setPostStatus({ type: 'error', message: 'Failed to launch schedule' });
+      toast.error('Lỗi thiết lập lịch đăng bài', { id: tid });
     } finally { setIsGeneratingBatch(false); }
   }, [topic, selectedFanpage, time, automationConfig, showAdvanced, fanpages, runCount, selectedWorkflow, api]);
 
@@ -246,6 +250,7 @@ export const AutomationView = ({ fanpages, api, initialFanpageId }: { fanpages: 
       // If schedule is linked to a workflow, use the workflow engine!
       if (schedule.workflowId) {
         setIsGeneratingBatchRecord(prev => ({ ...prev, [scheduleId]: true }));
+        const tid = toast.loading('Đang kích hoạt quy trình AI...');
         try {
           await api.workflows.execute(schedule.workflowId!, {
             scheduleId: schedule.id,
@@ -255,8 +260,10 @@ export const AutomationView = ({ fanpages, api, initialFanpageId }: { fanpages: 
             batchCount: numToGenerate // Send batchCount to let backend handle the loop
           });
           setPostStatus({ type: 'success', message: `Batch of ${numToGenerate} started on server. Check Video Queue for progress.` });
+          toast.success(`Đã bắt đầu tạo ${numToGenerate} nội dung qua AI`, { id: tid });
         } catch (err) {
           setPostStatus({ type: 'error', message: 'Failed to start batch generation.' });
+          toast.error('Lỗi khi chạy quy trình AI', { id: tid });
         } finally {
           setIsGeneratingBatchRecord(prev => ({ ...prev, [scheduleId]: false }));
         }
@@ -284,6 +291,7 @@ export const AutomationView = ({ fanpages, api, initialFanpageId }: { fanpages: 
         });
         await Promise.all(tasks);
         setPostStatus({ type: 'success', message: `Batch deployed: ${numToGenerate} posts queued.` });
+        toast.success(`Đã đưa ${numToGenerate} bài vào hàng chờ thành công!`);
       }
     } catch (err) { 
       setPostStatus({ type: 'error', message: 'Batch generation failed' });
@@ -298,8 +306,10 @@ export const AutomationView = ({ fanpages, api, initialFanpageId }: { fanpages: 
       await api.schedules.updateStatus(schedule.id, newStatus);
       setSchedules(prev => prev.map(s => s.id === schedule.id ? { ...s, status: newStatus } : s));
       setPostStatus({ type: 'success', message: newStatus === 'suspended' ? 'Schedule suspended.' : 'Schedule resumed.' });
+      toast.success(newStatus === 'suspended' ? 'Đã tạm dừng lịch đăng' : 'Đã tiếp tục lịch đăng');
     } catch (err) {
       setPostStatus({ type: 'error', message: 'Failed to update schedule status.' });
+      toast.error('Lỗi cập nhật trạng thái');
     }
   }, [api]);
 
@@ -309,8 +319,10 @@ export const AutomationView = ({ fanpages, api, initialFanpageId }: { fanpages: 
       await api.schedules.delete(schedule.id);
       setSchedules(prev => prev.filter(s => s.id !== schedule.id));
       setPostStatus({ type: 'success', message: 'Schedule and unpublished posts deleted.' });
+      toast.success('Đã xóa lịch đăng và các bài chưa đăng');
     } catch (err) {
       setPostStatus({ type: 'error', message: 'Failed to delete schedule.' });
+      toast.error('Lỗi khi xóa lịch đăng');
     }
   }, [api]);
 

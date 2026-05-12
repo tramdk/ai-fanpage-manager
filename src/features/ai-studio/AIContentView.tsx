@@ -147,6 +147,7 @@ export const AIContentView = memo(({ fanpages, api }: { fanpages: Fanpage[], api
 
     setIsPosting(true);
     setPostStatus({ type: '', message: '' });
+    toast.loading('Đang đăng bài lên Facebook...', { id: 'posting-fb' });
 
     try {
       const payload = {
@@ -159,8 +160,10 @@ export const AIContentView = memo(({ fanpages, api }: { fanpages: Fanpage[], api
 
       await api.facebook.post(payload);
       setPostStatus({ type: 'success', message: 'Published Successful!' });
+      toast.success('Đăng bài thành công!', { id: 'posting-fb' });
     } catch (err: any) {
       setPostStatus({ type: 'error', message: err.message });
+      toast.error('Đăng bài thất bại: ' + err.message, { id: 'posting-fb' });
     } finally {
       setIsPosting(false);
     }

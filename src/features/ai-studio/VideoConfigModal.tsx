@@ -9,10 +9,16 @@ interface VideoConfigModalProps {
 }
 
 export const VideoConfigModal: React.FC<VideoConfigModalProps> = ({ onConfirm, onClose, api }) => {
-  const [options, setOptions] = useState<{ voices: any[], providers: string[], bgm: any[] }>({ 
+  const [options, setOptions] = useState<{ voices: any[], providers: string[], bgm: any[], templates: any[] }>({ 
     voices: [], 
     providers: ['edge', 'azure', 'google'], 
-    bgm: [] 
+    bgm: [],
+    templates: [
+      { id: 'modern', name: 'Modern (Smooth & Fast)' },
+      { id: 'bold', name: 'Bold (Dynamic Energy)' },
+      { id: 'classic', name: 'Classic (Minimalist)' },
+      { id: 'cinematic', name: 'Cinematic (Epic Drama)' }
+    ]
   });
   const [loading, setLoading] = useState(true);
   
@@ -44,12 +50,14 @@ export const VideoConfigModal: React.FC<VideoConfigModalProps> = ({ onConfirm, o
         const voices = (data.voices && data.voices.length > 0) ? data.voices : FALLBACK_VOICES;
         const providers = (data.providers && data.providers.length > 0) ? data.providers : Array.from(new Set(voices.map((v: any) => v.provider)));
         const bgm = data.bgm || [];
+        const templates = (data.templates && data.templates.length > 0) ? data.templates : options.templates;
         
-        setOptions({ voices, providers, bgm });
+        setOptions({ voices, providers, bgm, templates });
         
-        // Initial setup for 'modern' template
-        const defaults = TEMPLATE_DEFAULTS['modern'];
-        setConfig(prev => ({ ...prev, ...defaults }));
+        // Initial setup for the first available template
+        const firstTemplateId = templates[0]?.id || 'modern';
+        const defaults = TEMPLATE_DEFAULTS[firstTemplateId] || TEMPLATE_DEFAULTS['modern'];
+        setConfig(prev => ({ ...prev, templateId: firstTemplateId, ...defaults }));
       })
       .catch(err => {
         console.warn('Failed to load video options, using fallbacks', err);
@@ -100,10 +108,9 @@ export const VideoConfigModal: React.FC<VideoConfigModalProps> = ({ onConfirm, o
                 value={config.templateId}
                 onChange={e => handleTemplateChange(e.target.value)}
               >
-                <option value="modern" className="bg-app-bg">Modern (Smooth & Fast)</option>
-                <option value="bold" className="bg-app-bg">Bold (Dynamic Energy)</option>
-                <option value="classic" className="bg-app-bg">Classic (Minimalist)</option>
-                <option value="cinematic" className="bg-app-bg">Cinematic (Epic Drama)</option>
+                {options.templates.map(t => (
+                  <option key={t.id} value={t.id} className="bg-app-bg">{t.name}</option>
+                ))}
               </select>
             </div>
 
