@@ -2,6 +2,7 @@ import { prisma } from '../config/prisma.js';
 import * as aiService from './ai.service.js';
 import * as postService from './post.service.js';
 import * as autoreelsService from './autoreels.service.js';
+import { scheduleJob, catchupScheduleIfMissed } from './cron.service.js';
 
 interface WorkflowNode {
   id: string;
@@ -67,6 +68,10 @@ export class WorkflowEngine {
       });
       this.executionState.scheduleId = schedule.id;
       console.log(`[ENGINE] Created new execution schedule: ${schedule.id} with runCount: ${runCount}`);
+      
+      // Initialize cron job in memory and check for missed slots
+      scheduleJob(schedule);
+      await catchupScheduleIfMissed(schedule);
     }
 
     await this.executeNode(triggerNode);

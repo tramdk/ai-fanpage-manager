@@ -1,5 +1,5 @@
 import { prisma } from '../config/prisma.js';
-import { scheduleJob, activeCronJobs } from './cron.service.js';
+import { scheduleJob, activeCronJobs, catchupScheduleIfMissed } from './cron.service.js';
 
 export async function listSchedules(userId: string) {
     const schedules = await prisma.schedule.findMany({
@@ -38,6 +38,7 @@ export async function createSchedule(userId: string, data: any) {
     });
 
     scheduleJob(schedule);
+    await catchupScheduleIfMissed(schedule);
     return schedule;
 }
 
@@ -60,6 +61,7 @@ export async function updateSchedule(userId: string, id: string, data: any) {
 
     if (schedule.status === 'active') {
         scheduleJob(schedule);
+        await catchupScheduleIfMissed(schedule);
     }
     return schedule;
 }
@@ -80,6 +82,7 @@ export async function updateScheduleStatus(userId: string, id: string, status: s
 
     if (status === 'active') {
         scheduleJob(schedule);
+        await catchupScheduleIfMissed(schedule);
     } else {
         const job = activeCronJobs.get(id);
         if (job) { job.stop(); activeCronJobs.delete(id); }

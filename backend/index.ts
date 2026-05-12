@@ -3,7 +3,7 @@ import app from './app.js';
 import { prisma } from './config/prisma.js';
 import { scheduleJob, processMissedSchedules, syncVideoStatuses } from './services/cron.service.js';
 import { startEventBusWorker } from './services/eventBusWorker.js';
-import nodeCron from 'node-cron';
+import { schedule } from 'node-cron';
 import bcrypt from 'bcryptjs';
 import dotenv from 'dotenv';
 import { createServer as createViteServer } from 'vite';
@@ -49,7 +49,7 @@ async function startServer() {
   } catch (err) { console.error('[BOOT] Schedule load error:', err); }
   
   // 3. Start Background Workers
-  nodeCron.schedule('*/5 * * * *', async () => {
+  schedule('*/5 * * * *', async () => {
     await syncVideoStatuses();
   });
   console.log('[BOOT] Background Video Sync Worker started (Every 5 min)');

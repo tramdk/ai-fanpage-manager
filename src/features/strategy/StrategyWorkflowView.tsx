@@ -267,14 +267,17 @@ export const StrategyWorkflowView: React.FC<{ api: ApiService; fanpages: any[] }
       const allSchedules = await api.schedules.list();
       const existingSchedule = allSchedules.find((s: any) => s.workflowId === currentWfId);
 
-      if (triggerNode && triggerNode.config.topic && triggerNode.config.pageId) {
+      const firstPublishNode = publishNodes.find(n => n.config.pageId);
+      if (triggerNode && triggerNode.config.topic && firstPublishNode) {
         const runCount = Number(triggerNode.config.runCount) || 1;
+        const pageId = firstPublishNode.config.pageId;
+
         if (!existingSchedule) {
           // Create new campaign
           await api.schedules.create({
             topic: triggerNode.config.topic,
             time: triggerNode.config.time || '10:00',
-            fanpageId: triggerNode.config.pageId,
+            fanpageId: pageId,
             runCount: runCount,
             workflowId: currentWfId,
             status: 'active'
@@ -285,7 +288,7 @@ export const StrategyWorkflowView: React.FC<{ api: ApiService; fanpages: any[] }
           await api.schedules.update(existingSchedule.id, {
             topic: triggerNode.config.topic,
             time: triggerNode.config.time || '10:00',
-            fanpageId: triggerNode.config.pageId,
+            fanpageId: pageId,
             runCount: runCount,
             status: 'active'
           });

@@ -1,19 +1,17 @@
-import nodeCron from 'node-cron';
+import { schedule, ScheduledTask } from 'node-cron';
 import { prisma } from '../config/prisma.js';
 import { decrypt } from '../utils/encryption.js';
 import { postToFacebook } from './facebook.service.js';
 
-export const activeCronJobs = new Map<string, any>();
+export const activeCronJobs = new Map<string, ScheduledTask>();
+
+const DEFAULT_TIMEZONE = process.env.TIMEZONE || 'Asia/Ho_Chi_Minh';
 
 /**
  * Checks for schedules that should have run today but were missed (e.g. server down)
  */
 export async function processMissedSchedules() {
   console.log('[CRON] Checking for missed schedules...');
-  const now = new Date();
-  const currentHHmm = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
-  const todayStart = new Date(now.setHours(0, 0, 0, 0));
-
   try {
     const activeSchedules = await prisma.schedule.findMany({
       where: { status: 'active' },
@@ -21,57 +19,79 @@ export async function processMissedSchedules() {
     });
 
     for (const schedule of activeSchedules) {
-      // If the scheduled time has already passed today
-      if (schedule.time < currentHHmm) {
-        // Check if any post was ALREADY published today for this schedule
-        // Note: Since we don't have publishedAt, we use createdAt of published posts as a proxy 
-        // OR we just check if there's any published post for this schedule today.
-        // Actually, a better way is to check the latest published post for this schedule.
-        const publishedToday = await prisma.post.findFirst({
-          where: {
-            scheduleId: schedule.id,
-            status: 'published',
-            createdAt: { gte: todayStart }
-          }
-        });
-
-        if (!publishedToday) {
-          console.log(`[CRON-CATCHUP] Schedule ${schedule.id} (${schedule.topic}) missed its ${schedule.time} slot. Publishing now...`);
-          // This will run the logic immediately for this schedule
-          await executeImmediate(schedule);
-        }
-      }
+      await catchupScheduleIfMissed(schedule);
     }
   } catch (err) {
     console.error('[CRON-CATCHUP] Error checking missed schedules:', err);
   }
 }
 
+/**
+ * Checks if a specific schedule missed its slot today and executes it if so.
+ */
+export async function catchupScheduleIfMissed(schedule: any) {
+  const now = new Date();
+  
+  // Use a formatter to get current time in the target timezone
+  const formatter = new Intl.DateTimeFormat('en-GB', {
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+    timeZone: DEFAULT_TIMEZONE
+  });
+  
+  const currentHHmm = formatter.format(now);
+  const todayStart = new Date(now.toLocaleString('en-US', { timeZone: DEFAULT_TIMEZONE }));
+  todayStart.setHours(0, 0, 0, 0);
+
+  // If the scheduled time has already passed today
+  if (schedule.time < currentHHmm) {
+    try {
+      const publishedToday = await prisma.post.findFirst({
+        where: {
+          scheduleId: schedule.id,
+          status: 'published',
+          createdAt: { gte: todayStart }
+        }
+      });
+
+      if (!publishedToday) {
+        console.log(`[CRON-CATCHUP] Schedule ${schedule.id} (${schedule.topic}) missed its ${schedule.time} slot (Current: ${currentHHmm} ${DEFAULT_TIMEZONE}). Publishing now...`);
+        await executeImmediate(schedule);
+      }
+    } catch (err) {
+      console.error(`[CRON-CATCHUP] Error in catchup for schedule ${schedule.id}:`, err);
+    }
+  }
+}
+
 async function executeImmediate(schedule: any) {
-  // Logic extracted from scheduleJob to run once
   try {
     const fanpage = await prisma.fanpage.findUnique({
       where: { pageId: schedule.fanpageId },
       include: { user: true }
     });
-    if (!fanpage || !fanpage.accessToken || !fanpage.user) return;
+    if (!fanpage || !fanpage.accessToken || !fanpage.user) {
+        console.warn(`[CRON-CATCHUP] Missing fanpage/token for schedule ${schedule.id}`);
+        return;
+    }
 
     const decryptedToken = decrypt(fanpage.accessToken, fanpage.user.email);
-    const autoreelsService = await import('./autoreels.service.js');
 
     const queuedPost = await prisma.post.findFirst({
       where: { scheduleId: schedule.id, status: 'queued' },
       orderBy: { orderIndex: 'asc' }
     });
 
-    if (!queuedPost) return;
+    if (!queuedPost) {
+        console.log(`[CRON-CATCHUP] No queued posts for schedule ${schedule.id}`);
+        return;
+    }
 
     // Handle video render check
     if (queuedPost.videoId) {
-      // With Pub/Sub, the EventBusWorker updates imageUrl as soon as it's ready.
-      // If imageUrl is still empty, it means rendering is in progress or failed.
       if (!queuedPost.imageUrl || (!queuedPost.imageUrl.includes('.mp4') && !queuedPost.imageUrl.includes('autoreels_videos'))) {
-        console.log(`[CRON-CATCHUP] Video ${queuedPost.videoId} not ready yet (handled by Pub/Sub). Skipping...`);
+        console.log(`[CRON-CATCHUP] Video ${queuedPost.videoId} not ready yet. Skipping catchup.`);
         return;
       }
     }
@@ -99,7 +119,7 @@ async function executeImmediate(schedule: any) {
         job.stop();
         activeCronJobs.delete(schedule.id);
       }
-      console.log(`[CRON-CATCHUP] Schedule ${schedule.id} exhausted its queued posts after catchup.`);
+      console.log(`[CRON-CATCHUP] Schedule ${schedule.id} exhausted its queued posts.`);
     }
   } catch (err) {
     console.error(`[CRON-CATCHUP] Failed catchup for ${schedule.topic}:`, err);
@@ -107,11 +127,21 @@ async function executeImmediate(schedule: any) {
 }
 
 export function scheduleJob(schedule: any) {
+  // 1. Clear existing job if any to prevent duplicates
+  const existingJob = activeCronJobs.get(schedule.id);
+  if (existingJob) {
+    console.log(`[CRON] Stopping existing job for schedule ${schedule.id}`);
+    existingJob.stop();
+    activeCronJobs.delete(schedule.id);
+  }
+
   const [hour, minute] = schedule.time.split(':');
   const cronExpression = `${minute} ${hour} * * *`;
 
-  const task = nodeCron.schedule(cronExpression, async () => {
-    console.log(`[CRON] Executing scheduled post for topic: ${schedule.topic}`);
+  console.log(`[CRON] Scheduling job for topic "${schedule.topic}" at ${schedule.time} (${DEFAULT_TIMEZONE})`);
+
+  const task = schedule(cronExpression, async () => {
+    console.log(`[CRON] Executing scheduled post for topic: ${schedule.topic} at ${new Date().toISOString()}`);
     try {
       const fanpage = await prisma.fanpage.findUnique({
         where: { pageId: schedule.fanpageId },
@@ -123,7 +153,6 @@ export function scheduleJob(schedule: any) {
       }
 
       const decryptedToken = decrypt(fanpage.accessToken, fanpage.user.email);
-      const autoreelsService = await import('./autoreels.service.js');
 
       const queuedPost = await prisma.post.findFirst({
         where: {
@@ -142,10 +171,8 @@ export function scheduleJob(schedule: any) {
 
       // Handle Video Rendering Status
       if (queuedPost.videoId) {
-        // Pub/Sub worker updates imageUrl when finished.
-        // If not ready, we wait for the next cron cycle or for the EventBusWorker to trigger immediate publish.
         if (!queuedPost.imageUrl || (!queuedPost.imageUrl.includes('.mp4') && !queuedPost.imageUrl.includes('autoreels_videos'))) {
-          console.log(`[CRON] Video ${queuedPost.videoId} is not ready yet. Waiting for Pub/Sub update...`);
+          console.log(`[CRON] Video ${queuedPost.videoId} is not ready yet. Post skipped, will try next cycle.`);
           return;
         }
       }
@@ -193,6 +220,9 @@ export function scheduleJob(schedule: any) {
         console.error('Failed to update post status to failed:', e);
       }
     }
+  }, {
+    scheduled: true,
+    timezone: DEFAULT_TIMEZONE
   });
 
   activeCronJobs.set(schedule.id, task);
