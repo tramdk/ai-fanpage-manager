@@ -70,11 +70,21 @@ async function startServer() {
     const distPath = path.resolve(PROJECT_ROOT, 'dist');
     
     // 1. Serve static files from dist
-    app.use(express.static(distPath));
+    app.use(express.static(distPath, {
+      setHeaders: (res, filePath) => {
+        if (filePath.endsWith('.html')) {
+          res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+        } else {
+          // Cache static assets with hashes for 1 year
+          res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+        }
+      }
+    }));
 
     // 2. SPA catch-all for client-side routing
     app.get('*', (req, res, next) => {
       if (req.path.startsWith('/api')) return next();
+      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
       res.sendFile(path.resolve(distPath, 'index.html'));
     });
   }
