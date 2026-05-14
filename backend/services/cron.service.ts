@@ -18,8 +18,8 @@ export async function processMissedSchedules() {
       include: { fanpage: true }
     });
 
-    for (const schedule of activeSchedules) {
-      await catchupScheduleIfMissed(schedule);
+    for (const scheduleObj of activeSchedules) {
+      await catchupScheduleIfMissed(scheduleObj);
     }
   } catch (err) {
     console.error('[CRON-CATCHUP] Error checking missed schedules:', err);
@@ -29,7 +29,7 @@ export async function processMissedSchedules() {
 /**
  * Checks if a specific schedule missed its slot today and executes it if so.
  */
-export async function catchupScheduleIfMissed(schedule: any) {
+export async function catchupScheduleIfMissed(scheduleObj: any) {
   const now = new Date();
   
   // Use a formatter to get current time in the target timezone
@@ -45,22 +45,22 @@ export async function catchupScheduleIfMissed(schedule: any) {
   todayStart.setHours(0, 0, 0, 0);
 
   // If the scheduled time has already passed today
-  if (schedule.time < currentHHmm) {
+  if (scheduleObj.time < currentHHmm) {
     try {
       const publishedToday = await prisma.post.findFirst({
         where: {
-          scheduleId: schedule.id,
+          scheduleId: scheduleObj.id,
           status: 'published',
           createdAt: { gte: todayStart }
         }
       });
 
       if (!publishedToday) {
-        console.log(`[CRON-CATCHUP] Schedule ${schedule.id} (${schedule.topic}) missed its ${schedule.time} slot (Current: ${currentHHmm} ${DEFAULT_TIMEZONE}). Publishing now...`);
-        await executeImmediate(schedule);
+        console.log(`[CRON-CATCHUP] Schedule ${scheduleObj.id} (${scheduleObj.topic}) missed its ${scheduleObj.time} slot (Current: ${currentHHmm} ${DEFAULT_TIMEZONE}). Publishing now...`);
+        await executeImmediate(scheduleObj);
       }
     } catch (err) {
-      console.error(`[CRON-CATCHUP] Error in catchup for schedule ${schedule.id}:`, err);
+      console.error(`[CRON-CATCHUP] Error in catchup for schedule ${scheduleObj.id}:`, err);
     }
   }
 }
@@ -126,29 +126,29 @@ async function executeImmediate(schedule: any) {
   }
 }
 
-export function scheduleJob(schedule: any) {
+export function scheduleJob(scheduleObj: any) {
   // 1. Clear existing job if any to prevent duplicates
-  const existingJob = activeCronJobs.get(schedule.id);
+  const existingJob = activeCronJobs.get(scheduleObj.id);
   if (existingJob) {
-    console.log(`[CRON] Stopping existing job for schedule ${schedule.id}`);
+    console.log(`[CRON] Stopping existing job for schedule ${scheduleObj.id}`);
     existingJob.stop();
-    activeCronJobs.delete(schedule.id);
+    activeCronJobs.delete(scheduleObj.id);
   }
 
-  const [hour, minute] = schedule.time.split(':');
+  const [hour, minute] = scheduleObj.time.split(':');
   const cronExpression = `${minute} ${hour} * * *`;
 
-  console.log(`[CRON] Scheduling job for topic "${schedule.topic}" at ${schedule.time} (${DEFAULT_TIMEZONE})`);
+  console.log(`[CRON] Scheduling job for topic "${scheduleObj.topic}" at ${scheduleObj.time} (${DEFAULT_TIMEZONE})`);
 
   const task = schedule(cronExpression, async () => {
-    console.log(`[CRON] Executing scheduled post for topic: ${schedule.topic} at ${new Date().toISOString()}`);
+    console.log(`[CRON] Executing scheduled post for topic: ${scheduleObj.topic} at ${new Date().toISOString()}`);
     try {
       const fanpage = await prisma.fanpage.findUnique({
-        where: { pageId: schedule.fanpageId },
+        where: { pageId: scheduleObj.fanpageId },
         include: { user: true }
       });
       if (!fanpage || !fanpage.accessToken || !fanpage.user) {
-        console.error(`[CRON] Fanpage not found or missing access token for schedule ${schedule.id}`);
+        console.error(`[CRON] Fanpage not found or missing access token for schedule ${scheduleObj.id}`);
         return;
       }
 
@@ -156,16 +156,16 @@ export function scheduleJob(schedule: any) {
 
       const queuedPost = await prisma.post.findFirst({
         where: {
-          scheduleId: schedule.id,
+          scheduleId: scheduleObj.id,
           status: 'queued',
-          fanpageId: schedule.fanpageId,
-          userId: schedule.userId
+          fanpageId: scheduleObj.fanpageId,
+          userId: scheduleObj.userId
         },
         orderBy: { orderIndex: 'asc' }
       });
 
       if (!queuedPost) {
-        console.log(`[CRON] No queued posts found for topic ${schedule.topic}.`);
+        console.log(`[CRON] No queued posts found for topic ${scheduleObj.topic}.`);
         return;
       }
 
@@ -184,30 +184,30 @@ export function scheduleJob(schedule: any) {
         data: { status: 'published', error: null }
       });
 
-      console.log(`[CRON] Successfully posted scheduled content for topic: ${schedule.topic}, Post ID: ${fbData.id}`);
+      console.log(`[CRON] Successfully posted scheduled content for topic: ${scheduleObj.topic}, Post ID: ${fbData.id}`);
 
       const remainingPosts = await prisma.post.count({
-        where: { scheduleId: schedule.id, status: 'queued' },
+        where: { scheduleId: scheduleObj.id, status: 'queued' },
       });
 
       if (remainingPosts === 0) {
         await prisma.schedule.update({
-          where: { id: schedule.id },
+          where: { id: scheduleObj.id },
           data: { status: 'suspended' }
         });
 
-        const job = activeCronJobs.get(schedule.id);
+        const job = activeCronJobs.get(scheduleObj.id);
         if (job) {
           job.stop();
-          activeCronJobs.delete(schedule.id);
+          activeCronJobs.delete(scheduleObj.id);
         }
-        console.log(`[CRON] Schedule ${schedule.id} exhausted its queued posts.`);
+        console.log(`[CRON] Schedule ${scheduleObj.id} exhausted its queued posts.`);
       }
     } catch (error: any) {
-      console.error(`[CRON] Failed to execute scheduled post for topic ${schedule.topic}:`, error);
+      console.error(`[CRON] Failed to execute scheduled post for topic ${scheduleObj.topic}:`, error);
       try {
         const queuedPost = await prisma.post.findFirst({
-          where: { scheduleId: schedule.id, status: 'queued', fanpageId: schedule.fanpageId },
+          where: { scheduleId: scheduleObj.id, status: 'queued', fanpageId: scheduleObj.fanpageId },
           orderBy: { orderIndex: 'asc' }
         });
         if (queuedPost) {
@@ -221,11 +221,10 @@ export function scheduleJob(schedule: any) {
       }
     }
   }, {
-    scheduled: true,
     timezone: DEFAULT_TIMEZONE
   });
 
-  activeCronJobs.set(schedule.id, task);
+  activeCronJobs.set(scheduleObj.id, task);
 }
 
 /**

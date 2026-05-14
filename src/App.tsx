@@ -27,6 +27,7 @@ const CampaignStudioView = React.lazy(() => import('./features/studio/CampaignSt
 const StrategyWorkflowView = React.lazy(() => import('./features/strategy/StrategyWorkflowView'));
 const ForcePasswordChangeView = React.lazy(() => import('./features/auth/ForcePasswordChangeView').then(m => ({ default: m.ForcePasswordChangeView })));
 const VideoQueueView = React.lazy(() => import('./features/ai-studio/VideoQueueView'));
+const ResetPasswordView = React.lazy(() => import('./features/auth/ResetPasswordView').then(m => ({ default: m.ResetPasswordView })));
 
 // [rerender-memo-with-default-value] - Hoist static constants outside component
 const GET_NAV_ITEMS = (t: any, role?: string) => [
@@ -241,12 +242,21 @@ export default function App() {
 
   const navItems = useMemo(() => GET_NAV_ITEMS(t, user?.role), [t, user?.role]);
 
-  if (!token) return (
-    <>
-      <Toaster position="top-right" expand={true} richColors theme={theme === 'dark' ? 'dark' : 'light'} />
-      <AuthView onLogin={handleLogin} />
-    </>
-  );
+  if (!token) {
+    const isResetPath = location.pathname === '/reset-password';
+    
+    return (
+      <>
+        <Toaster position="top-right" expand={true} richColors theme={theme === 'dark' ? 'dark' : 'light'} />
+        <React.Suspense fallback={<div className="min-h-screen bg-app-bg flex items-center justify-center"><Loader2 className="w-10 h-10 text-indigo-500 animate-spin" /></div>}>
+          <Routes>
+            <Route path="/reset-password" element={<ResetPasswordView api={api} onSuccess={() => navigate('/')} />} />
+            <Route path="*" element={<AuthView onLogin={handleLogin} />} />
+          </Routes>
+        </React.Suspense>
+      </>
+    );
+  }
 
   if (user?.requirePasswordChange) {
     return (

@@ -66,4 +66,29 @@ router.get('/facebook/url', async (req, res) => {
   }
 });
 
+router.post('/forgot-password', async (req, res) => {
+  const { email } = req.body;
+  if (!email) return res.status(400).json({ error: 'Email is required' });
+  try {
+    const result = await authService.requestPasswordReset(email);
+    res.json(result);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.post('/reset-password', async (req, res) => {
+  const { token, newPassword } = req.body;
+  if (!token || !newPassword) return res.status(400).json({ error: 'Token and new password are required' });
+  try {
+    const result = await authService.resetPassword(token, newPassword);
+    res.json(result);
+  } catch (error: any) {
+    if (error.message === 'INVALID_OR_EXPIRED_TOKEN') {
+      return res.status(400).json({ error: 'Invalid or expired reset token' });
+    }
+    res.status(500).json({ error: error.message });
+  }
+});
+
 export default router;

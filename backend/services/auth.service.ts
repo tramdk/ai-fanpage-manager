@@ -1,7 +1,9 @@
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
+import crypto from 'crypto';
 import { prisma } from '../config/prisma.js';
 import { decrypt } from '../utils/encryption.js';
+import { sendPasswordResetEmail } from './email.service.js';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
 const TEMP_PASSWORD = 'password@123';
@@ -43,6 +45,59 @@ export async function setupPassword(setupToken: string, newPassword: string) {
   const hashedPassword = await bcrypt.hash(newPassword, 10);
   await prisma.user.update({ where: { id: decoded.id }, data: { password: hashedPassword, requirePasswordChange: false } });
   return { message: 'Security protocol completed.' };
+}
+
+export async function requestPasswordReset(email: string) {
+  const user = await prisma.user.findUnique({ where: { email } });
+  if (!user) {
+    // We don't want to reveal if a user exists or not for security reasons, 
+    // but in some systems we just return success anyway.
+    return { message: 'If an account exists with that email, a reset link has been sent.' };
+  }
+
+  const token = crypto.randomBytes(32).toString('hex');
+  const expiry = new Date(Date.now() + 3600000); // 1 hour from now
+
+  await prisma.user.update({
+    where: { id: user.id },
+    data: {
+      resetToken: token,
+      resetTokenExpiry: expiry,
+    },
+  });
+
+  await sendPasswordResetEmail(email, token);
+
+  return { message: 'If an account exists with that email, a reset link has been sent.' };
+}
+
+export async function resetPassword(token: string, newPassword: string) {
+  const user = await prisma.user.findFirst({
+    where: {
+      resetToken: token,
+      resetTokenExpiry: {
+        gt: new Date(),
+      },
+    },
+  });
+
+  if (!user) {
+    throw new Error('INVALID_OR_EXPIRED_TOKEN');
+  }
+
+  const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+  await prisma.user.update({
+    where: { id: user.id },
+    data: {
+      password: hashedPassword,
+      resetToken: null,
+      resetTokenExpiry: null,
+      requirePasswordChange: false, // In case they were in setup mode
+    },
+  });
+
+  return { message: 'Password has been reset successfully.' };
 }
 
 export async function getMe(userId: string) {

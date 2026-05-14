@@ -15,6 +15,7 @@ import oauthRoutes from './routes/oauth.routes.js';
 import workflowRoutes from './routes/workflow.routes.js';
 import mediaRoutes from './routes/media.routes.js';
 import cors from 'cors';
+import { prisma } from './config/prisma.js';
 import helmet from 'helmet';
 import { rateLimit } from 'express-rate-limit';
 
@@ -52,8 +53,24 @@ app.use('/api', apiLimiter);
 app.use('/api/media', express.static(path.join(PROJECT_ROOT, 'public/uploads')));
 
 // Health check for anti-sleep ping
-app.get('/api/health', (req, res) => {
-  res.status(200).json({ status: 'ok', time: new Date().toISOString() });
+app.get('/api/health', async (req, res) => {
+  try {
+    // Basic DB check
+    await prisma.$queryRaw`SELECT 1`;
+    
+    res.status(200).json({ 
+      status: 'ok', 
+      database: 'connected',
+      time: new Date().toISOString(),
+      uptime: process.uptime()
+    });
+  } catch (error) {
+    res.status(500).json({ 
+      status: 'error', 
+      database: 'disconnected',
+      error: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
 });
 
 // Routes

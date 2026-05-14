@@ -18,6 +18,8 @@ model User {
   requirePasswordChange Boolean       @default(false)
   facebookAppId         String?       // Deprecated: legacy support
   facebookAppSecret String?       // Deprecated: legacy support
+  resetToken            String?
+  resetTokenExpiry      DateTime?
   createdAt         DateTime      @default(now())
   facebookApps      FacebookApp[]
   fanpages          Fanpage[]

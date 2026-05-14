@@ -6,6 +6,7 @@ import { ForcePasswordChangeView } from './ForcePasswordChangeView';
 
 export const AuthView = ({ onLogin }: { onLogin: (token: string, user: any) => void }) => {
   const [isLogin, setIsLogin] = useState(true);
+  const [isForgotPassword, setIsForgotPassword] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
@@ -50,6 +51,30 @@ export const AuthView = ({ onLogin }: { onLogin: (token: string, user: any) => v
         setSuccess(t('regSuccess'));
         setIsLogin(true);
       }
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setError('');
+    setSuccess('');
+
+    try {
+      const res = await fetch(CONFIG.getApiUrl('/api/auth/forgot-password'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email })
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to send reset link');
+
+      setSuccess(t('resetEmailSent'));
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -158,15 +183,15 @@ export const AuthView = ({ onLogin }: { onLogin: (token: string, user: any) => v
         <div className="bg-card-bg/40 backdrop-blur-3xl p-10 lg:p-14 rounded-[48px] border border-card-border/60 shadow-3xl ring-1 ring-white/5 animate-in zoom-in-95 duration-500">
           <div className="text-center mb-10">
             <h2 className="text-3xl font-black text-white mb-3">
-              {isLogin ? t('welcomeBack') : t('initiateIdentity')}
+              {isForgotPassword ? t('forgotPassword') : (isLogin ? t('welcomeBack') : t('initiateIdentity'))}
             </h2>
             <p className="text-text-secondary font-bold text-xs uppercase tracking-widest leading-loose">
-              {isLogin ? t('login') : t('register')}
+              {isForgotPassword ? t('email') : (isLogin ? t('login') : t('register'))}
             </p>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-6">
-            {!isLogin && (
+          <form onSubmit={isForgotPassword ? handleForgotPassword : handleSubmit} className="space-y-6">
+            {!isLogin && !isForgotPassword && (
               <div className="space-y-2 group">
                 <label className="block text-xs font-bold text-text-secondary uppercase tracking-widest ml-1">Master Account Name</label>
                 <div className="relative">
@@ -198,20 +223,33 @@ export const AuthView = ({ onLogin }: { onLogin: (token: string, user: any) => v
               </div>
             </div>
 
-            <div className="space-y-2 group">
-              <label className="block text-xs font-bold text-text-secondary uppercase tracking-widest ml-1">Secure Passkey</label>
-              <div className="relative">
-                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-text-secondary group-focus-within:text-purple-400 transition-colors" />
-                <input
-                  type="password"
-                  required
-                  className="w-full bg-app-bg border-2 border-card-border rounded-2xl pl-12 pr-6 py-4 text-white focus:outline-none focus:ring-4 focus:ring-purple-600/20 focus:border-purple-600 transition-all font-bold placeholder:text-slate-700"
-                  placeholder="••••••••••••"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                />
+            {!isForgotPassword && (
+              <div className="space-y-2 group">
+                <div className="flex items-center justify-between ml-1">
+                  <label className="block text-xs font-bold text-text-secondary uppercase tracking-widest">Secure Passkey</label>
+                  {isLogin && (
+                    <button 
+                      type="button"
+                      onClick={() => { setIsForgotPassword(true); setError(''); setSuccess(''); }}
+                      className="text-[10px] font-black text-indigo-400 hover:text-white transition-colors uppercase tracking-widest"
+                    >
+                      {t('forgotPassword')}
+                    </button>
+                  )}
+                </div>
+                <div className="relative">
+                  <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-text-secondary group-focus-within:text-purple-400 transition-colors" />
+                  <input
+                    type="password"
+                    required
+                    className="w-full bg-app-bg border-2 border-card-border rounded-2xl pl-12 pr-6 py-4 text-white focus:outline-none focus:ring-4 focus:ring-purple-600/20 focus:border-purple-600 transition-all font-bold placeholder:text-slate-700"
+                    placeholder="••••••••••••"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                  />
+                </div>
               </div>
-            </div>
+            )}
 
             {error && (
               <div className="p-5 bg-red-600/10 border-2 border-red-900/50 text-red-400 text-xs font-black uppercase tracking-widest rounded-2xl flex items-center justify-center text-center animate-in shake duration-500">
@@ -237,17 +275,29 @@ export const AuthView = ({ onLogin }: { onLogin: (token: string, user: any) => v
                   <span>{t('verifying')}</span>
                 </div>
               ) : (
-                <span>{isLogin ? t('grantAccess') : t('initiateRegistration')}</span>
+                <span>{isForgotPassword ? t('sendResetLink') : (isLogin ? t('grantAccess') : t('initiateRegistration'))}</span>
               )}
             </button>
           </form>
 
           <button
-            onClick={() => { setIsLogin(!isLogin); setError(''); setSuccess(''); }}
+            onClick={() => { 
+              if (isForgotPassword) {
+                setIsForgotPassword(false);
+              } else {
+                setIsLogin(!isLogin); 
+              }
+              setError(''); 
+              setSuccess(''); 
+            }}
             className="w-full mt-8 text-text-secondary hover:text-white transition-all text-xs font-black uppercase tracking-[0.3em] py-2 flex flex-col items-center group"
           >
-             <span className="opacity-40 group-hover:opacity-100 transition-opacity mb-1">{isLogin ? t('noIdentity') : t('alreadyAuthorized')}</span>
-             <span className="text-text-secondary group-hover:text-indigo-400 underline underline-offset-8 transition-all">{isLogin ? t('registerNew') : t('authenticateIdentity')}</span>
+             <span className="opacity-40 group-hover:opacity-100 transition-opacity mb-1">
+               {isForgotPassword ? '' : (isLogin ? t('noIdentity') : t('alreadyAuthorized'))}
+             </span>
+             <span className="text-text-secondary group-hover:text-indigo-400 underline underline-offset-8 transition-all">
+               {isForgotPassword ? t('backToLogin') : (isLogin ? t('registerNew') : t('authenticateIdentity'))}
+             </span>
           </button>
         </div>
       </div>
