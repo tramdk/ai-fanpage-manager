@@ -29,7 +29,8 @@ export const AIContentView = memo(({ fanpages, api }: { fanpages: Fanpage[], api
   const [showPlayer, setShowPlayer] = useState(false);
   const [isPublishingVideo, setIsPublishingVideo] = useState(false);
   const [postStatus, setPostStatus] = useState({ type: '', message: '' });
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
+  const isVi = language === 'vi';
 
   const [isAddingTopic, setIsAddingTopic] = useState(false);
   const [newTopicName, setNewTopicName] = useState('');
@@ -41,6 +42,16 @@ export const AIContentView = memo(({ fanpages, api }: { fanpages: Fanpage[], api
     instructions: ''
   });
   const [showMediaLibrary, setShowMediaLibrary] = useState(false);
+
+  // --- Product Advertisement States ---
+  const [activeTab, setActiveTab] = useState<'topic' | 'product'>('topic');
+  const [productImage, setProductImage] = useState('');
+  const [productName, setProductName] = useState('');
+  const [productTone, setProductTone] = useState('Chuyên nghiệp & Sang trọng');
+  const [productPostType, setProductPostType] = useState('facebook_ad');
+  const [productTargetAudience, setProductTargetAudience] = useState('');
+  const [productInstructions, setProductInstructions] = useState('');
+  const [showProductMediaLibrary, setShowProductMediaLibrary] = useState(false);
 
   useEffect(() => {
     api.topics.list()
@@ -138,6 +149,53 @@ export const AIContentView = memo(({ fanpages, api }: { fanpages: Fanpage[], api
       setIsGenerating(false);
     }
   }, [selectedTopic, topics, handleGenerateText, handleGenerateImage]);
+
+  const handleGenerateProductAd = useCallback(async () => {
+    if (!productImage) {
+      toast.error(isVi ? 'Vui lòng chọn hoặc tải lên hình ảnh sản phẩm!' : 'Please choose or upload a product image!');
+      return;
+    }
+    
+    setIsGenerating(true);
+    setIsGeneratingText(true);
+    setError('');
+    setPostStatus({ type: '', message: '' });
+    setGeneratedContent('');
+    setMediaItems([]);
+
+    const tid = toast.loading(isVi ? 'Đang phân tích hình ảnh & tạo nội dung quảng cáo...' : 'Analyzing image & creating product ad content...');
+    try {
+      const data = await api.ai.generateProductAd({
+        imageUrl: productImage,
+        productName,
+        tone: productTone,
+        targetAudience: productTargetAudience,
+        instructions: productInstructions,
+        postType: productPostType,
+        language: isVi ? 'Tiếng Việt' : 'English'
+      });
+
+      if (data.text) {
+        setGeneratedContent(data.text);
+        // Automatically populate visual assets with the product image
+        setMediaItems([{
+          type: 'image',
+          data: productImage,
+          id: Date.now().toString(),
+          isAiGenerated: false
+        }]);
+        toast.success(isVi ? 'Tạo nội dung quảng cáo thành công!' : 'Product ad content generated successfully!', { id: tid });
+      } else {
+        throw new Error(isVi ? 'Không nhận được nội dung phản hồi từ AI.' : 'Empty content response received from AI.');
+      }
+    } catch (err: any) {
+      setError(err.message || (isVi ? 'Lỗi tạo nội dung.' : 'Content generation error.'));
+      toast.error((isVi ? 'Tạo quảng cáo thất bại: ' : 'Failed to generate ad: ') + (err.message || 'Lỗi không xác định'), { id: tid });
+    } finally {
+      setIsGenerating(false);
+      setIsGeneratingText(false);
+    }
+  }, [productImage, productName, productTone, productTargetAudience, productInstructions, productPostType, api, isVi]);
 
 
   const handlePost = useCallback(async () => {
@@ -293,7 +351,7 @@ export const AIContentView = memo(({ fanpages, api }: { fanpages: Fanpage[], api
       <div className="nm-flat rounded-[32px] sm:rounded-[48px] overflow-hidden p-6 sm:p-10 lg:p-16 relative">
         <div className="absolute top-0 left-0 w-80 h-80 bg-soft-blue/5 blur-[120px] -ml-40 -mt-40"></div>
 
-        <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-6 mb-8 sm:mb-12 relative z-10">
+        <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-6 mb-8 relative z-10">
           <div className="flex items-center gap-4 sm:gap-8">
             <div className="w-12 h-12 sm:w-16 sm:h-16 nm-inset flex items-center justify-center text-soft-blue rounded-xl sm:rounded-[24px]">
               <Bot size={24} sm:size={32} />
@@ -303,67 +361,236 @@ export const AIContentView = memo(({ fanpages, api }: { fanpages: Fanpage[], api
               <p className="text-[9px] sm:text-[10px] font-black text-text-muted uppercase tracking-[0.3em] mt-2 sm:mt-3">AI Powered Content Engine</p>
             </div>
           </div>
-          <button 
-            onClick={() => setIsAddingTopic(prev => !prev)} 
-            className="nm-button px-6 py-3 sm:px-8 sm:py-4 text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-text-primary hover:text-soft-blue self-start sm:self-auto"
+          {activeTab === 'topic' && (
+            <button 
+              onClick={() => setIsAddingTopic(prev => !prev)} 
+              className="nm-button px-6 py-3 sm:px-8 sm:py-4 text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-text-primary hover:text-soft-blue self-start sm:self-auto"
+            >
+              <Plus className="inline-block mr-2" size={14} /> {t('addTopic')}
+            </button>
+          )}
+        </div>
+
+        {/* Tab Navigation */}
+        <div className="flex border-b border-white/5 mb-10 relative z-10 gap-6">
+          <button
+            onClick={() => setActiveTab('topic')}
+            className={`pb-4 text-xs font-black uppercase tracking-wider transition-all border-b-2 ${activeTab === 'topic' ? 'text-soft-blue border-soft-blue' : 'text-text-muted border-transparent hover:text-text-primary'}`}
           >
-            <Plus className="inline-block mr-2" size={14} /> {t('addTopic')}
+            {isVi ? 'Tạo theo chủ đề' : 'Topic-Based'}
+          </button>
+          <button
+            onClick={() => setActiveTab('product')}
+            className={`pb-4 text-xs font-black uppercase tracking-wider transition-all border-b-2 ${activeTab === 'product' ? 'text-soft-blue border-soft-blue' : 'text-text-muted border-transparent hover:text-text-primary'}`}
+          >
+            {isVi ? 'Tạo quảng cáo sản phẩm (Multimodal)' : 'Product Visual Ads'}
           </button>
         </div>
 
-        {isAddingTopic && (
-          <div className="mb-12 p-10 nm-inset rounded-[40px] animate-in zoom-in-95 duration-300">
-            <div className="space-y-6">
-              <input type="text" placeholder="Topic Name" className="nm-input font-bold" value={newTopicName} onChange={e => setNewTopicName(e.target.value)} />
-              <input type="text" placeholder="Keywords (Comma separated)" className="nm-input font-bold" value={newTopicKeywords} onChange={e => setNewTopicKeywords(e.target.value)} />
-              <div className="flex justify-end gap-6 pt-4">
-                <button onClick={() => setIsAddingTopic(false)} className="text-[10px] font-black uppercase text-text-muted hover:text-text-primary tracking-widest">{t('cancel')}</button>
-                <button onClick={handleAddTopic} className="nm-button px-10 py-4 text-soft-blue font-black uppercase text-[10px] tracking-widest">{t('saveChanges')}</button>
+        {activeTab === 'topic' ? (
+          <>
+            {isAddingTopic && (
+              <div className="mb-12 p-10 nm-inset rounded-[40px] animate-in zoom-in-95 duration-300">
+                <div className="space-y-6">
+                  <input type="text" placeholder="Topic Name" className="nm-input font-bold" value={newTopicName} onChange={e => setNewTopicName(e.target.value)} />
+                  <input type="text" placeholder="Keywords (Comma separated)" className="nm-input font-bold" value={newTopicKeywords} onChange={e => setNewTopicKeywords(e.target.value)} />
+                  <div className="flex justify-end gap-6 pt-4">
+                    <button onClick={() => setIsAddingTopic(false)} className="text-[10px] font-black uppercase text-text-muted hover:text-text-primary tracking-widest">{t('cancel')}</button>
+                    <button onClick={handleAddTopic} className="nm-button px-10 py-4 text-soft-blue font-black uppercase text-[10px] tracking-widest">{t('saveChanges')}</button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <div className="space-y-12 relative z-10">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+                <div className="space-y-4">
+                  <label className="text-[10px] font-black text-text-muted uppercase tracking-[0.2em] ml-4 flex items-center gap-2">
+                    <Target size={12} className="text-soft-blue" />
+                    {t('topicsKeywords')}
+                  </label>
+                  <div className="relative group">
+                    <select 
+                      className="nm-input font-bold appearance-none cursor-pointer pr-12 text-text-primary" 
+                      value={selectedTopic} 
+                      onChange={e => setSelectedTopic(e.target.value)}
+                    >
+                      <option value="">-- {t('selectProtocol')} --</option>
+                      {topics.map(t => <option key={t.id} value={t.id} className="bg-app-bg text-text-primary">{t.name}</option>)}
+                    </select>
+                    <div className="absolute right-5 top-1/2 -translate-y-1/2 pointer-events-none text-text-muted group-hover:text-soft-blue transition-colors">
+                      <Sliders size={16} />
+                    </div>
+                  </div>
+                </div>
+                <AutomationSettings
+                  config={automationConfig}
+                  onChange={setAutomationConfig}
+                  show={showAdvanced}
+                  onToggle={() => setShowAdvanced(prev => !prev)}
+                />
+              </div>
+
+              <div className="flex justify-center pt-6">
+                <button 
+                  onClick={handleGenerate} 
+                  disabled={isGenerating || !selectedTopic} 
+                  className="nm-button px-16 py-6 bg-gradient-to-r from-soft-blue/10 to-indigo-600/10 border-soft-blue/20 text-soft-blue font-black uppercase text-[11px] tracking-[0.3em] flex items-center gap-6 disabled:opacity-30 group hover:shadow-[0_0_30px_rgba(59,130,246,0.2)] transition-all"
+                >
+                  <Sparkles className={`w-6 h-6 ${isGenerating ? 'animate-spin' : 'group-hover:rotate-12 transition-transform'}`} />
+                  <span>{isGenerating ? t('loading') : t('generate')}</span>
+                </button>
               </div>
             </div>
-          </div>
-        )}
+          </>
+        ) : (
+          <div className="space-y-10 relative z-10 animate-in fade-in duration-300">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+              {/* Product Visual Area */}
+              <div className="space-y-6">
+                <div className="space-y-4">
+                  <label className="text-[10px] font-black text-text-muted uppercase tracking-[0.2em] ml-4 flex items-center gap-2">
+                    <ImageIcon size={12} className="text-soft-blue" />
+                    {isVi ? 'HÌNH ẢNH SẢN PHẨM' : 'PRODUCT IMAGE'}
+                  </label>
+                  <div 
+                    onClick={() => setShowProductMediaLibrary(true)}
+                    className="relative aspect-[4/3] rounded-[32px] nm-flat overflow-hidden p-3 group cursor-pointer border border-white/5 hover:scale-[1.01] transition-all duration-300 flex flex-col justify-center items-center"
+                  >
+                    {productImage ? (
+                      <>
+                        <img src={productImage} className="w-full h-full object-cover rounded-[24px]" alt="Product draft" />
+                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center rounded-[32px] backdrop-blur-[2px]">
+                          <span className="nm-button px-6 py-3 text-[10px] font-black uppercase text-soft-blue">{isVi ? 'ĐỔI ẢNH' : 'CHANGE IMAGE'}</span>
+                        </div>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setProductImage('');
+                          }}
+                          className="absolute top-6 right-6 w-10 h-10 nm-button bg-soft-pink/10 flex items-center justify-center text-soft-pink hover:bg-soft-pink/20 transition-all rounded-full"
+                        >
+                          <X size={18} />
+                        </button>
+                      </>
+                    ) : (
+                      <div className="w-full h-full flex flex-col items-center justify-center gap-4 text-text-muted hover:text-soft-blue transition-colors">
+                        <div className="w-16 h-16 nm-inset flex items-center justify-center rounded-[20px]">
+                          <Upload size={24} />
+                        </div>
+                        <span className="text-[10px] font-black uppercase tracking-widest">{isVi ? 'TẢI LÊN / CHỌN ẢNH' : 'UPLOAD / CHOOSE IMAGE'}</span>
+                        <p className="text-[8px] font-bold text-text-muted/60 uppercase tracking-wider">{isVi ? 'Hỗ trợ PNG, JPG, WEBP' : 'Supports PNG, JPG, WEBP'}</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
 
-        <div className="space-y-12 relative z-10">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
-            <div className="space-y-4">
-              <label className="text-[10px] font-black text-text-muted uppercase tracking-[0.2em] ml-4 flex items-center gap-2">
-                <Target size={12} className="text-soft-blue" />
-                {t('topicsKeywords')}
-              </label>
-              <div className="relative group">
-                <select 
-                  className="nm-input font-bold appearance-none cursor-pointer pr-12 text-text-primary" 
-                  value={selectedTopic} 
-                  onChange={e => setSelectedTopic(e.target.value)}
-                >
-                  <option value="">-- {t('selectProtocol')} --</option>
-                  {topics.map(t => <option key={t.id} value={t.id} className="bg-app-bg text-text-primary">{t.name}</option>)}
-                </select>
-                <div className="absolute right-5 top-1/2 -translate-y-1/2 pointer-events-none text-text-muted group-hover:text-soft-blue transition-colors">
-                  <Sliders size={16} />
+                <div className="space-y-4">
+                  <label className="text-[10px] font-black text-text-muted uppercase tracking-[0.2em] ml-4 flex items-center gap-2">
+                    <Bot size={12} className="text-soft-blue" />
+                    {isVi ? 'TÊN SẢN PHẨM / THƯƠNG HIỆU (TÙY CHỌN)' : 'PRODUCT NAME / BRAND (OPTIONAL)'}
+                  </label>
+                  <input 
+                    type="text" 
+                    placeholder={isVi ? 'Ví dụ: Giày Chạy Bộ Nike Air Max v2' : 'e.g. Nike Air Max Runner v2'} 
+                    value={productName}
+                    onChange={e => setProductName(e.target.value)}
+                    className="nm-input font-bold"
+                  />
+                </div>
+              </div>
+
+              {/* Marketing Options */}
+              <div className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-4">
+                    <label className="text-[10px] font-black text-text-muted uppercase tracking-[0.2em] ml-4 flex items-center gap-2">
+                      <FileText size={12} className="text-soft-blue" />
+                      {isVi ? 'ĐỊNH DẠNG BÀI VIẾT' : 'POST TYPE'}
+                    </label>
+                    <div className="relative group">
+                      <select 
+                        className="nm-input font-bold appearance-none cursor-pointer pr-12 text-text-primary" 
+                        value={productPostType} 
+                        onChange={e => setProductPostType(e.target.value)}
+                      >
+                        <option value="facebook_ad" className="bg-app-bg text-text-primary">{isVi ? 'Bài đăng Bán hàng / Ads' : 'Facebook Sales Post / Ads'}</option>
+                        <option value="product_review" className="bg-app-bg text-text-primary">{isVi ? 'Review / Đánh giá sản phẩm' : 'Product Review / Evaluation'}</option>
+                        <option value="storytelling" className="bg-app-bg text-text-primary">{isVi ? 'Storytelling / Kể chuyện' : 'Storytelling / Brand Story'}</option>
+                        <option value="tiktok_script" className="bg-app-bg text-text-primary">{isVi ? 'Kịch bản Video ngắn (TikTok/Reels)' : 'Short Video Script (TikTok/Reels)'}</option>
+                      </select>
+                      <div className="absolute right-5 top-1/2 -translate-y-1/2 pointer-events-none text-text-muted group-hover:text-soft-blue transition-colors">
+                        <Sliders size={16} />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="space-y-4">
+                    <label className="text-[10px] font-black text-text-muted uppercase tracking-[0.2em] ml-4 flex items-center gap-2">
+                      <Sliders size={12} className="text-soft-blue" />
+                      {isVi ? 'TÔNG GIỌNG NỘI DUNG' : 'TONE OF VOICE'}
+                    </label>
+                    <div className="relative group">
+                      <select 
+                        className="nm-input font-bold appearance-none cursor-pointer pr-12 text-text-primary" 
+                        value={productTone} 
+                        onChange={e => setProductTone(e.target.value)}
+                      >
+                        <option value="Chuyên nghiệp & Sang trọng" className="bg-app-bg text-text-primary">{isVi ? 'Chuyên nghiệp & Sang trọng' : 'Professional & Elegant'}</option>
+                        <option value="Năng động & Hào hứng" className="bg-app-bg text-text-primary">{isVi ? 'Năng động & Hào hứng' : 'Energetic & Excited'}</option>
+                        <option value="Thuyết phục & Thúc giục" className="bg-app-bg text-text-primary">{isVi ? 'Thuyết phục & Thúc giục' : 'Persuasive & Urgent'}</option>
+                        <option value="Hài hước & Gần gũi" className="bg-app-bg text-text-primary">{isVi ? 'Hài hước & Gần gũi' : 'Humorous & Relatable'}</option>
+                        <option value="Tự nhiên & Chia sẻ" className="bg-app-bg text-text-primary">{isVi ? 'Tự nhiên & Chia sẻ' : 'Natural & Sharing'}</option>
+                      </select>
+                      <div className="absolute right-5 top-1/2 -translate-y-1/2 pointer-events-none text-text-muted group-hover:text-soft-blue transition-colors">
+                        <Sliders size={16} />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <label className="text-[10px] font-black text-text-muted uppercase tracking-[0.2em] ml-4 flex items-center gap-2">
+                    <Target size={12} className="text-soft-blue" />
+                    {isVi ? 'KHÁCH HÀNG MỤC TIÊU (TÙY CHỌN)' : 'TARGET AUDIENCE (OPTIONAL)'}
+                  </label>
+                  <input 
+                    type="text" 
+                    placeholder={isVi ? 'Ví dụ: Dân văn phòng năng động, người chạy bộ chuyên nghiệp' : 'e.g. Active office workers, marathon runners'} 
+                    value={productTargetAudience}
+                    onChange={e => setProductTargetAudience(e.target.value)}
+                    className="nm-input font-bold"
+                  />
+                </div>
+
+                <div className="space-y-4">
+                  <label className="text-[10px] font-black text-text-muted uppercase tracking-[0.2em] ml-4 flex items-center gap-2">
+                    <Sparkles size={12} className="text-soft-blue" />
+                    {isVi ? 'YÊU CẦU ĐẶC BIỆT / KHUYẾN MÃI (TÙY CHỌN)' : 'SPECIAL INSTRUCTIONS / PROMOS (OPTIONAL)'}
+                  </label>
+                  <textarea 
+                    placeholder={isVi ? 'Ví dụ: Nhấn mạnh bảo hành 12 tháng, chương trình khuyến mãi mua 1 tặng 1 trong tuần này.' : 'e.g. Highlight 12 months warranty, buy 1 get 1 free promo this week.'} 
+                    value={productInstructions}
+                    onChange={e => setProductInstructions(e.target.value)}
+                    rows={3}
+                    className="nm-input w-full p-4 font-bold text-sm resize-none custom-scrollbar"
+                  />
                 </div>
               </div>
             </div>
-            <AutomationSettings
-              config={automationConfig}
-              onChange={setAutomationConfig}
-              show={showAdvanced}
-              onToggle={() => setShowAdvanced(prev => !prev)}
-            />
-          </div>
 
-          <div className="flex justify-center pt-6">
-            <button 
-              onClick={handleGenerate} 
-              disabled={isGenerating || !selectedTopic} 
-              className="nm-button px-16 py-6 bg-gradient-to-r from-soft-blue/10 to-indigo-600/10 border-soft-blue/20 text-soft-blue font-black uppercase text-[11px] tracking-[0.3em] flex items-center gap-6 disabled:opacity-30 group hover:shadow-[0_0_30px_rgba(59,130,246,0.2)] transition-all"
-            >
-              <Sparkles className={`w-6 h-6 ${isGenerating ? 'animate-spin' : 'group-hover:rotate-12 transition-transform'}`} />
-              <span>{isGenerating ? t('loading') : t('generate')}</span>
-            </button>
+            <div className="flex justify-center pt-6">
+              <button 
+                onClick={handleGenerateProductAd} 
+                disabled={isGenerating || !productImage} 
+                className="nm-button px-16 py-6 bg-gradient-to-r from-soft-blue/10 to-indigo-600/10 border-soft-blue/20 text-soft-blue font-black uppercase text-[11px] tracking-[0.3em] flex items-center gap-6 disabled:opacity-30 group hover:shadow-[0_0_30px_rgba(59,130,246,0.2)] transition-all"
+              >
+                <Sparkles className={`w-6 h-6 ${isGenerating ? 'animate-spin' : 'group-hover:rotate-12 transition-transform'}`} />
+                <span>{isGenerating ? (isVi ? 'ĐANG TẠO...' : 'GENERATING...') : (isVi ? 'TẠO QUẢNG CÁO SẢN PHẨM' : 'GENERATE PRODUCT AD')}</span>
+              </button>
+            </div>
           </div>
-        </div>
+        )}
       </div>
 
       {error && (
@@ -544,6 +771,17 @@ export const AIContentView = memo(({ fanpages, api }: { fanpages: Fanpage[], api
                 isAiGenerated: false
               }]);
               setShowMediaLibrary(false);
+            }}
+          />
+        )}
+
+        {showProductMediaLibrary && (
+          <MediaLibraryModal 
+            api={api}
+            onClose={() => setShowProductMediaLibrary(false)}
+            onSelect={(url) => {
+              setProductImage(url);
+              setShowProductMediaLibrary(false);
             }}
           />
         )}

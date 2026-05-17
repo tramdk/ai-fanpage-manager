@@ -19,8 +19,8 @@ function sanitizeText(text: string): string {
   const emojiRegex = /(\u00a9|\u00ae|[\u2000-\u3300]|\ud83c[\ud000-\udfff]|\ud83d[\ud000-\udfff]|\ud83e[\ud000-\udfff])/g;
   let clean = text.replace(emojiRegex, '');
 
-  // Remove all # and following characters until whitespace or next #
-  clean = clean.replace(/#+[^\s#]*/g, '');
+  // Remove hashtags (supporting all Unicode letters/numbers including Vietnamese accents) without destroying standard trailing punctuation
+  clean = clean.replace(/#[\p{L}\p{N}_]+/gu, '');
 
   // Remove markdown and special characters
   clean = clean.replace(/[*_~`|>\\\[\]]/g, ' ');
@@ -305,7 +305,7 @@ export async function generateVideoBatch(items: { postId: string, options: any }
       return {
         articleId: post.id,
         templateId: item.options.templateId,
-        content: post.content,
+        content: sanitizeText(post.content || ''),
         imageUrl: imageUrl,
         ttsProvider: item.options.ttsProvider,
         ttsVoiceId: item.options.ttsVoiceId,

@@ -101,6 +101,15 @@ export class ApiService {
       const payload = typeof data === 'string' ? { topic: data } : data;
       return this.fetch('/api/ai/generate-image', { method: 'POST', body: JSON.stringify(payload) }).then(r => this.handleResponse(r));
     },
+    generateProductAd: (data: {
+      imageUrl: string;
+      productName?: string;
+      tone?: string;
+      targetAudience?: string;
+      instructions?: string;
+      postType?: string;
+      language?: string;
+    }) => this.fetch('/api/ai/generate-product-ad', { method: 'POST', body: JSON.stringify(data) }).then(r => this.handleResponse(r)),
     generateVideo: (postId: string, options?: { templateId?: string, ttsProvider?: string, ttsVoiceId?: string, bgmAssetId?: string }) => 
       this.fetch('/api/ai/generate-video', { method: 'POST', body: JSON.stringify({ postId, ...options }) }).then(r => this.handleResponse(r)),
     getVideoOptions: () => this.fetch('/api/ai/video-options').then(r => this.handleResponse(r)),

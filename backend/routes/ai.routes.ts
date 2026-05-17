@@ -122,4 +122,24 @@ router.post('/generate-image', authenticateToken, async (req: any, res) => {
   }
 });
 
+router.post('/generate-product-ad', authenticateToken, async (req: any, res) => {
+  const { imageUrl, productName, tone, targetAudience, instructions, postType, language } = req.body;
+  if (!imageUrl) return res.status(400).json({ error: 'Hình ảnh sản phẩm là bắt buộc (imageUrl is required)' });
+
+  try {
+    const text = await aiService.generateProductAd({
+      imageUrl,
+      productName,
+      tone,
+      targetAudience,
+      instructions,
+      postType,
+      language
+    });
+    res.json({ text });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 export default router;

@@ -140,7 +140,14 @@ export const VideoConfigModal: React.FC<VideoConfigModalProps> = ({ onConfirm, o
               <select 
                 className="nm-input font-bold text-text-primary"
                 value={config.ttsProvider}
-                onChange={e => setConfig({ ...config, ttsProvider: e.target.value, ttsVoiceId: options.voices.find(v => v.provider === e.target.value)?.id || '' })}
+                onChange={e => {
+                  const firstVoiceOfProvider = options.voices.find(v => v.provider === e.target.value);
+                  setConfig({ 
+                    ...config, 
+                    ttsProvider: e.target.value, 
+                    ttsVoiceId: firstVoiceOfProvider ? (firstVoiceOfProvider.voiceId || firstVoiceOfProvider.id) : '' 
+                  });
+                }}
                 disabled={loading}
               >
                 {options.providers.map(p => (
@@ -161,7 +168,7 @@ export const VideoConfigModal: React.FC<VideoConfigModalProps> = ({ onConfirm, o
                 disabled={loading}
               >
                 {filteredVoices.map(v => (
-                  <option key={v.id} value={v.id} className="bg-app-bg">{v.name}</option>
+                  <option key={v.id} value={v.voiceId || v.id} className="bg-app-bg">{v.name}</option>
                 ))}
               </select>
             </div>
