@@ -41,7 +41,7 @@ export const VideoPlayerModal: React.FC<VideoPlayerModalProps> = ({ url, onClose
       
       <div className="relative w-full max-w-4xl nm-flat rounded-[40px] overflow-hidden animate-in zoom-in-95 duration-500 flex flex-col md:flex-row">
         {/* Video Side */}
-        <div className="flex-1 bg-black flex items-center justify-center min-h-[400px]">
+        <div className="flex-1 bg-slate-950 flex items-center justify-center min-h-[400px]">
           <video 
             src={cleanUrl}
             controls 

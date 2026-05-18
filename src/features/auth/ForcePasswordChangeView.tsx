@@ -132,7 +132,7 @@ export const ForcePasswordChangeView: React.FC<ForcePasswordChangeViewProps> = (
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full bg-indigo-600 hover:bg-white hover:text-slate-950 text-white p-5 rounded-2xl font-black uppercase tracking-[0.2em] text-[10px] transition-all transform active:scale-95 disabled:opacity-30 shadow-3xl shadow-indigo-900/20 flex items-center justify-center space-x-3"
+                className="w-full bg-indigo-600 hover:bg-white hover:text-indigo-950 text-white p-5 rounded-2xl font-black uppercase tracking-[0.2em] text-[10px] transition-all transform active:scale-95 disabled:opacity-30 shadow-3xl shadow-indigo-900/20 flex items-center justify-center space-x-3"
               >
                 {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <><span>Kích hoạt quyền truy cập</span> <ArrowRight className="w-4 h-4" /></>}
               </button>

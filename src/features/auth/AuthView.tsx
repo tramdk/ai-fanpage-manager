@@ -267,7 +267,7 @@ export const AuthView = ({ onLogin }: { onLogin: (token: string, user: any) => v
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-indigo-600 hover:bg-white hover:text-slate-950 text-white p-5 rounded-2xl font-black uppercase tracking-[0.2em] transition-all transform active:scale-95 disabled:opacity-30 shadow-3xl shadow-indigo-900/20 hover:shadow-indigo-600/20 group"
+              className="w-full bg-indigo-600 hover:bg-white hover:text-indigo-950 text-white p-5 rounded-2xl font-black uppercase tracking-[0.2em] transition-all transform active:scale-95 disabled:opacity-30 shadow-3xl shadow-indigo-900/20 hover:shadow-indigo-600/20 group"
             >
               {loading ? (
                 <div className="flex items-center justify-center space-x-3">

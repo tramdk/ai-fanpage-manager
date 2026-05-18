@@ -138,6 +138,55 @@ const WorkflowNode = memo(({
   );
 });
 
+interface WorkflowEdgesProps {
+  edges: Edge[];
+  nodes: NodeConfig[];
+  selectedEdgeId: string | null;
+  onEdgeContextMenu: (e: React.MouseEvent, edgeId: string) => void;
+}
+
+const WorkflowEdges: React.FC<WorkflowEdgesProps> = React.memo(({
+  edges,
+  nodes,
+  selectedEdgeId,
+  onEdgeContextMenu
+}) => {
+  return (
+    <>
+      {edges.map(edge => {
+        const source = nodes.find(n => n.id === edge.source);
+        const target = nodes.find(n => n.id === edge.target);
+        if (!source || !target) return null;
+        const startX = source.x + 256 + 8;
+        const startY = source.y + 40;
+        const endX = target.x - 8;
+        const endY = target.y + 40;
+        const isActive = selectedEdgeId === edge.id;
+        return (
+          <g key={edge.id}>
+            {/* Transparent hit area for easier right-clicking */}
+            <path
+              d={`M ${startX} ${startY} C ${(startX + endX) / 2} ${startY}, ${(startX + endX) / 2} ${endY}, ${endX} ${endY}`}
+              fill="none"
+              stroke="transparent"
+              strokeWidth="15"
+              className="pointer-events-auto cursor-pointer"
+              onContextMenu={(e) => onEdgeContextMenu(e, edge.id)}
+            />
+            <path
+              d={`M ${startX} ${startY} C ${(startX + endX) / 2} ${startY}, ${(startX + endX) / 2} ${endY}, ${endX} ${endY}`}
+              fill="none"
+              stroke="currentColor"
+              strokeWidth={isActive ? "5" : "3"}
+              className={`transition-all duration-300 pointer-events-none ${isActive ? 'text-soft-blue opacity-100' : 'text-soft-blue/30 hover:text-soft-blue/60'}`}
+            />
+          </g>
+        );
+      })}
+    </>
+  );
+});
+
 export const StrategyWorkflowView: React.FC<{ api: ApiService; fanpages: any[] }> = ({ api, fanpages }) => {
   const { t } = useLanguage();
   const [nodes, setNodes] = useState<NodeConfig[]>([
@@ -480,38 +529,6 @@ export const StrategyWorkflowView: React.FC<{ api: ApiService; fanpages: any[] }
     toast.info('Link Dissolved');
   };
 
-  const renderEdges = () => {
-    return edges.map(edge => {
-      const source = nodes.find(n => n.id === edge.source);
-      const target = nodes.find(n => n.id === edge.target);
-      if (!source || !target) return null;
-      const startX = source.x + 256 + 8;
-      const startY = source.y + 40;
-      const endX = target.x - 8;
-      const endY = target.y + 40;
-      const isActive = selectedEdgeId === edge.id;
-      return (
-        <g key={edge.id}>
-          {/* Transparent hit area for easier right-clicking */}
-          <path
-            d={`M ${startX} ${startY} C ${(startX + endX) / 2} ${startY}, ${(startX + endX) / 2} ${endY}, ${endX} ${endY}`}
-            fill="none"
-            stroke="transparent"
-            strokeWidth="15"
-            className="pointer-events-auto cursor-pointer"
-            onContextMenu={(e) => handleEdgeContextMenu(e, edge.id)}
-          />
-          <path
-            d={`M ${startX} ${startY} C ${(startX + endX) / 2} ${startY}, ${(startX + endX) / 2} ${endY}, ${endX} ${endY}`}
-            fill="none"
-            stroke="currentColor"
-            strokeWidth={isActive ? "5" : "3"}
-            className={`transition-all duration-300 pointer-events-none ${isActive ? 'text-soft-blue opacity-100' : 'text-soft-blue/30 hover:text-soft-blue/60'}`}
-          />
-        </g>
-      );
-    });
-  };
 
   const handleCanvasClick = () => {
     setSelectedNodeId(null);
@@ -608,7 +625,12 @@ export const StrategyWorkflowView: React.FC<{ api: ApiService; fanpages: any[] }
           {mobileViewMode === 'visual' ? (
             <div className="min-w-[1200px] min-h-[800px] w-full h-full relative bg-[radial-gradient(rgba(0,0,0,0.03)_1px,transparent_1px)] [background-size:32px_32px]">
               <svg className="absolute inset-0 w-full h-full pointer-events-none z-10">
-                {renderEdges()}
+                <WorkflowEdges 
+                  edges={edges}
+                  nodes={nodes}
+                  selectedEdgeId={selectedEdgeId}
+                  onEdgeContextMenu={handleEdgeContextMenu}
+                />
                 {drawingEdge && (
                    <path d={`M ${drawingEdge.startX} ${drawingEdge.startY} C ${(drawingEdge.startX + drawingEdge.endX) / 2} ${drawingEdge.startY}, ${(drawingEdge.startX + drawingEdge.endX) / 2} ${drawingEdge.endY}, ${drawingEdge.endX} ${drawingEdge.endY}`} fill="none" stroke="currentColor" strokeWidth="3" strokeDasharray="6,6" className="text-soft-blue/50" />
                 )}

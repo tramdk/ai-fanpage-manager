@@ -45,7 +45,7 @@ const GET_NAV_ITEMS = (t: any, role?: string) => [
 ];
 
 export default function App() {
-  const [token, setToken] = useState<string | null>(localStorage.getItem('token'));
+  const [token, setToken] = useState<string | null>(() => localStorage.getItem('token'));
   const [user, setUser] = useState<User | null>(null);
   
   const navigate = useNavigate();
@@ -57,23 +57,8 @@ export default function App() {
 
   const [isPending, startTransition] = useTransition();
 
-  const [isSidebarOpen, setIsSidebarOpen] = useState(window.innerWidth > 1024);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [isSidebarHovered, setIsSidebarHovered] = useState(false);
   const [theme, setTheme] = useState<'light' | 'dark'>(() => (localStorage.getItem('theme') as any) || 'dark');
-  
-  // Handle resize for sidebar defaults (Mobile only)
-  useEffect(() => {
-    const handleResize = () => {
-      if (window.innerWidth <= 1024) {
-        setIsSidebarOpen(false);
-      } else {
-        setIsSidebarOpen(true);
-      }
-    };
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
 
   const [fanpages, setFanpages] = useState<Fanpage[]>([]);
   const [preSelectedFanpageId, setPreSelectedFanpageId] = useState<string | undefined>(undefined);
@@ -210,36 +195,6 @@ export default function App() {
       });
     }
   };
-
-  // [rerender-memo] - Memoize view rendering
-  const content = useMemo(() => {
-    return (
-      <React.Suspense fallback={
-        <div className="flex flex-col items-center justify-center h-96 space-y-4 animate-pulse">
-          <Loader2 className="w-12 h-12 text-indigo-500 animate-spin" />
-          <p className="text-[10px] font-black text-text-secondary uppercase tracking-[0.4em]">{t('optimizing')}</p>
-        </div>
-      }>
-        <Routes>
-          <Route path="/" element={<Navigate to="/dashboard" replace />} />
-          <Route path="/dashboard" element={<DashboardView api={api} onViewLog={() => navigate('/history')} />} />
-          <Route path="/fanpages" element={<FanpageView fanpages={fanpages} onConnect={() => handleConnectFacebook()} onConfigure={(id) => { setPreSelectedFanpageId(id); navigate('/automation'); }} api={api} />} />
-          <Route path="/strategy" element={<StrategyWorkflowView api={api} fanpages={fanpages} />} />
-          <Route path="/automation" element={<AutomationView fanpages={fanpages} api={api} initialFanpageId={preSelectedFanpageId} />} />
-          <Route path="/ai-content" element={<AIContentView fanpages={fanpages} api={api} />} />
-          <Route path="/video-queue" element={<VideoQueueView api={api} />} />
-          <Route path="/approvals" element={<ApprovalsView api={api} />} />
-          <Route path="/history" element={<HistoryView api={api} />} />
-          <Route path="/admin" element={user?.role === 'admin' ? <AdminView api={api} /> : <Navigate to="/dashboard" replace />} />
-          <Route path="/settings" element={<SettingsView api={api} />} />
-          <Route path="/studio" element={<CampaignStudioView api={api} />} />
-          <Route path="/planner" element={<CampaignStudioView api={api} />} />
-          <Route path="*" element={<Navigate to="/dashboard" replace />} />
-        </Routes>
-      </React.Suspense>
-    );
-  }, [api, fanpages, handleConnectFacebook, preSelectedFanpageId, user?.role, navigate, t]);
-
   const navItems = useMemo(() => GET_NAV_ITEMS(t, user?.role), [t, user?.role]);
 
   if (!token) {
@@ -392,7 +347,16 @@ export default function App() {
         </header>
 
         <div className={`flex-1 transition-all duration-500 overflow-y-auto custom-scrollbar p-4 sm:p-0 ${isPending ? 'opacity-50' : 'opacity-100'}`}>
-          {content}
+          <AppRoutes
+            api={api}
+            fanpages={fanpages}
+            handleConnectFacebook={handleConnectFacebook}
+            preSelectedFanpageId={preSelectedFanpageId}
+            setPreSelectedFanpageId={setPreSelectedFanpageId}
+            user={user}
+            navigate={navigate}
+            t={t}
+          />
         </div>
       </div>
 
@@ -429,3 +393,52 @@ export default function App() {
     </div>
   );
 }
+
+// --- APP ROUTES COMPONENT ---
+interface AppRoutesProps {
+  api: any;
+  fanpages: Fanpage[];
+  handleConnectFacebook: (fbAppRecordId?: string) => Promise<void>;
+  preSelectedFanpageId?: string;
+  setPreSelectedFanpageId: React.Dispatch<React.SetStateAction<string | undefined>>;
+  user: User | null;
+  navigate: ReturnType<typeof useNavigate>;
+  t: (key: string) => string;
+}
+
+const AppRoutes = React.memo(function AppRoutes({
+  api,
+  fanpages,
+  handleConnectFacebook,
+  preSelectedFanpageId,
+  setPreSelectedFanpageId,
+  user,
+  navigate,
+  t
+}: AppRoutesProps) {
+  return (
+    <React.Suspense fallback={
+      <div className="flex flex-col items-center justify-center h-96 space-y-4 animate-pulse">
+        <Loader2 className="w-12 h-12 text-indigo-500 animate-spin" />
+        <p className="text-[10px] font-black text-text-secondary uppercase tracking-[0.4em]">{t('optimizing')}</p>
+      </div>
+    }>
+      <Routes>
+        <Route path="/" element={<Navigate to="/dashboard" replace />} />
+        <Route path="/dashboard" element={<DashboardView api={api} onViewLog={() => navigate('/history')} />} />
+        <Route path="/fanpages" element={<FanpageView fanpages={fanpages} onConnect={() => handleConnectFacebook()} onConfigure={(id) => { setPreSelectedFanpageId(id); navigate('/automation'); }} api={api} />} />
+        <Route path="/strategy" element={<StrategyWorkflowView api={api} fanpages={fanpages} />} />
+        <Route path="/automation" element={<AutomationView fanpages={fanpages} api={api} initialFanpageId={preSelectedFanpageId} />} />
+        <Route path="/ai-content" element={<AIContentView fanpages={fanpages} api={api} />} />
+        <Route path="/video-queue" element={<VideoQueueView api={api} />} />
+        <Route path="/approvals" element={<ApprovalsView api={api} />} />
+        <Route path="/history" element={<HistoryView api={api} />} />
+        <Route path="/admin" element={user?.role === 'admin' ? <AdminView api={api} /> : <Navigate to="/dashboard" replace />} />
+        <Route path="/settings" element={<SettingsView api={api} />} />
+        <Route path="/studio" element={<CampaignStudioView api={api} />} />
+        <Route path="/planner" element={<CampaignStudioView api={api} />} />
+        <Route path="*" element={<Navigate to="/dashboard" replace />} />
+      </Routes>
+    </React.Suspense>
+  );
+});

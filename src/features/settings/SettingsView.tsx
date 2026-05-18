@@ -331,7 +331,7 @@ export const SettingsView = ({ api }: { api: ApiService }) => {
                            </div>
                            <div className="space-y-4 opacity-60">
                               <label className="text-[10px] font-black text-text-muted uppercase tracking-widest ml-3">{t('authorizedEmail')}</label>
-                              <input type="email" disabled className="nm-input font-bold bg-white/50" value={user?.email || ''} />
+                              <input type="email" disabled readOnly className="nm-input font-bold bg-white/50" value={user?.email || ''} />
                            </div>
                            <button type="submit" disabled={isSavingInfo} className="w-full bg-emerald-500 text-white py-5 rounded-3xl font-black uppercase text-[10px] tracking-widest shadow-xl hover:brightness-110 disabled:opacity-50">
                               {isSavingInfo ? <RefreshCw className="animate-spin mx-auto" /> : t('updateIdentity')}

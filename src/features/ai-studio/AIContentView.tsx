@@ -678,7 +678,7 @@ export const AIContentView = memo(({ fanpages, api }: { fanpages: Fanpage[], api
           </div>
 
           {videoResult && (
-            <div className="nm-inset p-8 rounded-[32px] border-l-4 border-soft-blue bg-soft-blue/5 animate-in slide-in-from-left-4 duration-500">
+            <div className="nm-inset p-8 rounded-[32px] border-l border-soft-blue/40 bg-soft-blue/5 animate-in slide-in-from-left-4 duration-500">
               <div className="flex justify-between items-center">
                 <div className="flex items-center gap-6">
                   <div className={`w-12 h-12 nm-flat flex items-center justify-center rounded-xl ${videoResult.status === 'ready' ? 'text-emerald-500' : 'text-soft-blue animate-pulse'}`}>

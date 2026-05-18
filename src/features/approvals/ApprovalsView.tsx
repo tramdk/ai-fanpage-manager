@@ -120,7 +120,7 @@ export const ApprovalsView: React.FC<{ api: ApiService }> = ({ api }) => {
               <div className="flex flex-col lg:flex-row">
                 {/* Media Preview */}
                 {item.content.mediaUrl ? (
-                  <div className="lg:w-80 w-full h-64 lg:h-auto bg-black flex items-center justify-center relative overflow-hidden shrink-0">
+                  <div className="lg:w-80 w-full h-64 lg:h-auto bg-slate-950 flex items-center justify-center relative overflow-hidden shrink-0">
                     {item.content.mediaType === 'video' ? (
                       <video src={item.content.mediaUrl} className="w-full h-full object-cover opacity-80" muted loop onMouseOver={e => e.currentTarget.play()} onMouseOut={e => e.currentTarget.pause()} />
                     ) : (

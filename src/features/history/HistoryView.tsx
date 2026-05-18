@@ -156,7 +156,7 @@ export const HistoryView = ({ api }: { api: ApiService }) => {
         toast.dismiss();
         toast.success('Protocol: Existing video recovered from neural archive.');
         setPosts(prev => prev.map(p => p.id === activePost.id ? { ...p, imageUrl: res.videoUrl } : p));
-        setActivePost({ ...activePost, imageUrl: res.videoUrl });
+        setActivePost(prev => prev ? { ...prev, imageUrl: res.videoUrl } : null);
         setShowVideoPlayer(true);
         return;
       }
@@ -173,7 +173,7 @@ export const HistoryView = ({ api }: { api: ApiService }) => {
             toast.success('Synthesis Successful!');
             // Update local post state
             setPosts(prev => prev.map(p => p.id === activePost.id ? { ...p, imageUrl: status.videoUrl } : p));
-            setActivePost({ ...activePost, imageUrl: status.videoUrl });
+            setActivePost(prev => prev ? { ...prev, imageUrl: status.videoUrl } : null);
             setShowVideoPlayer(true);
           }
         } catch (e) { console.warn('History poll fail', e); }

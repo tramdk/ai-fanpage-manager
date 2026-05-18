@@ -185,7 +185,7 @@ export const AICreativeStudio: React.FC<AICreativeStudioProps> = memo(({ post, a
 
         {/* Body */}
         <div className="flex-1 overflow-y-auto p-10 space-y-8 bg-app-bg/50 custom-scrollbar relative z-10">
-          <div className="bg-card-bg border border-card-border p-6 rounded-2xl text-text-secondary flex items-start shadow-sm border-l-4 border-l-emerald-500">
+          <div className="bg-card-bg border border-card-border p-6 rounded-2xl text-text-secondary flex items-start shadow-sm border-l border-l-emerald-500/40">
             <Info className="w-6 h-6 mr-4 flex-shrink-0 text-emerald-500" />
             <div className="flex-1">
               <p className="text-[9px] font-black text-text-secondary uppercase tracking-widest mb-1">{t('aiGeneration')}</p>
@@ -246,7 +246,7 @@ export const AICreativeStudio: React.FC<AICreativeStudioProps> = memo(({ post, a
                   </button>
                   <button 
                     onClick={() => setShowMediaLibrary(true)} 
-                    className="px-4 py-2 bg-slate-100 text-slate-950 rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-emerald-500 hover:text-white transition-all flex items-center gap-2"
+                    className="px-4 py-2 bg-slate-100 text-black rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-emerald-500 hover:text-white transition-all flex items-center gap-2"
                   >
                     <Upload size={14} /> <span>Upload</span>
                   </button>

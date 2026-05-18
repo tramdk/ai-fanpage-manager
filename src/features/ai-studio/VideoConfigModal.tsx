@@ -69,7 +69,7 @@ export const VideoConfigModal: React.FC<VideoConfigModalProps> = ({ onConfirm, o
   // Handle Template change and load defaults
   const handleTemplateChange = (id: string) => {
     const defaults = TEMPLATE_DEFAULTS[id] || {};
-    setConfig({ ...config, templateId: id, ...defaults });
+    setConfig(prev => ({ ...prev, templateId: id, ...defaults }));
   };
 
   const filteredVoices = options.voices.filter(v => v.provider === config.ttsProvider);
@@ -122,7 +122,10 @@ export const VideoConfigModal: React.FC<VideoConfigModalProps> = ({ onConfirm, o
               <select 
                 className="nm-input font-bold text-text-primary"
                 value={config.bgmAssetId}
-                onChange={e => setConfig({ ...config, bgmAssetId: e.target.value })}
+                onChange={e => {
+                  const val = e.target.value;
+                  setConfig(prev => ({ ...prev, bgmAssetId: val }));
+                }}
                 disabled={loading}
               >
                 <option value="none" className="bg-app-bg">No Atmosphere (Silent)</option>
@@ -142,11 +145,12 @@ export const VideoConfigModal: React.FC<VideoConfigModalProps> = ({ onConfirm, o
                 value={config.ttsProvider}
                 onChange={e => {
                   const firstVoiceOfProvider = options.voices.find(v => v.provider === e.target.value);
-                  setConfig({ 
-                    ...config, 
-                    ttsProvider: e.target.value, 
+                  const provider = e.target.value;
+                  setConfig(prev => ({ 
+                    ...prev, 
+                    ttsProvider: provider, 
                     ttsVoiceId: firstVoiceOfProvider ? (firstVoiceOfProvider.voiceId || firstVoiceOfProvider.id) : '' 
-                  });
+                  }));
                 }}
                 disabled={loading}
               >
@@ -164,7 +168,10 @@ export const VideoConfigModal: React.FC<VideoConfigModalProps> = ({ onConfirm, o
               <select 
                 className="nm-input font-bold text-text-primary"
                 value={config.ttsVoiceId}
-                onChange={e => setConfig({ ...config, ttsVoiceId: e.target.value })}
+                onChange={e => {
+                  const val = e.target.value;
+                  setConfig(prev => ({ ...prev, ttsVoiceId: val }));
+                }}
                 disabled={loading}
               >
                 {filteredVoices.map(v => (
@@ -174,7 +181,7 @@ export const VideoConfigModal: React.FC<VideoConfigModalProps> = ({ onConfirm, o
             </div>
           </div>
 
-          <div className="nm-inset p-8 rounded-3xl flex items-start gap-6 border-l-4 border-soft-blue">
+          <div className="nm-inset p-8 rounded-3xl flex items-start gap-6 border-l border-soft-blue/40">
             <Info size={20} className="text-soft-blue mt-1 flex-shrink-0" />
             <div className="space-y-1">
               <p className="text-[11px] text-text-primary font-black uppercase tracking-widest">Synthesis Protocol Info</p>
