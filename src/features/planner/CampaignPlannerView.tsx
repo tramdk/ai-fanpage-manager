@@ -7,6 +7,10 @@ import { ApiService } from '../../api';
 import { Post, Schedule, Fanpage } from '../../types';
 import { AICreativeStudio } from '../ai-studio/AICreativeStudio';
 import { toast } from 'sonner';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Button } from '@/components/ui/button';
 
 // [rendering-memo] - Ensure performance for many list items
 const PostPreviewCard = memo(({ post, onEdit }: { post: any; onEdit: (post: any) => void }) => {
@@ -24,22 +28,22 @@ const PostPreviewCard = memo(({ post, onEdit }: { post: any; onEdit: (post: any)
       className="nm-flat p-5 group cursor-pointer hover:scale-[1.02] transition-all"
     >
       <div className="flex flex-col gap-4">
-        <div className="w-full h-32 nm-inset p-2 rounded-2xl overflow-hidden relative">
+        <div className="w-full h-32 bg-[#F3F4F6] dark:bg-white/8 border border-[#D1D5DB] dark:border-white/12 rounded-lg p-2 rounded-lg overflow-hidden relative">
           <img src={displayImage} alt="Preview" className="w-full h-full object-cover rounded-xl group-hover:scale-110 transition-transform duration-700"/>
-          <div className="absolute top-4 right-4 nm-flat px-3 py-1 rounded-lg text-[8px] font-black uppercase text-soft-blue tracking-widest backdrop-blur-md bg-white/40">
+          <div className="absolute top-4 right-4 nm-flat px-3 py-1 rounded-lg text-[8px] font-bold uppercase text-[#2563EB] dark:text-blue-400 tracking-normal backdrop-blur-md bg-white/40">
             {post.phase || 'NARRATIVE'}
           </div>
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center justify-between mb-3 px-1">
-             <div className="flex items-center gap-2 text-[9px] font-black text-text-muted uppercase tracking-widest font-mono">
-                <Clock size={12} className="text-soft-blue" /> {post.time}
+             <div className="flex items-center gap-2 text-[9px] font-bold text-[#6B7280] dark:text-gray-400 uppercase font-mono">
+                <Clock size={12} className="text-[#2563EB] dark:text-blue-400" /> {post.time}
              </div>
-             <button onClick={(e) => { e.stopPropagation(); onEdit(post); }} className="w-8 h-8 nm-button flex items-center justify-center text-text-muted hover:text-soft-blue transition-colors">
+             <button onClick={(e) => { e.stopPropagation(); onEdit(post); }} className="w-8 h-8 border border-[#D1D5DB] dark:border-white/12 rounded-lg flex items-center justify-center text-[#6B7280] dark:text-gray-400 hover:text-[#2563EB] dark:text-blue-400 transition-colors">
                <Edit3 size={14} />
              </button>
           </div>
-          <p className="text-[11px] leading-relaxed text-text-secondary line-clamp-3 font-bold px-1 italic">
+          <p className="text-[11px] leading-relaxed text-[#6B7280] dark:text-gray-400 line-clamp-3 font-bold px-1 italic">
             "{post.caption}"
           </p>
         </div>
@@ -227,8 +231,8 @@ const CampaignPlannerView: React.FC<{ api: ApiService }> = ({ api }) => {
 
   if (loading) return (
     <div className="flex flex-col items-center justify-center p-32 gap-6">
-       <RefreshCw className="w-12 h-12 text-soft-blue animate-spin opacity-40" />
-       <p className="text-[10px] font-black text-text-muted uppercase tracking-[0.3em]">Synching Neural Strategy...</p>
+       <RefreshCw className="w-12 h-12 text-[#2563EB] dark:text-blue-400 animate-spin opacity-40" />
+       <p className="text-[10px] font-bold text-[#6B7280] dark:text-gray-400 uppercase tracking-[0.3em]">Synching Neural Strategy...</p>
     </div>
   );
 
@@ -237,12 +241,12 @@ const CampaignPlannerView: React.FC<{ api: ApiService }> = ({ api }) => {
       <div className="absolute inset-0 bg-gradient-to-br from-soft-blue/5 to-soft-pink/5 pointer-events-none"></div>
 
       {/* CAMPAIGN CONSOLE SIDEBAR */}
-      <aside className="w-[450px] nm-flat m-6 mr-0 p-10 flex flex-col gap-10 relative overflow-y-auto custom-scrollbar z-10 rounded-[48px]">
+      <aside className="w-[450px] nm-flat m-6 mr-0 p-10 flex flex-col gap-10 relative overflow-y-auto custom-scrollbar z-10 rounded-xl">
         <div className="flex items-center gap-6">
-           <div className="w-16 h-16 nm-flat flex items-center justify-center text-soft-blue"><Roadmap size={28} /></div>
+           <div className="w-16 h-16 nm-flat flex items-center justify-center text-[#2563EB] dark:text-blue-400"><Roadmap size={28} /></div>
            <div>
-              <h2 className="text-xl font-black text-text-primary uppercase tracking-tight">Campaign Logic</h2>
-              <p className="text-[9px] font-black text-text-muted uppercase tracking-[0.4em] mt-1.5 opacity-60">Factory Intelligence Unit</p>
+              <h2 className="text-xl font-bold text-[#111827] dark:text-gray-100 ">Campaign Logic</h2>
+              <p className="text-[9px] font-bold text-[#6B7280] dark:text-gray-400 uppercase mt-1.5 opacity-60">Factory Intelligence Unit</p>
            </div>
         </div>
 
@@ -250,62 +254,112 @@ const CampaignPlannerView: React.FC<{ api: ApiService }> = ({ api }) => {
            {/* Primary Inputs */}
            <div className="space-y-6">
               <div className="space-y-3">
-                <label className="text-[10px] font-black text-text-muted uppercase tracking-widest ml-4 flex items-center gap-2"><Target size={14} className="text-soft-blue" /> Deployment Node</label>
-                <select className="nm-input font-bold" value={selectedFanpage} onChange={e => setSelectedFanpage(e.target.value)}>
-                  {fanpages.map(p => <option key={p.id} value={p.pageId}>{p.name}</option>)}
-                </select>
+                <label className="text-[10px] font-bold text-[#6B7280] dark:text-gray-400 uppercase ml-4 flex items-center gap-2"><Target size={14} className="text-[#2563EB] dark:text-blue-400" /> Deployment Node</label>
+                <Select value={selectedFanpage} onValueChange={setSelectedFanpage}>
+                   <SelectTrigger className="flex h-12 w-full rounded-lg border border-black/10 dark:border-white/10 bg-slate-200/50 dark:bg-slate-950/40 px-6 py-3 text-sm font-bold text-slate-900 dark:text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all justify-between [&>span]:line-clamp-1">
+                     <SelectValue />
+                   </SelectTrigger>
+                   <SelectContent>
+                     {fanpages.map(p => (
+                       <SelectItem key={p.id} value={p.pageId} >
+                         {p.name}
+                       </SelectItem>
+                     ))}
+                   </SelectContent>
+                 </Select>
               </div>
               <div className="space-y-3">
-                <label className="text-[10px] font-black text-text-muted uppercase tracking-widest ml-4">Campaign Alias</label>
-                <input type="text" className="nm-input font-bold placeholder:text-text-muted/30" placeholder="Brand Launch 2024" value={campaignName} onChange={e => setCampaignName(e.target.value)} />
+                <label className="text-[10px] font-bold text-[#6B7280] dark:text-gray-400 uppercase ml-4">Campaign Alias</label>
+                <Input 
+                   type="text" 
+                   className="flex h-12 w-full rounded-lg border border-black/10 dark:border-white/10 bg-slate-200/50 dark:bg-slate-950/40 px-6 py-3 text-sm font-bold text-slate-900 dark:text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-600 dark:placeholder:text-slate-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:border-indigo-500 disabled:cursor-not-allowed disabled:opacity-50 transition-all" 
+                   placeholder="Brand Launch 2024" 
+                   value={campaignName} 
+                   onChange={e => setCampaignName(e.target.value)} 
+                 />
               </div>
               <div className="space-y-3">
-                 <label className="text-[10px] font-black text-text-muted uppercase tracking-widest ml-4">Reference Topic</label>
-                 <select className="nm-input font-bold" value={topic} onChange={e => setTopic(e.target.value)}>
-                   {topics.map(t => <option key={t.id} value={t.name}>{t.name}</option>)}
-                 </select>
+                 <label className="text-[10px] font-bold text-[#6B7280] dark:text-gray-400 uppercase ml-4">Reference Topic</label>
+                 <Select value={topic} onValueChange={setTopic}>
+                    <SelectTrigger className="flex h-12 w-full rounded-lg border border-black/10 dark:border-white/10 bg-slate-200/50 dark:bg-slate-950/40 px-6 py-3 text-sm font-bold text-slate-900 dark:text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all justify-between [&>span]:line-clamp-1">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {topics.map(t => (
+                        <SelectItem key={t.id} value={t.name} >
+                          {t.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
               </div>
            </div>
 
            {/* Strategic Core */}
            <div className="space-y-6">
               <div className="space-y-3">
-                <label className="text-[10px] font-black text-text-muted uppercase tracking-widest ml-4 flex items-center gap-2"><Shield size={14} className="text-soft-blue" /> Narrative Logic</label>
-                <textarea className="nm-input font-bold resize-none min-h-[120px] pt-4" placeholder="Central Idea / Hook Strategy..." value={mainIdea} onChange={e => setMainIdea(e.target.value)} />
+                <label className="text-[10px] font-bold text-[#6B7280] dark:text-gray-400 uppercase ml-4 flex items-center gap-2"><Shield size={14} className="text-[#2563EB] dark:text-blue-400" /> Narrative Logic</label>
+                <Textarea 
+                   className="w-full min-h-[120px] p-4 font-bold text-sm resize-none custom-scrollbar rounded-lg border border-black/10 dark:border-white/10 bg-slate-200/50 dark:bg-slate-950/40 text-slate-900 dark:text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-600 dark:placeholder:text-slate-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:border-indigo-500 transition-all" 
+                   placeholder="Central Idea / Hook Strategy..." 
+                   value={mainIdea} 
+                   onChange={e => setMainIdea(e.target.value)} 
+                 />
               </div>
               <div className="space-y-3">
-                <label className="text-[10px] font-black text-text-muted uppercase tracking-widest ml-4">Target Audience</label>
-                <input type="text" className="nm-input font-bold" placeholder="e.g. Gen Z Professionals" value={targetAudience} onChange={e => setTargetAudience(e.target.value)} />
+                <label className="text-[10px] font-bold text-[#6B7280] dark:text-gray-400 uppercase ml-4">Target Audience</label>
+                <Input 
+                   type="text" 
+                   className="flex h-12 w-full rounded-lg border border-black/10 dark:border-white/10 bg-slate-200/50 dark:bg-slate-950/40 px-6 py-3 text-sm font-bold text-slate-900 dark:text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-600 dark:placeholder:text-slate-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:border-indigo-500 disabled:cursor-not-allowed disabled:opacity-50 transition-all" 
+                   placeholder="e.g. Gen Z Professionals" 
+                   value={targetAudience} 
+                   onChange={e => setTargetAudience(e.target.value)} 
+                 />
               </div>
            </div>
 
            {/* Chronology Settings */}
            <div className="space-y-6">
-              <label className="text-[10px] font-black text-text-muted uppercase tracking-widest ml-4 flex items-center gap-2"><Clock size={14} className="text-soft-blue" /> Chronology Node</label>
+              <label className="text-[10px] font-bold text-[#6B7280] dark:text-gray-400 uppercase ml-4 flex items-center gap-2"><Clock size={14} className="text-[#2563EB] dark:text-blue-400" /> Chronology Node</label>
               <div className="grid grid-cols-2 gap-6">
                  <div className="space-y-3">
-                    <span className="text-[9px] font-black text-text-muted uppercase ml-4 opacity-50">Start</span>
-                    <input type="date" className="nm-input font-bold text-xs" value={startDate} onChange={e => setStartDate(e.target.value)} />
+                    <span className="text-[9px] font-bold text-[#6B7280] dark:text-gray-400 uppercase ml-4 opacity-50">Start</span>
+                    <Input 
+                       type="date" 
+                       className="flex h-12 w-full rounded-lg border border-black/10 dark:border-white/10 bg-slate-200/50 dark:bg-slate-950/40 px-6 py-3 text-sm font-bold text-slate-900 dark:text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-600 dark:placeholder:text-slate-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:border-indigo-500 disabled:cursor-not-allowed disabled:opacity-50 transition-all [color-scheme:dark]" 
+                       value={startDate} 
+                       onChange={e => setStartDate(e.target.value)} 
+                     />
                  </div>
                  <div className="space-y-3">
-                    <span className="text-[9px] font-black text-text-muted uppercase ml-4 opacity-50">End</span>
-                    <input type="date" className="nm-input font-bold text-xs" value={endDate} onChange={e => setEndDate(e.target.value)} />
+                    <span className="text-[9px] font-bold text-[#6B7280] dark:text-gray-400 uppercase ml-4 opacity-50">End</span>
+                    <Input 
+                       type="date" 
+                       className="flex h-12 w-full rounded-lg border border-black/10 dark:border-white/10 bg-slate-200/50 dark:bg-slate-950/40 px-6 py-3 text-sm font-bold text-slate-900 dark:text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-600 dark:placeholder:text-slate-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:border-indigo-500 disabled:cursor-not-allowed disabled:opacity-50 transition-all [color-scheme:dark]" 
+                       value={endDate} 
+                       onChange={e => setEndDate(e.target.value)} 
+                     />
                  </div>
               </div>
                <div className="space-y-3">
-                  <span className="text-[9px] font-black text-text-muted uppercase ml-4 opacity-50">Node Sync Time</span>
-                  <input type="time" className="nm-input font-bold" value={postTime} onChange={e => setPostTime(e.target.value)} />
+                  <span className="text-[9px] font-bold text-[#6B7280] dark:text-gray-400 uppercase ml-4 opacity-50">Node Sync Time</span>
+                  <Input 
+                     type="time" 
+                     className="flex h-12 w-full rounded-lg border border-black/10 dark:border-white/10 bg-slate-200/50 dark:bg-slate-950/40 px-6 py-3 text-sm font-bold text-slate-900 dark:text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-600 dark:placeholder:text-slate-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:border-indigo-500 disabled:cursor-not-allowed disabled:opacity-50 transition-all [color-scheme:dark]" 
+                     value={postTime} 
+                     onChange={e => setPostTime(e.target.value)} 
+                   />
                </div>
 
                <button 
                  onClick={() => setUseDayProgression(!useDayProgression)}
-                 className={`w-full flex items-center justify-between p-6 nm-flat rounded-3xl group transition-all ${useDayProgression ? 'nm-inset' : ''}`}
+                 className={`w-full flex items-center justify-between p-6 nm-flat rounded-xl group transition-all ${useDayProgression ? 'bg-[#F3F4F6] dark:bg-white/8 border border-[#D1D5DB] dark:border-white/12 rounded-lg' : ''}`}
                >
                   <div className="flex flex-col items-start gap-1">
-                     <span className={`text-[10px] font-black uppercase tracking-widest ${useDayProgression ? 'text-soft-blue' : 'text-text-primary'}`}>{useDayProgression ? 'Series Mode' : 'Phase Mode'}</span>
-                     <span className="text-[8px] text-text-muted font-bold uppercase tracking-tighter">Algorithm Selection</span>
+                     <span className={`text-[10px] font-bold uppercase ${useDayProgression ? 'text-[#2563EB] dark:text-blue-400' : 'text-[#111827] dark:text-gray-100'}`}>{useDayProgression ? 'Series Mode' : 'Phase Mode'}</span>
+                     <span className="text-[8px] text-[#6B7280] dark:text-gray-400 font-bold er">Algorithm Selection</span>
                   </div>
-                  <div className={`w-12 h-6 rounded-full transition-all relative ${useDayProgression ? 'bg-soft-blue' : 'nm-inset'}`}>
+                  <div className={`w-12 h-6 rounded-full transition-all relative ${useDayProgression ? 'bg-[#2563EB]' : 'bg-[#F3F4F6] dark:bg-white/8 border border-[#D1D5DB] dark:border-white/12 rounded-lg'}`}>
                      <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all shadow-sm ${useDayProgression ? 'left-7' : 'left-1'}`}></div>
                   </div>
                </button>
@@ -314,17 +368,17 @@ const CampaignPlannerView: React.FC<{ api: ApiService }> = ({ api }) => {
 
         <div className="mt-auto pt-10">
            {isDrafting ? (
-             <div className="w-full nm-inset rounded-[32px] p-8 animate-pulse">
+             <div className="w-full bg-[#F3F4F6] dark:bg-white/8 border border-[#D1D5DB] dark:border-white/12 rounded-lg rounded-lg p-8 animate-pulse">
                 <div className="flex justify-between items-center mb-4">
-                   <span className="text-[10px] font-black uppercase text-soft-blue tracking-widest">Neural Drafting...</span>
-                   <span className="text-[10px] font-black text-soft-blue">{draftProgress}%</span>
+                   <span className="text-[10px] font-bold uppercase text-[#2563EB] dark:text-blue-400 tracking-normal">Neural Drafting...</span>
+                   <span className="text-[10px] font-bold text-[#2563EB] dark:text-blue-400">{draftProgress}%</span>
                 </div>
                 <div className="w-full h-2 bg-black/5 rounded-full overflow-hidden">
-                  <div className="h-full bg-soft-blue transition-all duration-700 shadow-[0_0_15px_rgba(59,130,246,0.4)]" style={{ width: `${draftProgress}%` }}></div>
+                  <div className="h-full bg-[#2563EB] transition-all duration-700 " style={{ width: `${draftProgress}%` }}></div>
                 </div>
              </div>
            ) : (
-             <button onClick={handleDraftCampaign} className="w-full bg-soft-blue text-white font-black uppercase text-xs tracking-widest py-6 rounded-[32px] shadow-2xl hover:brightness-110 transition-all flex items-center justify-center gap-4 group active:scale-95">
+             <button onClick={handleDraftCampaign} className="w-full bg-[#2563EB] text-white font-bold uppercase text-xs tracking-normal py-6 rounded-lg shadow-2xl hover:brightness-110 transition-all flex items-center justify-center gap-4 group active:scale-95">
                <Zap size={22} className="group-hover:rotate-12 transition-transform" /> LAUNCH AI FACTORY
              </button>
            )}
@@ -333,7 +387,7 @@ const CampaignPlannerView: React.FC<{ api: ApiService }> = ({ api }) => {
 
       <main className="flex-1 min-w-0 flex flex-col bg-transparent overflow-hidden relative p-6">
         <header className="h-28 flex items-center justify-between px-10 mb-2">
-          <div className="nm-inset p-2 rounded-3xl flex items-center gap-3">
+          <div className="bg-[#F3F4F6] dark:bg-white/8 border border-[#D1D5DB] dark:border-white/12 rounded-lg p-2 rounded-xl flex items-center gap-3">
               {[
                 { id: 'planner', icon: <Calendar size={14} />, label: 'PLANNER' },
                 { id: 'map', icon: <MapIcon size={14} />, label: 'STRATEGY MAP' },
@@ -342,7 +396,7 @@ const CampaignPlannerView: React.FC<{ api: ApiService }> = ({ api }) => {
                 <button 
                   key={t.id} 
                   onClick={() => handleTabChange(t.id)} 
-                  className={`px-8 py-3.5 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] transition-all flex items-center gap-3 ${activeTab === t.id ? 'nm-flat text-soft-blue' : 'text-text-muted hover:text-text-primary'}`}
+                  className={`px-8 py-3.5 rounded-lg text-[10px] font-bold uppercase tracking-[0.2em] transition-all flex items-center gap-3 ${activeTab === t.id ? 'nm-flat text-[#2563EB] dark:text-blue-400' : 'text-[#6B7280] dark:text-gray-400 hover:text-[#111827] dark:text-gray-100'}`}
                 >
                   {t.icon} {t.label}
                 </button>
@@ -350,23 +404,23 @@ const CampaignPlannerView: React.FC<{ api: ApiService }> = ({ api }) => {
           </div>
           <button 
             onClick={() => { setIsSyncing(true); fetchPlannerData().finally(() => setIsSyncing(false)); }} 
-            className="w-14 h-14 nm-button flex items-center justify-center text-text-muted hover:text-soft-blue transition-all active:scale-90"
+            className="w-14 h-14 border border-[#D1D5DB] dark:border-white/12 rounded-lg flex items-center justify-center text-[#6B7280] dark:text-gray-400 hover:text-[#2563EB] dark:text-blue-400 transition-all active:scale-90"
           >
-            <RefreshCw size={20} className={isSyncing ? 'animate-spin text-soft-blue' : ''} />
+            <RefreshCw size={20} className={isSyncing ? 'animate-spin text-[#2563EB] dark:text-blue-400' : ''} />
           </button>
         </header>
 
-        <div className={`flex-1 nm-inset rounded-[48px] overflow-hidden relative m-4 flex flex-col transition-all duration-500 ${isPending ? 'opacity-40 blur-[4px]' : 'opacity-100'}`}>
+        <div className={`flex-1 bg-[#F3F4F6] dark:bg-white/8 border border-[#D1D5DB] dark:border-white/12 rounded-lg rounded-xl overflow-hidden relative m-4 flex flex-col transition-all duration-500 ${isPending ? 'opacity-40 blur-[4px]' : 'opacity-100'}`}>
           {activeTab === 'map' ? (
              <div className="flex flex-col h-full overflow-hidden">
                 <div className="pt-12 pb-8 flex flex-col items-center gap-8 px-12">
                    <div className="text-center">
-                      <h3 className="text-3xl font-black text-text-primary tracking-tight uppercase mb-2">Neural Journey Explorer</h3>
-                      <div className="h-1.5 w-24 bg-soft-blue mx-auto rounded-full shadow-[0_0_15px_rgba(59,130,246,0.3)]"></div>
+                      <h3 className="text-2xl font-bold text-[#111827] dark:text-gray-100  uppercase mb-2">Neural Journey Explorer</h3>
+                      <div className="h-1.5 w-24 bg-[#2563EB] mx-auto rounded-full "></div>
                    </div>
-                   <div className="nm-flat p-2 rounded-[32px] flex items-center gap-6 min-w-[500px]">
-                      <div className="w-12 h-12 nm-flat flex items-center justify-center text-soft-blue"><Filter size={20} /></div>
-                      <select className="bg-transparent px-4 text-[11px] font-black uppercase text-text-primary outline-none appearance-none cursor-pointer flex-1 tracking-widest" value={selectedCampaignForMap} onChange={e => setSelectedCampaignForMap(e.target.value)}>
+                   <div className="nm-flat p-2 rounded-lg flex items-center gap-6 min-w-[500px]">
+                      <div className="w-12 h-12 nm-flat flex items-center justify-center text-[#2563EB] dark:text-blue-400"><Filter size={20} /></div>
+                      <select className="bg-transparent px-4 text-[11px] font-bold uppercase text-[#111827] dark:text-gray-100 outline-none appearance-none cursor-pointer flex-1 tracking-normal" value={selectedCampaignForMap} onChange={e => setSelectedCampaignForMap(e.target.value)}>
                          {schedules.map(s => <option key={s.id} value={s.id} className="text-slate-900">{s.topic}</option>)}
                       </select>
                    </div>
@@ -377,28 +431,28 @@ const CampaignPlannerView: React.FC<{ api: ApiService }> = ({ api }) => {
                     {filteredMapPosts.map((post, idx) => (
                       <React.Fragment key={post.id}>
                         <div className="relative group">
-                          <div className="w-80 nm-flat rounded-[40px] p-8 transition-all group-hover:scale-105 group-hover:-translate-y-8">
+                          <div className="w-80 nm-flat rounded-xl p-8 transition-all group-hover:scale-105 group-hover:-translate-y-8">
                              <div className="flex items-center justify-between mb-6">
-                                <div className="w-12 h-12 nm-inset flex items-center justify-center font-black text-sm text-soft-blue">{idx + 1}</div>
-                                <div className="nm-inset px-4 py-1.5 rounded-xl text-[9px] font-black uppercase text-soft-blue tracking-widest">
+                                <div className="w-12 h-12 bg-[#F3F4F6] dark:bg-white/8 border border-[#D1D5DB] dark:border-white/12 rounded-lg flex items-center justify-center font-bold text-sm text-[#2563EB] dark:text-blue-400">{idx + 1}</div>
+                                <div className="bg-[#F3F4F6] dark:bg-white/8 border border-[#D1D5DB] dark:border-white/12 rounded-lg px-4 py-1.5 rounded-xl text-[9px] font-bold uppercase text-[#2563EB] dark:text-blue-400 tracking-normal">
                                   {post.phase || 'LOGIC'}
                                 </div>
                              </div>
-                             <div className="w-full h-44 nm-inset p-2 rounded-3xl mb-6 overflow-hidden relative">
+                             <div className="w-full h-44 bg-[#F3F4F6] dark:bg-white/8 border border-[#D1D5DB] dark:border-white/12 rounded-lg p-2 rounded-xl mb-6 overflow-hidden relative">
                                 {post.imageUrl ? (
-                                  <img src={(() => { try { return JSON.parse(post.imageUrl)[0]?.data || post.imageUrl } catch(e) { return post.imageUrl } })()} className="w-full h-full object-cover rounded-2xl group-hover:scale-110 transition-all duration-700" />
+                                  <img src={(() => { try { return JSON.parse(post.imageUrl)[0]?.data || post.imageUrl } catch(e) { return post.imageUrl } })()} className="w-full h-full object-cover rounded-lg group-hover:scale-110 transition-all duration-700" />
                                 ) : (
-                                  <div className="w-full h-full flex items-center justify-center text-[10px] font-black uppercase text-text-muted/20 italic">No Node Asset</div>
+                                  <div className="w-full h-full flex items-center justify-center text-[10px] font-bold uppercase text-[#6B7280] dark:text-gray-400/20 italic">No Node Asset</div>
                                 )}
                              </div>
-                             <p className="text-xs font-bold text-text-secondary line-clamp-3 leading-relaxed italic px-2">"{post.caption}"</p>
-                             <button onClick={() => setEditingPost(post)} className="mt-6 w-full nm-button py-3 text-[10px] font-black uppercase tracking-widest text-text-muted hover:text-soft-blue transition-all">
+                             <p className="text-xs font-bold text-[#6B7280] dark:text-gray-400 line-clamp-3 leading-relaxed italic px-2">"{post.caption}"</p>
+                             <button onClick={() => setEditingPost(post)} className="mt-6 w-full border border-[#D1D5DB] dark:border-white/12 rounded-lg py-3 text-[10px] font-bold uppercase text-[#6B7280] dark:text-gray-400 hover:text-[#2563EB] dark:text-blue-400 transition-all">
                                Modify Strategic Node
                              </button>
                           </div>
                         </div>
                         {idx < filteredMapPosts.length - 1 ? (
-                          <div className="flex items-center"><ArrowRight className="text-text-muted/20" size={48} strokeWidth={4} /></div>
+                          <div className="flex items-center"><ArrowRight className="text-[#6B7280] dark:text-gray-400/20" size={48} strokeWidth={4} /></div>
                         ) : null}
                       </React.Fragment>
                     ))}
@@ -407,13 +461,13 @@ const CampaignPlannerView: React.FC<{ api: ApiService }> = ({ api }) => {
 
                 <div className="pb-16 pt-8 flex justify-center gap-10">
                    {[
-                     { label: 'AWARENESS', color: 'bg-soft-blue' },
+                     { label: 'AWARENESS', color: 'bg-[#2563EB]' },
                      { label: 'NARRATIVE', color: 'bg-soft-pink' },
                      { label: 'CONVERSION', color: 'bg-emerald-500' }
                    ].map((l, i) => (
-                      <div key={i} className="flex items-center gap-4 nm-flat px-8 py-4 rounded-2xl">
+                      <div key={i} className="flex items-center gap-4 nm-flat px-8 py-4 rounded-lg">
                          <div className={`w-3 h-3 rounded-full ${l.color} shadow-lg`}></div>
-                         <span className="text-[10px] font-black uppercase text-text-muted tracking-widest italic">{l.label}</span>
+                         <span className="text-[10px] font-bold uppercase text-[#6B7280] dark:text-gray-400 tracking-normal italic">{l.label}</span>
                       </div>
                    ))}
                 </div>
@@ -422,10 +476,10 @@ const CampaignPlannerView: React.FC<{ api: ApiService }> = ({ api }) => {
              <div className="flex-1 overflow-y-auto custom-scrollbar bg-white/40">
                 <div className="grid grid-cols-7 min-w-[1500px] min-h-full">
                    {calendarData.map((data, idx) => (
-                      <div key={idx} className={`p-8 border-r border-b border-black/5 flex flex-col gap-8 ${data.isToday ? 'bg-soft-blue/[0.03]' : ''}`}>
+                      <div key={idx} className={`p-8 border-r border-b border-black/5 flex flex-col gap-8 ${data.isToday ? 'bg-[#2563EB]/[0.03]' : ''}`}>
                          <div className="flex justify-between items-center px-2">
-                            <span className="text-[11px] font-black text-text-muted uppercase tracking-[0.2em]">{data.dayLabel}</span>
-                            <span className={`w-11 h-11 flex items-center justify-center rounded-2xl text-sm font-black transition-all ${data.isToday ? 'nm-flat text-soft-blue' : 'nm-inset text-text-muted'}`}>{data.dateLabel}</span>
+                            <span className="text-[11px] font-bold text-[#6B7280] dark:text-gray-400 uppercase tracking-[0.2em]">{data.dayLabel}</span>
+                            <span className={`w-11 h-11 flex items-center justify-center rounded-lg text-sm font-bold transition-all ${data.isToday ? 'nm-flat text-[#2563EB] dark:text-blue-400' : 'bg-[#F3F4F6] dark:bg-white/8 border border-[#D1D5DB] dark:border-white/12 rounded-lg text-[#6B7280] dark:text-gray-400'}`}>{data.dateLabel}</span>
                          </div>
                          <div className="space-y-8">
                            {data.posts.map((p: any) => <PostPreviewCard key={p.id} post={p} onEdit={setEditingPost} />)}

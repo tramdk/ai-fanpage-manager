@@ -10,6 +10,9 @@ import {
   ArrowUp, ArrowDown
 } from 'lucide-react';
 import { ApiService } from '../../api';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 // --- TYPES ---
 type NodeType = 'trigger' | 'ai_text' | 'ai_video' | 'human_approval' | 'publish';
@@ -69,19 +72,19 @@ const WorkflowNode = memo(({
       onDragStart={(e) => onDragStart(e, node.id)}
       onClick={(e) => { e.stopPropagation(); onSelect(node); }}
       data-node-id={node.id}
-      className={`absolute w-64 rounded-3xl transition-all cursor-move group p-1 pointer-events-auto
+      className={`absolute w-64 rounded-xl transition-all cursor-move group p-1 pointer-events-auto
         ${isSelected ? 'nm-flat ring-2 ring-soft-blue/20' : 'nm-flat hover:scale-[1.02]'}
         overflow-hidden z-20
       `}
       style={{ left: node.x, top: node.y }}
     >
       <div className="p-4 flex items-center gap-4">
-        <div className={`w-10 h-10 rounded-2xl flex items-center justify-center nm-inset pointer-events-none ${meta.defaultColor}`}>
+        <div className={`w-10 h-10 rounded-lg flex items-center justify-center bg-[#F3F4F6] dark:bg-white/8 border border-[#D1D5DB] dark:border-white/12 rounded-lg pointer-events-none ${meta.defaultColor}`}>
           <Icon size={20} />
         </div>
         <div className="flex-1 min-w-0 pointer-events-none">
-          <h4 className="text-[11px] font-black text-text-primary uppercase tracking-tight truncate">{node.title}</h4>
-          <p className="text-[9px] font-bold text-text-muted uppercase tracking-widest truncate">{node.description}</p>
+          <h4 className="text-[11px] font-bold text-[#111827] dark:text-gray-100  truncate">{node.title}</h4>
+          <p className="text-[9px] font-bold text-[#6B7280] dark:text-gray-400 uppercase truncate">{node.description}</p>
         </div>
       </div>
       
@@ -89,20 +92,20 @@ const WorkflowNode = memo(({
       <div className="px-4 pb-4 space-y-2">
         {node.type === 'trigger' && (node.config.topic || node.config.time) && (
           <div className="flex flex-wrap gap-2">
-            {node.config.topic && <span className="nm-inset px-2 py-0.5 rounded-lg text-[8px] font-black text-soft-blue uppercase">{node.config.topic}</span>}
-            {node.config.time && <span className="nm-inset px-2 py-0.5 rounded-lg text-[8px] font-black text-text-muted uppercase">{node.config.time}</span>}
+            {node.config.topic && <span className="bg-[#F3F4F6] dark:bg-white/8 border border-[#D1D5DB] dark:border-white/12 rounded-lg px-2 py-0.5 rounded-lg text-[8px] font-bold text-[#2563EB] dark:text-blue-400 uppercase">{node.config.topic}</span>}
+            {node.config.time && <span className="bg-[#F3F4F6] dark:bg-white/8 border border-[#D1D5DB] dark:border-white/12 rounded-lg px-2 py-0.5 rounded-lg text-[8px] font-bold text-[#6B7280] dark:text-gray-400 uppercase">{node.config.time}</span>}
           </div>
         )}
         
         {(node.type === 'ai_text' || node.type === 'ai_video') && node.config.topic && (
           <div className="flex flex-wrap gap-2">
-            <span className="nm-inset px-2 py-0.5 rounded-lg text-[8px] font-black text-indigo-500 uppercase">{node.config.topic}</span>
+            <span className="bg-[#F3F4F6] dark:bg-white/8 border border-[#D1D5DB] dark:border-white/12 rounded-lg px-2 py-0.5 rounded-lg text-[8px] font-bold text-indigo-500 uppercase">{node.config.topic}</span>
           </div>
         )}
 
         {node.type === 'publish' && node.config.pageId && (
           <div className="flex flex-wrap gap-2">
-            <span className="nm-inset px-2 py-0.5 rounded-lg text-[8px] font-black text-emerald-500 uppercase">
+            <span className="bg-[#F3F4F6] dark:bg-white/8 border border-[#D1D5DB] dark:border-white/12 rounded-lg px-2 py-0.5 rounded-lg text-[8px] font-bold text-emerald-500 uppercase">
               {fanpages.find(f => f.pageId === node.config.pageId)?.name || 'Fanpage Selected'}
             </span>
           </div>
@@ -114,7 +117,7 @@ const WorkflowNode = memo(({
         onMouseUp={(e) => onPortMouseUp(node.id, 'in', e)}
         className="absolute top-1/2 -left-4 w-8 h-10 flex items-center justify-center -translate-y-1/2 z-30 cursor-crosshair group/port"
       >
-        <div className="w-4 h-4 nm-flat rounded-full group-hover/port:bg-soft-blue transition-all border border-white/5"></div>
+        <div className="w-4 h-4 nm-flat rounded-full group-hover/port:bg-[#2563EB] transition-all border border-white/5"></div>
       </div>
       <div 
         onMouseDown={(e) => {
@@ -126,13 +129,13 @@ const WorkflowNode = memo(({
         className="absolute top-1/2 -right-4 w-8 h-10 flex items-center justify-center -translate-y-1/2 z-30 cursor-crosshair group/port"
       >
         <div className={`w-4 h-4 nm-flat rounded-full transition-all border border-white/5
-          ${isActiveSource ? 'bg-soft-blue ring-4 ring-soft-blue/20 animate-pulse' : 'group-hover/port:bg-soft-blue'}
+          ${isActiveSource ? 'bg-[#2563EB] ring-4 ring-soft-blue/20 animate-pulse' : 'group-hover/port:bg-[#2563EB]'}
         `}></div>
       </div>
       
       {/* Status indicator */}
       {node.status === 'running' && (
-        <div className="absolute bottom-0 left-0 h-1 bg-soft-blue animate-pulse w-full"></div>
+        <div className="absolute bottom-0 left-0 h-1 bg-[#2563EB] animate-pulse w-full"></div>
       )}
     </div>
   );
@@ -178,7 +181,7 @@ const WorkflowEdges: React.FC<WorkflowEdgesProps> = React.memo(({
               fill="none"
               stroke="currentColor"
               strokeWidth={isActive ? "5" : "3"}
-              className={`transition-all duration-300 pointer-events-none ${isActive ? 'text-soft-blue opacity-100' : 'text-soft-blue/30 hover:text-soft-blue/60'}`}
+              className={`transition-all duration-300 pointer-events-none ${isActive ? 'text-[#2563EB] dark:text-blue-400 opacity-100' : 'text-[#2563EB] dark:text-blue-400/30 hover:text-[#2563EB] dark:text-blue-400/60'}`}
             />
           </g>
         );
@@ -542,19 +545,19 @@ export const StrategyWorkflowView: React.FC<{ api: ApiService; fanpages: any[] }
     <div className="flex-1 flex flex-col lg:flex-row bg-app-bg h-full overflow-hidden relative">
       <aside className="lg:w-72 w-full lg:h-full h-auto nm-sidebar flex lg:flex-col flex-row z-20 overflow-hidden shrink-0">
         <div className="lg:h-20 h-16 flex items-center lg:px-10 px-6 border-b lg:border-white/5 border-transparent shrink-0">
-          <Workflow className="text-soft-blue lg:block hidden" size={24} />
-          <span className="lg:ml-4 text-[10px] font-black text-text-primary uppercase tracking-[0.2em] whitespace-nowrap">Strategy Nodes</span>
+          <Workflow className="text-[#2563EB] dark:text-blue-400 lg:block hidden" size={24} />
+          <span className="lg:ml-4 text-[10px] font-bold text-[#111827] dark:text-gray-100 uppercase tracking-[0.2em] whitespace-nowrap">Strategy Nodes</span>
         </div>
         <div className="flex-1 overflow-x-auto lg:overflow-y-auto p-3 lg:p-6 flex lg:flex-col flex-row gap-3 lg:gap-4 custom-scrollbar lg:items-stretch items-center">
           {(Object.entries(NODE_TYPES) as [NodeType, any][]).map(([type, meta]) => {
             const Icon = meta.icon;
             return (
-              <button key={type} onClick={() => addNode(type)} className="flex items-center lg:p-4 p-2.5 rounded-2xl nm-button group shrink-0 lg:w-full min-w-[50px]">
-                <div className={`lg:p-2.5 p-2 rounded-xl nm-inset ${meta.defaultColor}`}>
+              <button key={type} onClick={() => addNode(type)} className="flex items-center lg:p-4 p-2.5 rounded-lg border border-[#D1D5DB] dark:border-white/12 rounded-lg group shrink-0 lg:w-full min-w-[50px]">
+                <div className={`lg:p-2.5 p-2 rounded-xl bg-[#F3F4F6] dark:bg-white/8 border border-[#D1D5DB] dark:border-white/12 rounded-lg ${meta.defaultColor}`}>
                   <Icon className="lg:w-[18px] lg:h-[18px] w-4 h-4" />
                 </div>
                 <div className="hidden md:block lg:ml-4 ml-3 text-left truncate">
-                  <div className="text-[10px] font-black text-text-primary uppercase tracking-widest truncate">{meta.title}</div>
+                  <div className="text-[10px] font-bold text-[#111827] dark:text-gray-100 uppercase truncate">{meta.title}</div>
                 </div>
               </button>
             );
@@ -566,31 +569,33 @@ export const StrategyWorkflowView: React.FC<{ api: ApiService; fanpages: any[] }
         <header className="h-20 lg:h-28 flex items-center justify-between lg:px-10 px-4 border-b border-white/5 z-10 bg-app-bg/80 backdrop-blur-xl shrink-0">
           <div className="flex items-center gap-4 lg:gap-8 min-w-0">
             <div className="flex items-center gap-4 hidden sm:flex">
-              <div className="w-12 h-12 nm-flat flex items-center justify-center text-soft-blue shrink-0">
+              <div className="w-12 h-12 nm-flat flex items-center justify-center text-[#2563EB] dark:text-blue-400 shrink-0">
                 <Zap size={24} />
               </div>
               <div className="truncate">
-                <h2 className="text-lg font-black text-text-primary uppercase tracking-tight truncate">Strategy Architect</h2>
-                <p className="text-[10px] font-black text-text-muted uppercase tracking-widest mt-0.5 opacity-60">Neural Flow v2.0</p>
+                <h2 className="text-lg font-bold text-[#111827] dark:text-gray-100  truncate">Strategy Architect</h2>
+                <p className="text-[10px] font-bold text-[#6B7280] dark:text-gray-400 uppercase mt-0.5 opacity-60">Neural Flow v2.0</p>
               </div>
             </div>
 
             <div className="w-px h-10 bg-white/5 hidden lg:block"></div>
 
             <div className="flex items-center gap-3">
-               <select 
-                 value={workflowId || ''} 
-                 onChange={(e) => loadWorkflow(e.target.value)}
-                 className="nm-input h-12 px-5 rounded-2xl text-[10px] font-black uppercase tracking-widest min-w-[160px] lg:min-w-[240px] appearance-none cursor-pointer"
-               >
-                 <option value="" disabled>{workflows.length > 0 ? 'Chọn Workflow...' : 'Chưa có Workflow'}</option>
-                 {workflows.map(wf => (
-                   <option key={wf.id} value={wf.id}>{wf.name}</option>
-                 ))}
-               </select>
+               <Select value={workflowId || undefined} onValueChange={(val) => loadWorkflow(val)}>
+                 <SelectTrigger className="flex h-12 w-full lg:min-w-[240px] min-w-[160px] rounded-lg border border-black/10 dark:border-white/10 bg-slate-200/50 dark:bg-slate-950/40 px-6 py-3 text-[10px] font-bold uppercase text-slate-900 dark:text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all justify-between [&>span]:line-clamp-1">
+                   <SelectValue placeholder={workflows.length > 0 ? 'Chọn Workflow...' : 'Chưa có Workflow'} />
+                 </SelectTrigger>
+                 <SelectContent>
+                   {workflows.map(wf => (
+                     <SelectItem key={wf.id} value={wf.id} >
+                       {wf.name}
+                     </SelectItem>
+                   ))}
+                 </SelectContent>
+               </Select>
                <button 
                  onClick={handleNewWorkflow}
-                 className="w-12 h-12 nm-button flex items-center justify-center text-soft-blue hover:text-white transition-all group shrink-0"
+                 className="w-12 h-12 border border-[#D1D5DB] dark:border-white/12 rounded-lg flex items-center justify-center text-[#2563EB] dark:text-blue-400 hover:text-white transition-all group shrink-0"
                  title="Thêm Workflow mới"
                >
                  <PlusCircle size={20} className="group-hover:rotate-90 transition-transform" />
@@ -599,24 +604,24 @@ export const StrategyWorkflowView: React.FC<{ api: ApiService; fanpages: any[] }
           </div>
 
           <div className="flex items-center gap-2 sm:gap-4">
-            <button onClick={() => setMobileViewMode(prev => prev === 'visual' ? 'sequence' : 'visual')} className="lg:hidden nm-button w-12 h-12 flex items-center justify-center text-soft-blue">
+            <button onClick={() => setMobileViewMode(prev => prev === 'visual' ? 'sequence' : 'visual')} className="lg:hidden border border-[#D1D5DB] dark:border-white/12 rounded-lg w-12 h-12 flex items-center justify-center text-[#2563EB] dark:text-blue-400">
               {mobileViewMode === 'visual' ? <HistoryIcon size={18} /> : <Workflow size={18} />}
             </button>
             <button 
               onClick={handleExecute}
               disabled={isSaving || nodes.length === 0}
-              className="nm-button h-12 px-6 flex items-center gap-3 text-emerald-500 hover:text-emerald-400 disabled:opacity-50 transition-all group shrink-0"
+              className="border border-[#D1D5DB] dark:border-white/12 rounded-lg h-12 px-6 flex items-center gap-3 text-emerald-500 hover:text-emerald-400 disabled:opacity-50 transition-all group shrink-0"
             >
               <Play size={18} className="group-hover:scale-110 transition-transform fill-emerald-500/20" />
-              <span className="hidden md:inline text-[10px] font-black uppercase tracking-widest">Run Strategy</span>
+              <span className="hidden md:inline text-[10px] font-bold uppercase">Run Strategy</span>
             </button>
             <button 
               onClick={handleSave}
               disabled={isSaving}
-              className="nm-button h-12 px-6 flex items-center gap-3 text-soft-blue hover:text-white disabled:opacity-50 transition-all group shrink-0"
+              className="border border-[#D1D5DB] dark:border-white/12 rounded-lg h-12 px-6 flex items-center gap-3 text-[#2563EB] dark:text-blue-400 hover:text-white disabled:opacity-50 transition-all group shrink-0"
             >
               <Save size={18} className="group-hover:rotate-12 transition-transform" />
-              <span className="hidden md:inline text-[10px] font-black uppercase tracking-widest">{isSaving ? 'Saving...' : 'Save Draft'}</span>
+              <span className="hidden md:inline text-[10px] font-bold uppercase">{isSaving ? 'Saving...' : 'Save Draft'}</span>
             </button>
           </div>
         </header>
@@ -632,7 +637,7 @@ export const StrategyWorkflowView: React.FC<{ api: ApiService; fanpages: any[] }
                   onEdgeContextMenu={handleEdgeContextMenu}
                 />
                 {drawingEdge && (
-                   <path d={`M ${drawingEdge.startX} ${drawingEdge.startY} C ${(drawingEdge.startX + drawingEdge.endX) / 2} ${drawingEdge.startY}, ${(drawingEdge.startX + drawingEdge.endX) / 2} ${drawingEdge.endY}, ${drawingEdge.endX} ${drawingEdge.endY}`} fill="none" stroke="currentColor" strokeWidth="3" strokeDasharray="6,6" className="text-soft-blue/50" />
+                   <path d={`M ${drawingEdge.startX} ${drawingEdge.startY} C ${(drawingEdge.startX + drawingEdge.endX) / 2} ${drawingEdge.startY}, ${(drawingEdge.startX + drawingEdge.endX) / 2} ${drawingEdge.endY}, ${drawingEdge.endX} ${drawingEdge.endY}`} fill="none" stroke="currentColor" strokeWidth="3" strokeDasharray="6,6" className="text-[#2563EB] dark:text-blue-400/50" />
                 )}
               </svg>
 
@@ -664,10 +669,10 @@ export const StrategyWorkflowView: React.FC<{ api: ApiService; fanpages: any[] }
           ) : (
             <div className="p-6 space-y-8 max-w-xl mx-auto">
                <div className="flex items-center gap-4 mb-10">
-                  <div className="w-1.5 h-12 bg-soft-blue rounded-full"></div>
+                  <div className="w-1.5 h-12 bg-[#2563EB] rounded-full"></div>
                   <div>
-                    <h3 className="text-lg font-black text-text-primary uppercase tracking-tight">Sequence Logic</h3>
-                    <p className="text-[10px] font-black text-text-muted uppercase tracking-widest mt-1">Linear Strategy Protocol</p>
+                    <h3 className="text-lg font-bold text-[#111827] dark:text-gray-100 ">Sequence Logic</h3>
+                    <p className="text-[10px] font-bold text-[#6B7280] dark:text-gray-400 uppercase mt-1">Linear Strategy Protocol</p>
                   </div>
                </div>
                <div className="space-y-6 relative">
@@ -676,36 +681,36 @@ export const StrategyWorkflowView: React.FC<{ api: ApiService; fanpages: any[] }
                      const meta = NODE_TYPES[node.type];
                      const Icon = meta.icon;
                      return (
-                       <div key={node.id} onClick={(e) => { e.stopPropagation(); setSelectedNodeId(node.id); setIsPanelOpen(true); }} className={`relative z-10 nm-flat p-5 rounded-[32px] flex items-center gap-5 transition-all ${selectedNodeId === node.id ? 'ring-2 ring-soft-blue/50' : ''}`}>
-                          <div className={`w-14 h-14 rounded-2xl flex items-center justify-center flex-shrink-0 nm-inset ${meta.defaultColor}`}>
+                       <div key={node.id} onClick={(e) => { e.stopPropagation(); setSelectedNodeId(node.id); setIsPanelOpen(true); }} className={`relative z-10 nm-flat p-5 rounded-lg flex items-center gap-5 transition-all ${selectedNodeId === node.id ? 'ring-2 ring-soft-blue/50' : ''}`}>
+                          <div className={`w-14 h-14 rounded-lg flex items-center justify-center flex-shrink-0 bg-[#F3F4F6] dark:bg-white/8 border border-[#D1D5DB] dark:border-white/12 rounded-lg ${meta.defaultColor}`}>
                              <Icon size={24} />
                           </div>
                           <div className="flex-1 min-w-0">
                              <div className="flex items-center gap-2">
-                                <span className="text-[8px] font-black text-soft-blue nm-inset px-2 py-0.5 rounded-full uppercase tracking-tighter">Step {idx + 1}</span>
-                                <h4 className="text-[11px] font-black text-text-primary uppercase tracking-tight truncate">{node.title}</h4>
+                                <span className="text-[8px] font-bold text-[#2563EB] dark:text-blue-400 bg-[#F3F4F6] dark:bg-white/8 border border-[#D1D5DB] dark:border-white/12 rounded-lg px-2 py-0.5 rounded-full er">Step {idx + 1}</span>
+                                <h4 className="text-[11px] font-bold text-[#111827] dark:text-gray-100  truncate">{node.title}</h4>
                              </div>
                              <div className="flex flex-wrap gap-2 mt-2">
-                                <p className="text-[9px] text-text-muted font-black uppercase tracking-widest">{node.type}</p>
+                                <p className="text-[9px] text-[#6B7280] dark:text-gray-400 font-bold uppercase">{node.type}</p>
                                 {node.type === 'trigger' && (
                                   <>
-                                    {node.config.topic && <span className="text-[8px] font-black text-soft-blue uppercase bg-soft-blue/5 px-2 py-0.5 rounded-lg border border-soft-blue/10">{node.config.topic}</span>}
-                                    {node.config.time && <span className="text-[8px] font-black text-text-muted uppercase bg-white/5 px-2 py-0.5 rounded-lg">{node.config.time}</span>}
+                                    {node.config.topic && <span className="text-[8px] font-bold text-[#2563EB] dark:text-blue-400 uppercase bg-[#2563EB]/5 px-2 py-0.5 rounded-lg border border-soft-blue/10">{node.config.topic}</span>}
+                                    {node.config.time && <span className="text-[8px] font-bold text-[#6B7280] dark:text-gray-400 uppercase bg-white/5 px-2 py-0.5 rounded-lg">{node.config.time}</span>}
                                   </>
                                 )}
                                 {node.type === 'publish' && node.config.pageId && (
-                                  <span className="text-[8px] font-black text-emerald-500 uppercase bg-emerald-500/5 px-2 py-0.5 rounded-lg border border-emerald-500/10">
+                                  <span className="text-[8px] font-bold text-emerald-500 uppercase bg-emerald-500/5 px-2 py-0.5 rounded-lg border border-emerald-500/10">
                                     {fanpages.find(f => f.pageId === node.config.pageId)?.name || 'Fanpage mục tiêu'}
                                   </span>
                                 )}
                                 {(node.type === 'ai_text' || node.type === 'ai_video') && node.config.topic && (
-                                  <span className="text-[8px] font-black text-indigo-500 uppercase bg-indigo-500/5 px-2 py-0.5 rounded-lg border border-indigo-500/10">{node.config.topic}</span>
+                                  <span className="text-[8px] font-bold text-indigo-500 uppercase bg-indigo-500/5 px-2 py-0.5 rounded-lg border border-indigo-500/10">{node.config.topic}</span>
                                 )}
                              </div>
                           </div>
                           <div className="flex flex-col gap-2 shrink-0">
-                             <button onClick={(e) => { e.stopPropagation(); moveNode(idx, 'up'); }} disabled={idx === 0} className="w-8 h-8 nm-button flex items-center justify-center text-text-muted disabled:opacity-20"><ArrowUp size={14} /></button>
-                             <button onClick={(e) => { e.stopPropagation(); moveNode(idx, 'down'); }} disabled={idx === nodes.length - 1} className="w-8 h-8 nm-button flex items-center justify-center text-text-muted disabled:opacity-20"><ArrowDown size={14} /></button>
+                             <button onClick={(e) => { e.stopPropagation(); moveNode(idx, 'up'); }} disabled={idx === 0} className="w-8 h-8 border border-[#D1D5DB] dark:border-white/12 rounded-lg flex items-center justify-center text-[#6B7280] dark:text-gray-400 disabled:opacity-20"><ArrowUp size={14} /></button>
+                             <button onClick={(e) => { e.stopPropagation(); moveNode(idx, 'down'); }} disabled={idx === nodes.length - 1} className="w-8 h-8 border border-[#D1D5DB] dark:border-white/12 rounded-lg flex items-center justify-center text-[#6B7280] dark:text-gray-400 disabled:opacity-20"><ArrowDown size={14} /></button>
                           </div>
                        </div>
                      );
@@ -720,154 +725,203 @@ export const StrategyWorkflowView: React.FC<{ api: ApiService; fanpages: any[] }
         <aside className="nm-panel-right backdrop-blur-2xl flex flex-col z-[150] fixed inset-0 lg:relative lg:inset-auto lg:w-[420px] lg:h-full animate-in slide-in-from-right-full duration-500">
           <div className="h-20 flex items-center justify-between px-6 sm:px-10 border-b border-white/5 shrink-0">
             <div className="flex items-center gap-3">
-              <Settings2 size={18} className="text-text-muted" />
-              <span className="text-[10px] font-black text-text-primary uppercase tracking-widest">Protocol Config</span>
+              <Settings2 size={18} className="text-[#6B7280] dark:text-gray-400" />
+              <span className="text-[10px] font-bold text-[#111827] dark:text-gray-100 uppercase">Protocol Config</span>
             </div>
-            <button onClick={() => setIsPanelOpen(false)} className="w-10 h-10 nm-button flex items-center justify-center text-text-muted hover:text-soft-pink"><X size={20} /></button>
+            <button onClick={() => setIsPanelOpen(false)} className="w-10 h-10 border border-[#D1D5DB] dark:border-white/12 rounded-lg flex items-center justify-center text-[#6B7280] dark:text-gray-400 hover:text-soft-pink"><X size={20} /></button>
           </div>
           <div className="flex-1 overflow-y-auto p-6 sm:p-10 space-y-10 custom-scrollbar">
             <div className="flex items-center gap-6">
-               <div className={`w-16 h-16 rounded-[24px] flex items-center justify-center nm-inset ${NODE_TYPES[selectedNode.type].defaultColor}`}>
+               <div className={`w-16 h-16 rounded-lg flex items-center justify-center bg-[#F3F4F6] dark:bg-white/8 border border-[#D1D5DB] dark:border-white/12 rounded-lg ${NODE_TYPES[selectedNode.type].defaultColor}`}>
                   {(() => { const Icon = NODE_TYPES[selectedNode.type].icon; return <Icon size={24} />; })()}
                </div>
                <div className="flex-1 min-w-0">
-                  <input type="text" value={selectedNode.title} onChange={(e) => setNodes(prev => prev.map(n => n.id === selectedNode.id ? { ...n, title: e.target.value } : n))} className="bg-transparent text-lg font-black text-text-primary outline-none w-full border-b-2 border-transparent focus:border-soft-blue mb-1 transition-all uppercase tracking-tight" />
-                  <p className="text-[9px] font-black text-text-muted uppercase tracking-[0.2em]">{selectedNode.type} NODE</p>
+                  <input type="text" value={selectedNode.title} onChange={(e) => setNodes(prev => prev.map(n => n.id === selectedNode.id ? { ...n, title: e.target.value } : n))} className="bg-transparent text-lg font-bold text-[#111827] dark:text-gray-100 outline-none w-full border-b-2 border-transparent focus:border-soft-blue mb-1 transition-all " />
+                  <p className="text-[9px] font-bold text-[#6B7280] dark:text-gray-400 uppercase tracking-[0.2em]">{selectedNode.type} NODE</p>
                </div>
             </div>
             <div className="space-y-8">
                {selectedNode.type === 'trigger' && (
                  <div className="space-y-8">
                     <div className="space-y-4">
-                       <label className="text-[10px] font-black text-text-muted uppercase tracking-widest block ml-4">Chủ đề (Topic)</label>
-                       <select value={selectedNode.config.topic || ''} onChange={(e) => updateNodeConfig({ topic: e.target.value })} className="nm-input font-bold appearance-none">
-                          <option value="">Chọn chủ đề...</option>
-                          {topics.map(t => (
-                            <option key={t.id} value={t.name}>{t.name}</option>
-                          ))}
-                       </select>
+                       <label className="text-[10px] font-bold text-[#6B7280] dark:text-gray-400 uppercase block ml-4">Chủ đề (Topic)</label>
+                       <Select value={selectedNode.config.topic || undefined} onValueChange={(val) => updateNodeConfig({ topic: val })}>
+                           <SelectTrigger className="flex h-12 w-full rounded-lg border border-black/10 dark:border-white/10 bg-slate-200/50 dark:bg-slate-950/40 px-6 py-3 text-sm font-bold text-slate-900 dark:text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all justify-between [&>span]:line-clamp-1">
+                             <SelectValue placeholder="Chọn chủ đề..." />
+                           </SelectTrigger>
+                           <SelectContent>
+                             {topics.map(t => (
+                               <SelectItem key={t.id} value={t.name} >
+                                 {t.name}
+                               </SelectItem>
+                             ))}
+                           </SelectContent>
+                        </Select>
                     </div>
                     <div className="space-y-4">
-                       <label className="text-[10px] font-black text-text-muted uppercase tracking-widest block ml-4">Giờ đăng (Time)</label>
-                       <input type="time" value={selectedNode.config.time || '09:00'} onChange={(e) => updateNodeConfig({ time: e.target.value })} className="nm-input font-bold" />
+                       <label className="text-[10px] font-bold text-[#6B7280] dark:text-gray-400 uppercase block ml-4">Giờ đăng (Time)</label>
+                       <Input type="time" value={selectedNode.config.time || '09:00'} onChange={(e) => updateNodeConfig({ time: e.target.value })} className="flex h-12 w-full rounded-lg border border-black/10 dark:border-white/10 bg-slate-200/50 dark:bg-slate-950/40 px-6 py-3 text-sm font-bold text-slate-900 dark:text-slate-900 dark:text-white focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:border-indigo-500 transition-all [color-scheme:light] dark:[color-scheme:dark]" />
                     </div>
                     <div className="space-y-4">
-                       <label className="text-[10px] font-black text-text-muted uppercase tracking-widest block ml-4">Số lượng bài (Run Count)</label>
-                       <input type="number" value={selectedNode.config.runCount || 1} onChange={(e) => updateNodeConfig({ runCount: parseInt(e.target.value) })} className="nm-input font-bold" />
+                       <label className="text-[10px] font-bold text-[#6B7280] dark:text-gray-400 uppercase block ml-4">Số lượng bài (Run Count)</label>
+                       <Input type="number" value={selectedNode.config.runCount || 1} onChange={(e) => updateNodeConfig({ runCount: parseInt(e.target.value) })} className="flex h-12 w-full rounded-lg border border-black/10 dark:border-white/10 bg-slate-200/50 dark:bg-slate-950/40 px-6 py-3 text-sm font-bold text-slate-900 dark:text-white focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:border-indigo-500 transition-all" />
                     </div>
                  </div>
                )}
                {selectedNode.type === 'ai_text' && (
                  <div className="space-y-8">
                     <div className="space-y-4">
-                       <label className="text-[10px] font-black text-text-muted uppercase tracking-widest block ml-4">Chủ đề (Topic)</label>
-                       <select value={selectedNode.config.topic || ''} onChange={(e) => updateNodeConfig({ topic: e.target.value })} className="nm-input font-bold appearance-none">
-                          <option value="">Chọn chủ đề...</option>
-                          {topics.map(t => (
-                            <option key={t.id} value={t.name}>{t.name}</option>
-                          ))}
-                       </select>
+                       <label className="text-[10px] font-bold text-[#6B7280] dark:text-gray-400 uppercase block ml-4">Chủ đề (Topic)</label>
+                       <Select value={selectedNode.config.topic || undefined} onValueChange={(val) => updateNodeConfig({ topic: val })}>
+                           <SelectTrigger className="flex h-12 w-full rounded-lg border border-black/10 dark:border-white/10 bg-slate-200/50 dark:bg-slate-950/40 px-6 py-3 text-sm font-bold text-slate-900 dark:text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all justify-between [&>span]:line-clamp-1">
+                             <SelectValue placeholder="Chọn chủ đề..." />
+                           </SelectTrigger>
+                           <SelectContent>
+                             {topics.map(t => (
+                               <SelectItem key={t.id} value={t.name} >
+                                 {t.name}
+                               </SelectItem>
+                             ))}
+                           </SelectContent>
+                        </Select>
                     </div>
                     <div className="space-y-4">
-                       <label className="text-[10px] font-black text-text-muted uppercase tracking-widest block ml-4">Tông giọng (Tone)</label>
-                       <select value={selectedNode.config.tone || 'professional and elegant'} onChange={(e) => updateNodeConfig({ tone: e.target.value })} className="nm-input font-bold appearance-none">
-                          <option value="professional and elegant">Chuyên nghiệp & Sang trọng</option>
-                          <option value="engaging and humorous">Hài hước & Thu thu hút</option>
-                          <option value="friendly and helpful">Thân thiện & Hữu ích</option>
-                          <option value="bold and direct">Mạnh mẽ & Trực diện</option>
-                       </select>
+                       <label className="text-[10px] font-bold text-[#6B7280] dark:text-gray-400 uppercase block ml-4">Tông giọng (Tone)</label>
+                       <Select value={selectedNode.config.tone || 'professional and elegant'} onValueChange={(val) => updateNodeConfig({ tone: val })}>
+                           <SelectTrigger className="flex h-12 w-full rounded-lg border border-black/10 dark:border-white/10 bg-slate-200/50 dark:bg-slate-950/40 px-6 py-3 text-sm font-bold text-slate-900 dark:text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all justify-between [&>span]:line-clamp-1">
+                             <SelectValue />
+                           </SelectTrigger>
+                           <SelectContent>
+                             <SelectItem value="professional and elegant" >Chuyên nghiệp & Sang trọng</SelectItem>
+                             <SelectItem value="engaging and humorous" >Hài hước & Thu thu hút</SelectItem>
+                             <SelectItem value="friendly and helpful" >Thân thiện & Hữu ích</SelectItem>
+                             <SelectItem value="bold and direct" >Mạnh mẽ & Trực diện</SelectItem>
+                           </SelectContent>
+                        </Select>
                     </div>
                     <div className="space-y-4">
-                       <label className="text-[10px] font-black text-text-muted uppercase tracking-widest block ml-4">Từ khóa (Keywords)</label>
-                       <input type="text" value={selectedNode.config.keywords || ''} onChange={(e) => updateNodeConfig({ keywords: e.target.value })} placeholder="Ví dụ: AI, Marketing, Automation..." className="nm-input font-bold" />
+                       <label className="text-[10px] font-bold text-[#6B7280] dark:text-gray-400 uppercase block ml-4">Từ khóa (Keywords)</label>
+                       <Input type="text" value={selectedNode.config.keywords || ''} onChange={(e) => updateNodeConfig({ keywords: e.target.value })} placeholder="Ví dụ: AI, Marketing, Automation..." className="flex h-12 w-full rounded-lg border border-black/10 dark:border-white/10 bg-slate-200/50 dark:bg-slate-950/40 px-6 py-3 text-sm font-bold text-slate-900 dark:text-white focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:border-indigo-500 transition-all" />
                     </div>
                     <div className="space-y-4">
-                       <label className="text-[10px] font-black text-text-muted uppercase tracking-widest block ml-4">Chỉ dẫn thêm (Instructions)</label>
-                       <textarea value={selectedNode.config.instructions || ''} onChange={(e) => updateNodeConfig({ instructions: e.target.value })} placeholder="Hướng dẫn cụ thể cho AI..." className="nm-input min-h-[100px] font-bold py-6 text-sm" />
+                       <label className="text-[10px] font-bold text-[#6B7280] dark:text-gray-400 uppercase block ml-4">Chỉ dẫn thêm (Instructions)</label>
+                       <Textarea value={selectedNode.config.instructions || ''} onChange={(e) => updateNodeConfig({ instructions: e.target.value })} placeholder="Hướng dẫn cụ thể cho AI..." className="w-full min-h-[120px] p-4 font-bold text-sm resize-none custom-scrollbar rounded-lg border border-black/10 dark:border-white/10 bg-slate-200/50 dark:bg-slate-950/40 text-slate-900 dark:text-slate-900 dark:text-white focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:border-indigo-500 transition-all" />
                     </div>
                  </div>
                )}
                 {selectedNode.type === 'ai_video' && (
                   <div className="space-y-8 animate-in fade-in slide-in-from-right-4">
                      <div className="space-y-4">
-                        <label className="text-[10px] font-black text-text-muted uppercase tracking-widest block ml-4">Video Template</label>
-                        <select value={selectedNode.config.template || 'modern'} onChange={(e) => updateNodeConfig({ template: e.target.value })} className="nm-input font-bold appearance-none">
-                          {videoTemplates.map(t => (
-                            <option key={t.id} value={t.id}>{t.name}</option>
-                          ))}
-                        </select>
+                        <label className="text-[10px] font-bold text-[#6B7280] dark:text-gray-400 uppercase block ml-4">Video Template</label>
+                        <Select value={selectedNode.config.template || undefined} onValueChange={(val) => updateNodeConfig({ template: val })}>
+                           <SelectTrigger className="flex h-12 w-full rounded-lg border border-black/10 dark:border-white/10 bg-slate-200/50 dark:bg-slate-950/40 px-6 py-3 text-sm font-bold text-slate-900 dark:text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all justify-between [&>span]:line-clamp-1">
+                             <SelectValue placeholder="Chọn template..." />
+                           </SelectTrigger>
+                           <SelectContent>
+                             {videoTemplates.map(t => (
+                               <SelectItem key={t.id} value={t.id} >
+                                 {t.name}
+                               </SelectItem>
+                             ))}
+                           </SelectContent>
+                        </Select>
                      </div>
                      <div className="space-y-4">
-                        <label className="text-[10px] font-black text-text-muted uppercase tracking-widest block ml-4">TTS Provider (Model)</label>
-                        <select value={selectedNode.config.ttsProvider || 'edge'} onChange={(e) => updateNodeConfig({ ttsProvider: e.target.value, ttsVoiceId: '' })} className="nm-input font-bold appearance-none">
-                          {ttsProviders.map(p => (
-                            <option key={p} value={p}>{p.toUpperCase()} Engine</option>
-                          ))}
-                        </select>
+                        <label className="text-[10px] font-bold text-[#6B7280] dark:text-gray-400 uppercase block ml-4">TTS Provider (Model)</label>
+                        <Select value={selectedNode.config.ttsProvider || 'edge'} onValueChange={(val) => updateNodeConfig({ ttsProvider: val, ttsVoiceId: '' })}>
+                           <SelectTrigger className="flex h-12 w-full rounded-lg border border-black/10 dark:border-white/10 bg-slate-200/50 dark:bg-slate-950/40 px-6 py-3 text-sm font-bold text-slate-900 dark:text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all justify-between [&>span]:line-clamp-1">
+                             <SelectValue />
+                           </SelectTrigger>
+                           <SelectContent>
+                             {ttsProviders.map(p => (
+                               <SelectItem key={p} value={p} >
+                                 {p.toUpperCase()} Engine
+                               </SelectItem>
+                             ))}
+                           </SelectContent>
+                        </Select>
                      </div>
                      <div className="space-y-4">
-                        <label className="text-[10px] font-black text-text-muted uppercase tracking-widest block ml-4">Giọng đọc (Voice Signature)</label>
-                        <select 
-                          value={voices.find(v => v.voiceId === selectedNode.config.ttsVoiceId && v.provider === (selectedNode.config.ttsProvider || 'edge'))?.id || ''} 
-                          onChange={(e) => {
-                            const voice = voices.find(v => v.id === e.target.value);
-                            if (voice) updateNodeConfig({ ttsVoiceId: voice.voiceId, ttsProvider: voice.provider });
-                          }} 
-                          className="nm-input font-bold appearance-none"
-                        >
-                          <option value="">Chọn giọng đọc...</option>
-                          {voices.filter(v => v.provider === (selectedNode.config.ttsProvider || 'edge')).map(v => (
-                            <option key={v.id} value={v.id}>{v.name} ({v.gender})</option>
-                          ))}
-                        </select>
+                        <label className="text-[10px] font-bold text-[#6B7280] dark:text-gray-400 uppercase block ml-4">Giọng đọc (Voice Signature)</label>
+                        <Select 
+                           value={voices.find(v => v.voiceId === selectedNode.config.ttsVoiceId && v.provider === (selectedNode.config.ttsProvider || 'edge'))?.id || undefined} 
+                           onValueChange={(val) => {
+                             const voice = voices.find(v => v.id === val);
+                             if (voice) updateNodeConfig({ ttsVoiceId: voice.voiceId, ttsProvider: voice.provider });
+                           }}
+                         >
+                           <SelectTrigger className="flex h-12 w-full rounded-lg border border-black/10 dark:border-white/10 bg-slate-200/50 dark:bg-slate-950/40 px-6 py-3 text-sm font-bold text-slate-900 dark:text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all justify-between [&>span]:line-clamp-1">
+                             <SelectValue placeholder="Chọn giọng đọc..." />
+                           </SelectTrigger>
+                           <SelectContent>
+                             {voices.filter(v => v.provider === (selectedNode.config.ttsProvider || 'edge')).map(v => (
+                               <SelectItem key={v.id} value={v.id} >
+                                 {v.name} ({v.gender})
+                               </SelectItem>
+                             ))}
+                           </SelectContent>
+                         </Select>
                      </div>
                      <div className="space-y-4">
-                        <label className="text-[10px] font-black text-text-muted uppercase tracking-widest block ml-4">BGM Audio</label>
-                        <select value={selectedNode.config.bgmAssetId || 'none'} onChange={(e) => updateNodeConfig({ bgmAssetId: e.target.value })} className="nm-input font-bold appearance-none">
-                          <option value="none">Không có nhạc nền</option>
-                          {bgmPresets.map(bgm => (
-                            <option key={bgm.id} value={bgm.id}>{bgm.name}</option>
-                          ))}
-                        </select>
+                        <label className="text-[10px] font-bold text-[#6B7280] dark:text-gray-400 uppercase block ml-4">BGM Audio</label>
+                        <Select value={selectedNode.config.bgmAssetId || 'none'} onValueChange={(val) => updateNodeConfig({ bgmAssetId: val })}>
+                           <SelectTrigger className="flex h-12 w-full rounded-lg border border-black/10 dark:border-white/10 bg-slate-200/50 dark:bg-slate-950/40 px-6 py-3 text-sm font-bold text-slate-900 dark:text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all justify-between [&>span]:line-clamp-1">
+                             <SelectValue placeholder="Chọn nhạc nền..." />
+                           </SelectTrigger>
+                           <SelectContent>
+                             <SelectItem value="none" >Không có nhạc nền</SelectItem>
+                             {bgmPresets.map(bgm => (
+                               <SelectItem key={bgm.id} value={bgm.id} >
+                                 {bgm.name}
+                               </SelectItem>
+                             ))}
+                           </SelectContent>
+                        </Select>
                      </div>
                      <div className="space-y-4">
-                        <label className="text-[10px] font-black text-text-muted uppercase tracking-widest block ml-4">BGM Volume ({Math.round((selectedNode.config.bgmVolume || 0.15) * 100)}%)</label>
+                        <label className="text-[10px] font-bold text-[#6B7280] dark:text-gray-400 uppercase block ml-4">BGM Volume ({Math.round((selectedNode.config.bgmVolume || 0.15) * 100)}%)</label>
                         <input type="range" min="0" max="1" step="0.05" value={selectedNode.config.bgmVolume || 0.15} onChange={(e) => updateNodeConfig({ bgmVolume: parseFloat(e.target.value) })} className="w-full h-2 bg-accent-bg rounded-lg appearance-none cursor-pointer accent-soft-blue" />
                      </div>
                   </div>
                 )}
                {selectedNode.type === 'human_approval' && (
                   <div className="space-y-6">
-                    <div className="nm-inset p-6 rounded-3xl bg-soft-blue/5">
-                      <p className="text-[10px] font-bold text-soft-blue uppercase tracking-widest text-center">Step requires manual approval</p>
+                    <div className="bg-[#F3F4F6] dark:bg-white/8 border border-[#D1D5DB] dark:border-white/12 rounded-lg p-6 rounded-xl bg-[#2563EB]/5">
+                      <p className="text-[10px] font-bold text-[#2563EB] dark:text-blue-400 uppercase text-center">Step requires manual approval</p>
                     </div>
                     <div className="space-y-4">
-                       <label className="text-[10px] font-black text-text-muted uppercase tracking-widest block ml-4">Review Instructions</label>
-                       <textarea value={selectedNode.config.instructions || ''} onChange={(e) => updateNodeConfig({ instructions: e.target.value })} placeholder="What should the reviewer check?..." className="nm-input min-h-[100px] font-bold py-6 text-sm" />
+                       <label className="text-[10px] font-bold text-[#6B7280] dark:text-gray-400 uppercase block ml-4">Review Instructions</label>
+                       <Textarea value={selectedNode.config.instructions || ''} onChange={(e) => updateNodeConfig({ instructions: e.target.value })} placeholder="What should the reviewer check?..." className="w-full min-h-[120px] p-4 font-bold text-sm resize-none custom-scrollbar rounded-lg border border-black/10 dark:border-white/10 bg-slate-200/50 dark:bg-slate-950/40 text-slate-900 dark:text-slate-900 dark:text-white focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:border-indigo-500 transition-all" />
                     </div>
                   </div>
                )}
                {selectedNode.type === 'publish' && (
                  <div className="space-y-6">
                     <div className="space-y-4">
-                       <label className="text-[10px] font-black text-text-muted uppercase tracking-widest block ml-4">Fanpage Đích (Target)</label>
-                       <select value={selectedNode.config.pageId || ''} onChange={(e) => updateNodeConfig({ pageId: e.target.value })} className="nm-input font-bold appearance-none">
-                         <option value="">Chọn Fanpage...</option>
-                         {fanpages.map(p => (
-                           <option key={p.id} value={p.pageId}>{p.name}</option>
-                         ))}
-                       </select>
+                       <label className="text-[10px] font-bold text-[#6B7280] dark:text-gray-400 uppercase block ml-4">Fanpage Đích (Target)</label>
+                       <Select value={selectedNode.config.pageId || undefined} onValueChange={(val) => updateNodeConfig({ pageId: val })}>
+                          <SelectTrigger className="flex h-12 w-full rounded-lg border border-black/10 dark:border-white/10 bg-slate-200/50 dark:bg-slate-950/40 px-6 py-3 text-sm font-bold text-slate-900 dark:text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all justify-between [&>span]:line-clamp-1">
+                            <SelectValue placeholder="Chọn Fanpage..." />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {fanpages.map(p => (
+                              <SelectItem key={p.id} value={p.pageId} >
+                                {p.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                     </div>
                     <div className="space-y-4">
-                     <div className="nm-inset p-6 rounded-2xl">
-                       <p className="text-[10px] font-black text-text-muted uppercase tracking-widest mb-2">Chế độ đăng bài</p>
-                       <p className="text-xs font-bold text-text-primary">Bài viết sẽ được đưa vào hàng đợi đăng bài tự động của Fanpage đã chọn.</p>
+                     <div className="bg-[#F3F4F6] dark:bg-white/8 border border-[#D1D5DB] dark:border-white/12 rounded-lg p-6 rounded-lg">
+                       <p className="text-[10px] font-bold text-[#6B7280] dark:text-gray-400 uppercase mb-2">Chế độ đăng bài</p>
+                       <p className="text-xs font-bold text-[#111827] dark:text-gray-100">Bài viết sẽ được đưa vào hàng đợi đăng bài tự động của Fanpage đã chọn.</p>
                      </div>
                     </div>
                  </div>
                )}
                <div className="pt-10">
-                  <button onClick={() => { setNodes(prev => prev.filter(n => n.id !== selectedNode.id)); setIsPanelOpen(false); }} className="w-full py-5 rounded-[24px] nm-button text-soft-pink font-black uppercase text-[10px] tracking-[0.2em] hover:text-white hover:bg-soft-pink transition-all flex items-center justify-center gap-3">
+                  <button onClick={() => { setNodes(prev => prev.filter(n => n.id !== selectedNode.id)); setIsPanelOpen(false); }} className="w-full py-5 rounded-lg border border-[#D1D5DB] dark:border-white/12 rounded-lg text-soft-pink font-bold uppercase text-[10px] tracking-[0.2em] hover:text-white hover:bg-soft-pink transition-all flex items-center justify-center gap-3">
                     <Trash size={16} /> Xóa Node
                   </button>
 
@@ -880,23 +934,23 @@ export const StrategyWorkflowView: React.FC<{ api: ApiService; fanpages: any[] }
       {/* Context Menu Overlay */}
       {contextMenu && (
         <div 
-          className="fixed z-[300] nm-flat rounded-2xl p-2 w-56 animate-in zoom-in-95 duration-200 border border-white/5"
+          className="fixed z-[300] nm-flat rounded-lg p-2 w-56 animate-in zoom-in-95 duration-200 border border-white/5"
           style={{ left: contextMenu.x, top: contextMenu.y }}
           onClick={(e) => e.stopPropagation()}
         >
           {contextMenu.type === 'node' && (
             <div className="space-y-1">
-              <button onClick={() => deleteNode(contextMenu.targetId!)} className="w-full flex items-center gap-3 px-4 py-4 rounded-xl bg-soft-pink/10 hover:bg-soft-pink text-[10px] font-black text-soft-pink hover:text-white uppercase tracking-widest transition-all">
+              <button onClick={() => deleteNode(contextMenu.targetId!)} className="w-full flex items-center gap-3 px-4 py-4 rounded-xl bg-soft-pink/10 hover:bg-soft-pink text-[10px] font-bold text-soft-pink hover:text-white uppercase transition-all">
                 <Trash2 size={16} /> Xóa Node
               </button>
               <div className="h-px bg-white/5 mx-2 my-1"></div>
-              <button onClick={() => { setContextMenu(null); setIsPanelOpen(true); }} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-white/5 text-[10px] font-black text-text-primary uppercase tracking-widest transition-all">
-                <Settings2 size={14} className="text-soft-blue" /> Cấu hình
+              <button onClick={() => { setContextMenu(null); setIsPanelOpen(true); }} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-white/5 text-[10px] font-bold text-[#111827] dark:text-gray-100 uppercase transition-all">
+                <Settings2 size={14} className="text-[#2563EB] dark:text-blue-400" /> Cấu hình
               </button>
-              <button onClick={() => duplicateNode(contextMenu.targetId!)} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-soft-blue/10 text-[10px] font-black text-text-primary uppercase tracking-widest transition-all">
-                <Copy size={14} className="text-soft-blue" /> Nhân bản
+              <button onClick={() => duplicateNode(contextMenu.targetId!)} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-[#2563EB]/10 text-[10px] font-bold text-[#111827] dark:text-gray-100 uppercase transition-all">
+                <Copy size={14} className="text-[#2563EB] dark:text-blue-400" /> Nhân bản
               </button>
-              <button onClick={() => { toast.info('Execution started from selected node'); setContextMenu(null); }} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-emerald-500/10 text-[10px] font-black text-emerald-500 uppercase tracking-widest transition-all">
+              <button onClick={() => { toast.info('Execution started from selected node'); setContextMenu(null); }} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-emerald-500/10 text-[10px] font-bold text-emerald-500 uppercase transition-all">
                 <Play size={14} className="fill-emerald-500" /> Chạy từ đây
               </button>
             </div>
@@ -904,21 +958,21 @@ export const StrategyWorkflowView: React.FC<{ api: ApiService; fanpages: any[] }
           {contextMenu.type === 'edge' && (
             <div className="space-y-1">
               <div className="px-4 py-2 mb-1">
-                <p className="text-[8px] font-black text-soft-blue uppercase tracking-widest">Link Actions</p>
+                <p className="text-[8px] font-bold text-[#2563EB] dark:text-blue-400 uppercase">Link Actions</p>
               </div>
-              <button onClick={() => deleteEdge(contextMenu.targetId!)} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-soft-pink/10 text-[10px] font-black text-soft-pink uppercase tracking-widest transition-all">
+              <button onClick={() => deleteEdge(contextMenu.targetId!)} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-soft-pink/10 text-[10px] font-bold text-soft-pink uppercase transition-all">
                 <Trash size={14} /> Xóa Liên Kết
               </button>
-              <button onClick={() => setContextMenu(null)} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-white/5 text-[10px] font-black text-text-muted uppercase tracking-widest transition-all">
+              <button onClick={() => setContextMenu(null)} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-white/5 text-[10px] font-bold text-[#6B7280] dark:text-gray-400 uppercase transition-all">
                 <X size={14} /> Cancel
               </button>
             </div>
           )}
           {contextMenu.type === 'canvas' && (
             <div className="space-y-1">
-              <p className="px-4 py-2 text-[8px] font-black text-text-muted uppercase tracking-widest">Quick Create</p>
+              <p className="px-4 py-2 text-[8px] font-bold text-[#6B7280] dark:text-gray-400 uppercase">Quick Create</p>
               {(Object.entries(NODE_TYPES) as [NodeType, any][]).map(([type, meta]) => (
-                <button key={type} onClick={() => { addNode(type); setContextMenu(null); }} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-soft-blue/10 text-[10px] font-black text-text-primary uppercase tracking-widest transition-all">
+                <button key={type} onClick={() => { addNode(type); setContextMenu(null); }} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-[#2563EB]/10 text-[10px] font-bold text-[#111827] dark:text-gray-100 uppercase transition-all">
                   <meta.icon size={14} className={meta.defaultColor.split(' ')[0]} /> {meta.title}
                 </button>
               ))}

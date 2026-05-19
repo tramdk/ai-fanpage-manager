@@ -3,6 +3,10 @@ import { toast } from 'sonner';
 import { Sparkles, Workflow, Play, Check, Edit3, Send, RefreshCw, ChevronRight, X, ArrowLeft, Zap, FileText, Image as ImageIcon, Clock, CheckCircle2 } from 'lucide-react';
 import { ApiService } from '../../api';
 import { useLanguage } from '../../LanguageContext';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Button } from '@/components/ui/button';
 
 type Step = 'config' | 'generate' | 'review';
 
@@ -12,12 +16,12 @@ const NODE_ICONS: Record<string, any> = {
 };
 
 const NODE_COLORS: Record<string, string> = {
-  trigger: 'text-text-primary nm-flat-sm px-3 py-1 bg-soft-blue/10',
-  ai_text: 'text-text-primary nm-flat-sm px-3 py-1 bg-soft-cyan/10',
-  ai_image: 'text-text-primary nm-flat-sm px-3 py-1 bg-soft-pink/10',
+  trigger: 'text-[#111827] dark:text-gray-100 nm-flat-sm px-3 py-1 bg-[#2563EB]/10',
+  ai_text: 'text-[#111827] dark:text-gray-100 nm-flat-sm px-3 py-1 bg-soft-cyan/10',
+  ai_image: 'text-[#111827] dark:text-gray-100 nm-flat-sm px-3 py-1 bg-soft-pink/10',
   human_approval: 'text-emerald-500 nm-flat-sm px-3 py-1 bg-emerald-50',
   publish: 'text-indigo-500 nm-flat-sm px-3 py-1 bg-indigo-50',
-  delay: 'text-text-muted nm-flat-sm px-3 py-1 bg-white/50',
+  delay: 'text-[#6B7280] dark:text-gray-400 nm-flat-sm px-3 py-1 bg-white/50',
 };
 
 export const CampaignStudioView: React.FC<{ api: ApiService }> = ({ api }) => {
@@ -169,17 +173,17 @@ Bài ${i + 1}/${postCount}. Hãy viết nội dung hấp dẫn, chuyên nghiệp
       {/* Header */}
       <div className="nm-flat p-10 flex flex-col md:flex-row items-center justify-between gap-10">
         <div className="flex items-center gap-6">
-          <div className="w-16 h-16 nm-flat flex items-center justify-center text-soft-blue">
+          <div className="w-16 h-16 nm-flat flex items-center justify-center text-[#2563EB] dark:text-blue-400">
             <Sparkles size={28} />
           </div>
           <div>
-            <h2 className="text-3xl font-black text-text-primary uppercase tracking-tighter">{t('campaignStudio')}</h2>
-            <p className="text-[10px] font-black text-text-secondary uppercase tracking-[0.3em] mt-2">{t('studioSub')}</p>
+            <h2 className="text-2xl font-bold text-[#111827] dark:text-gray-100 er">{t('campaignStudio')}</h2>
+            <p className="text-[10px] font-bold text-[#6B7280] dark:text-gray-400 uppercase tracking-[0.3em] mt-2">{t('studioSub')}</p>
           </div>
         </div>
 
         {/* Step Indicator */}
-        <div className="nm-inset p-2 flex items-center gap-2">
+        <div className="bg-[#F3F4F6] dark:bg-white/8 border border-[#D1D5DB] dark:border-white/12 rounded-lg p-2 flex items-center gap-2">
           {(['config', 'generate', 'review'] as Step[]).map((s, i) => {
             const isDone = (step === 'generate' && i === 0) || (step === 'review' && i <= 1);
             const isActive = step === s;
@@ -187,12 +191,12 @@ Bài ${i + 1}/${postCount}. Hãy viết nội dung hấp dẫn, chuyên nghiệp
               <React.Fragment key={s}>
                 <button
                   onClick={() => !generating && i <= (step === 'review' ? 2 : step === 'generate' ? 1 : 0) && setStep(s)}
-                  className={`px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all
-                  ${isActive ? 'nm-button text-soft-blue' : isDone ? 'text-emerald-500' : 'text-text-muted opacity-50'}
+                  className={`px-6 py-3 rounded-lg text-[10px] font-bold uppercase transition-all
+                  ${isActive ? 'border border-[#D1D5DB] dark:border-white/12 rounded-lg text-[#2563EB] dark:text-blue-400' : isDone ? 'text-emerald-500' : 'text-[#6B7280] dark:text-gray-400 opacity-50'}
                 `}>
                   {isDone ? <span className="flex items-center gap-2"><Check size={14}/>{t(s as any)}</span> : t(s as any)}
                 </button>
-                {i < 2 && <ChevronRight size={14} className="text-text-muted" />}
+                {i < 2 && <ChevronRight size={14} className="text-[#6B7280] dark:text-gray-400" />}
               </React.Fragment>
             );
           })}
@@ -205,44 +209,95 @@ Bài ${i + 1}/${postCount}. Hãy viết nội dung hấp dẫn, chuyên nghiệp
           {/* Campaign Config */}
           <div className="nm-flat p-10 space-y-8">
             <div className="flex items-center gap-4 mb-2">
-               <Edit3 size={18} className="text-soft-blue" />
-               <h3 className="text-sm font-black text-text-primary uppercase tracking-widest">{t('campaignConfig')}</h3>
+               <Edit3 size={18} className="text-[#2563EB] dark:text-blue-400" />
+               <h3 className="text-sm font-bold text-[#111827] dark:text-gray-100 uppercase">{t('campaignConfig')}</h3>
             </div>
  
             <div className="space-y-6">
               <div className="space-y-3">
-                <label className="text-[10px] font-black text-text-muted uppercase tracking-widest block ml-2">{t('fanpageTarget')}</label>
-                <select className="nm-input appearance-none" value={selectedFanpage} onChange={e => setSelectedFanpage(e.target.value)}>
-                  {fanpages.map(p => <option key={p.id} value={p.pageId}>{p.name}</option>)}
-                </select>
+                <label className="text-[10px] font-bold text-[#6B7280] dark:text-gray-400 uppercase block ml-2">{t('fanpageTarget')}</label>
+                <Select value={selectedFanpage} onValueChange={setSelectedFanpage}>
+                  <SelectTrigger className="flex h-12 w-full rounded-lg border border-black/10 dark:border-white/10 bg-slate-200/50 dark:bg-slate-950/40 px-6 py-3 text-sm font-bold text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all justify-between [&>span]:line-clamp-1">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="bg-slate-900 border border-white/10 rounded-lg text-white">
+                    {fanpages.map(p => (
+                      <SelectItem key={p.id} value={p.pageId} className="text-white hover:bg-slate-800 focus:bg-slate-800 rounded-xl cursor-pointer">
+                        {p.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               <div className="space-y-3">
-                <label className="text-[10px] font-black text-text-muted uppercase tracking-widest block ml-2">{t('campaignName')}</label>
-                <input className="nm-input" placeholder="Tên chiến dịch..." value={campaignName} onChange={e => setCampaignName(e.target.value)} />
+                <label className="text-[10px] font-bold text-[#6B7280] dark:text-gray-400 uppercase block ml-2">{t('campaignName')}</label>
+                <Input
+                  type="text"
+                  placeholder="Tên chiến dịch..."
+                  value={campaignName}
+                  onChange={e => setCampaignName(e.target.value)}
+                  className="flex h-12 w-full rounded-lg border border-black/10 dark:border-white/10 bg-slate-200/50 dark:bg-slate-950/40 px-6 py-3 text-sm font-bold text-slate-900 dark:text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-600 dark:placeholder:text-slate-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:border-indigo-500 disabled:cursor-not-allowed disabled:opacity-50 transition-all"
+                />
               </div>
               <div className="space-y-3">
-                <label className="text-[10px] font-black text-text-muted uppercase tracking-widest block ml-2">{t('strategicTopic')}</label>
-                <select className="nm-input appearance-none" value={topic} onChange={e => setTopic(e.target.value)}>
-                  {topics.map(t => <option key={t.id || t.name} value={t.name}>{t.name}</option>)}
-                  {topics.length === 0 && <option value={topic || ''}>{topic || 'No topics'}</option>}
-                </select>
+                <label className="text-[10px] font-bold text-[#6B7280] dark:text-gray-400 uppercase block ml-2">{t('strategicTopic')}</label>
+                <Select value={topic} onValueChange={setTopic}>
+                  <SelectTrigger className="flex h-12 w-full rounded-lg border border-black/10 dark:border-white/10 bg-slate-200/50 dark:bg-slate-950/40 px-6 py-3 text-sm font-bold text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all justify-between [&>span]:line-clamp-1">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="bg-slate-900 border border-white/10 rounded-lg text-white">
+                    {topics.map(t => (
+                      <SelectItem key={t.id || t.name} value={t.name} className="text-white hover:bg-slate-800 focus:bg-slate-800 rounded-xl cursor-pointer">
+                        {t.name}
+                      </SelectItem>
+                    ))}
+                    {topics.length === 0 && (
+                      <SelectItem value={topic || 'no-topics'} className="text-white hover:bg-slate-800 focus:bg-slate-800 rounded-xl cursor-pointer">
+                        {topic || 'No topics'}
+                      </SelectItem>
+                    )}
+                  </SelectContent>
+                </Select>
               </div>
               <div className="space-y-3">
-                <label className="text-[10px] font-black text-text-muted uppercase tracking-widest block ml-2">{t('mainIdea')}</label>
-                <textarea className="nm-input min-h-[120px] resize-none" placeholder="Ý chính của chiến dịch, hook strategy..." value={mainIdea} onChange={e => setMainIdea(e.target.value)} />
+                <label className="text-[10px] font-bold text-[#6B7280] dark:text-gray-400 uppercase block ml-2">{t('mainIdea')}</label>
+                <Textarea
+                  placeholder="Ý chính của chiến dịch, hook strategy..."
+                  value={mainIdea}
+                  onChange={e => setMainIdea(e.target.value)}
+                  className="w-full min-h-[120px] p-4 font-bold text-sm resize-none custom-scrollbar rounded-lg border border-black/10 dark:border-white/10 bg-slate-200/50 dark:bg-slate-950/40 text-slate-900 dark:text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-600 dark:placeholder:text-slate-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:border-indigo-500 transition-all"
+                />
               </div>
               <div className="space-y-3">
-                <label className="text-[10px] font-black text-text-muted uppercase tracking-widest block ml-2">{t('targetAudience')}</label>
-                <input className="nm-input" placeholder="Đối tượng mục tiêu..." value={audience} onChange={e => setAudience(e.target.value)} />
+                <label className="text-[10px] font-bold text-[#6B7280] dark:text-gray-400 uppercase block ml-2">{t('targetAudience')}</label>
+                <Input
+                  type="text"
+                  placeholder="Đối tượng mục tiêu..."
+                  value={audience}
+                  onChange={e => setAudience(e.target.value)}
+                  className="flex h-12 w-full rounded-lg border border-black/10 dark:border-white/10 bg-slate-200/50 dark:bg-slate-950/40 px-6 py-3 text-sm font-bold text-slate-900 dark:text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-600 dark:placeholder:text-slate-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:border-indigo-500 disabled:cursor-not-allowed disabled:opacity-50 transition-all"
+                />
               </div>
               <div className="grid grid-cols-2 gap-8">
                 <div className="space-y-3">
-                  <label className="text-[10px] font-black text-text-muted uppercase tracking-widest block ml-2">{t('postCount')}</label>
-                  <input type="number" min={1} max={30} className="nm-input" value={postCount} onChange={e => setPostCount(parseInt(e.target.value) || 1)} />
+                  <label className="text-[10px] font-bold text-[#6B7280] dark:text-gray-400 uppercase block ml-2">{t('postCount')}</label>
+                  <Input
+                    type="number"
+                    min={1}
+                    max={30}
+                    value={postCount}
+                    onChange={e => setPostCount(parseInt(e.target.value) || 1)}
+                    className="flex h-12 w-full rounded-lg border border-black/10 dark:border-white/10 bg-slate-200/50 dark:bg-slate-950/40 px-6 py-3 text-sm font-bold text-slate-900 dark:text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-600 dark:placeholder:text-slate-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:border-indigo-500 disabled:cursor-not-allowed disabled:opacity-50 transition-all"
+                  />
                 </div>
                 <div className="space-y-3">
-                  <label className="text-[10px] font-black text-text-muted uppercase tracking-widest block ml-2">{t('postTime')}</label>
-                  <input type="time" className="nm-input" value={postTime} onChange={e => setPostTime(e.target.value)} />
+                  <label className="text-[10px] font-bold text-[#6B7280] dark:text-gray-400 uppercase block ml-2">{t('postTime')}</label>
+                  <Input
+                    type="time"
+                    value={postTime}
+                    onChange={e => setPostTime(e.target.value)}
+                    className="flex h-12 w-full rounded-lg border border-black/10 dark:border-white/10 bg-slate-200/50 dark:bg-slate-950/40 px-6 py-3 text-sm font-bold text-slate-900 dark:text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-600 dark:placeholder:text-slate-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:border-indigo-500 disabled:cursor-not-allowed disabled:opacity-50 transition-all [color-scheme:dark]"
+                  />
                 </div>
               </div>
             </div>
@@ -251,17 +306,17 @@ Bài ${i + 1}/${postCount}. Hãy viết nội dung hấp dẫn, chuyên nghiệp
           {/* Workflow Selection */}
           <div className="nm-flat p-10 space-y-8 flex flex-col">
             <div className="flex items-center gap-4 mb-2">
-              <Workflow size={18} className="text-soft-blue" />
-              <h3 className="text-sm font-black text-text-primary uppercase tracking-widest">{t('selectWorkflow')}</h3>
+              <Workflow size={18} className="text-[#2563EB] dark:text-blue-400" />
+              <h3 className="text-sm font-bold text-[#111827] dark:text-gray-100 uppercase">{t('selectWorkflow')}</h3>
             </div>
  
             <div className="space-y-6 flex-1">
               <button
                 onClick={() => setSelectedWorkflow('')}
-                className={`w-full p-8 text-left transition-all duration-300 rounded-3xl ${!selectedWorkflow ? 'nm-button text-soft-blue' : 'nm-flat-sm opacity-70 hover:opacity-100'}`}
+                className={`w-full p-8 text-left transition-all duration-300 rounded-xl ${!selectedWorkflow ? 'border border-[#D1D5DB] dark:border-white/12 rounded-lg text-[#2563EB] dark:text-blue-400' : 'nm-flat-sm opacity-70 hover:opacity-100'}`}
               >
-                <div className="text-[11px] font-black uppercase tracking-widest mb-2">Default Strategy</div>
-                <div className="text-[9px] text-text-secondary font-bold uppercase tracking-tight">Trigger → AI Text → AI Image → Publish</div>
+                <div className="text-[11px] font-bold uppercase mb-2">Default Strategy</div>
+                <div className="text-[9px] text-[#6B7280] dark:text-gray-400 font-bold ">Trigger → AI Text → AI Image → Publish</div>
               </button>
 
               {workflows.map(wf => {
@@ -271,10 +326,10 @@ Bài ${i + 1}/${postCount}. Hãy viết nội dung hấp dẫn, chuyên nghiệp
                   <button
                     key={wf.id}
                     onClick={() => setSelectedWorkflow(wf.id)}
-                    className={`w-full p-8 text-left transition-all duration-300 rounded-3xl ${isActive ? 'nm-button text-soft-blue' : 'nm-flat-sm opacity-70 hover:opacity-100'}`}
+                    className={`w-full p-8 text-left transition-all duration-300 rounded-xl ${isActive ? 'border border-[#D1D5DB] dark:border-white/12 rounded-lg text-[#2563EB] dark:text-blue-400' : 'nm-flat-sm opacity-70 hover:opacity-100'}`}
                   >
                     <div className="flex items-center justify-between mb-4">
-                      <div className="text-[11px] font-black uppercase tracking-widest">{wf.name}</div>
+                      <div className="text-[11px] font-bold uppercase">{wf.name}</div>
                       {isActive && <Check size={16} />}
                     </div>
                     <div className="flex items-center gap-2 flex-wrap">
@@ -282,10 +337,10 @@ Bài ${i + 1}/${postCount}. Hãy viết nội dung hấp dẫn, chuyên nghiệp
                         const Icon = NODE_ICONS[n.type] || Zap;
                         return (
                           <React.Fragment key={n.id}>
-                            <span className={`flex items-center gap-2 text-[8px] font-black uppercase ${NODE_COLORS[n.type] || 'text-text-muted nm-flat-sm px-2 py-1'}`}>
+                            <span className={`flex items-center gap-2 text-[8px] font-bold uppercase ${NODE_COLORS[n.type] || 'text-[#6B7280] dark:text-gray-400 nm-flat-sm px-2 py-1'}`}>
                               <Icon size={10} />{n.title}
                             </span>
-                            {i < nodes.length - 1 && i < 4 && <ChevronRight size={10} className="text-text-muted" />}
+                            {i < nodes.length - 1 && i < 4 && <ChevronRight size={10} className="text-[#6B7280] dark:text-gray-400" />}
                           </React.Fragment>
                         );
                       })}
@@ -299,12 +354,12 @@ Bài ${i + 1}/${postCount}. Hãy viết nội dung hấp dẫn, chuyên nghiệp
               <button
                 onClick={() => setStep('generate')}
                 disabled={!campaignName || !selectedFanpage}
-                className="w-full bg-soft-blue text-white py-5 rounded-3xl font-black uppercase tracking-widest text-xs shadow-xl hover:brightness-110 disabled:opacity-30 transition-all flex items-center justify-center gap-4"
+                className="w-full bg-[#2563EB] text-white py-5 rounded-xl font-bold uppercase text-xs shadow-xl hover:brightness-110 disabled:opacity-30 transition-all flex items-center justify-center gap-4"
               >
                 <Play size={20} fill="currentColor" /> {generating ? t('loading') : t('launchFactory')}
               </button>
               {(!campaignName || !selectedFanpage) && (
-                <p className="text-center text-[9px] text-text-muted mt-6 font-bold uppercase tracking-widest opacity-50">{t('completeInfo')}</p>
+                <p className="text-center text-[9px] text-[#6B7280] dark:text-gray-400 mt-6 font-bold uppercase opacity-50">{t('completeInfo')}</p>
               )}
             </div>
           </div>
@@ -316,40 +371,40 @@ Bài ${i + 1}/${postCount}. Hãy viết nội dung hấp dẫn, chuyên nghiệp
         <div className="nm-flat p-12 space-y-10 max-w-4xl mx-auto">
           <div className="flex items-center justify-between">
             <div>
-              <h3 className="text-2xl font-black text-text-primary uppercase tracking-tight">{t('factoryRunning')}</h3>
-              <p className="text-[10px] text-text-secondary font-bold uppercase tracking-widest mt-1">{campaignName} · {postCount} units in production</p>
+              <h3 className="text-2xl font-bold text-[#111827] dark:text-gray-100 ">{t('factoryRunning')}</h3>
+              <p className="text-[10px] text-[#6B7280] dark:text-gray-400 font-bold uppercase mt-1">{campaignName} · {postCount} units in production</p>
             </div>
             <div className="text-right">
-              <div className="text-4xl font-black text-soft-blue leading-none">{genProgress}%</div>
-              <div className="text-[9px] text-text-muted font-bold uppercase tracking-widest mt-2">Neural Load</div>
+              <div className="text-xl font-bold text-[#2563EB] dark:text-blue-400 leading-none">{genProgress}%</div>
+              <div className="text-[9px] text-[#6B7280] dark:text-gray-400 font-bold uppercase mt-2">Neural Load</div>
             </div>
           </div>
 
-          <div className="nm-inset p-1.5 rounded-full overflow-hidden h-6">
-            <div className="h-full bg-soft-blue rounded-full transition-all duration-700 shadow-lg" style={{ width: `${genProgress}%` }} />
+          <div className="bg-[#F3F4F6] dark:bg-white/8 border border-[#D1D5DB] dark:border-white/12 rounded-lg p-1.5 rounded-full overflow-hidden h-6">
+            <div className="h-full bg-[#2563EB] rounded-full transition-all duration-700 shadow-lg" style={{ width: `${genProgress}%` }} />
           </div>
 
-          <div className="nm-inset p-8 h-64 overflow-y-auto custom-scrollbar font-mono text-soft-blue/80">
+          <div className="bg-[#F3F4F6] dark:bg-white/8 border border-[#D1D5DB] dark:border-white/12 rounded-lg p-8 h-64 overflow-y-auto custom-scrollbar font-mono text-[#2563EB] dark:text-blue-400/80">
             {genLog.map((l, i) => (
               <div key={i} className="text-[11px] mb-2 last:mb-0 border-l-2 border-soft-blue/20 pl-4 py-1">{l}</div>
             ))}
             {!generating && genLog.length === 0 && (
               <div className="flex flex-col items-center justify-center h-full opacity-20">
                 <Zap size={32} />
-                <p className="text-[10px] font-black uppercase tracking-[0.3em] mt-4">Generator Offline</p>
+                <p className="text-[10px] font-bold uppercase tracking-[0.3em] mt-4">Generator Offline</p>
               </div>
             )}
           </div>
 
           <div className="space-y-4 pt-6">
             {generatedPosts.length > 0 && !generating && (
-              <button onClick={() => setStep('review')} className="w-full bg-emerald-500 text-white py-6 rounded-3xl font-black uppercase tracking-widest text-xs shadow-xl hover:brightness-110 transition-all flex items-center justify-center gap-4">
+              <button onClick={() => setStep('review')} className="w-full bg-emerald-500 text-white py-6 rounded-xl font-bold uppercase text-xs shadow-xl hover:brightness-110 transition-all flex items-center justify-center gap-4">
                 <Check size={20} /> Finalize {generatedPosts.length} Results
               </button>
             )}
             
             {!generating && (
-              <button onClick={() => setStep('config')} className="w-full text-text-muted hover:text-text-primary text-[10px] font-bold uppercase tracking-widest transition-colors flex items-center justify-center gap-2">
+              <button onClick={() => setStep('config')} className="w-full text-[#6B7280] dark:text-gray-400 hover:text-[#111827] dark:text-gray-100 text-[10px] font-bold uppercase transition-colors flex items-center justify-center gap-2">
                 <ArrowLeft size={14} /> Adjust Config
               </button>
             )}
@@ -362,18 +417,18 @@ Bài ${i + 1}/${postCount}. Hãy viết nội dung hấp dẫn, chuyên nghiệp
         <div className="space-y-12">
           <div className="flex flex-col md:flex-row items-center justify-between gap-8">
             <div className="flex items-center gap-6">
-              <button onClick={() => setStep('config')} className="w-14 h-14 nm-button flex items-center justify-center text-text-primary">
+              <button onClick={() => setStep('config')} className="w-14 h-14 border border-[#D1D5DB] dark:border-white/12 rounded-lg flex items-center justify-center text-[#111827] dark:text-gray-100">
                 <ArrowLeft size={22} />
               </button>
               <div>
-                <h3 className="text-3xl font-black text-text-primary uppercase tracking-tight">{t('reviewPublish')}</h3>
-                <p className="text-[10px] text-text-secondary font-black uppercase tracking-widest mt-2">{generatedPosts.length} nodes ready for deployment</p>
+                <h3 className="text-2xl font-bold text-[#111827] dark:text-gray-100 ">{t('reviewPublish')}</h3>
+                <p className="text-[10px] text-[#6B7280] dark:text-gray-400 font-bold uppercase mt-2">{generatedPosts.length} nodes ready for deployment</p>
               </div>
             </div>
             <button
               onClick={handlePublishAll}
               disabled={publishing}
-              className="bg-soft-blue text-white px-10 py-5 rounded-3xl font-black uppercase tracking-widest text-xs shadow-xl hover:brightness-110 disabled:opacity-50 transition-all flex items-center gap-4"
+              className="bg-[#2563EB] text-white px-10 py-5 rounded-xl font-bold uppercase text-xs shadow-xl hover:brightness-110 disabled:opacity-50 transition-all flex items-center gap-4"
             >
               {publishing ? <RefreshCw size={20} className="animate-spin" /> : <Send size={20} />}
               {publishing ? t('loading') : t('queueAll')}
@@ -389,7 +444,7 @@ Bài ${i + 1}/${postCount}. Hãy viết nội dung hấp dẫn, chuyên nghiệp
               return (
                 <div key={idx} className={`nm-flat overflow-hidden transition-all duration-500 flex flex-col ${isQueued ? 'opacity-70 scale-95' : 'hover:scale-[1.02]'}`}>
                   <div className="p-2 h-64">
-                    <div className="nm-inset w-full h-full rounded-2xl overflow-hidden relative">
+                    <div className="bg-[#F3F4F6] dark:bg-white/8 border border-[#D1D5DB] dark:border-white/12 rounded-lg w-full h-full rounded-lg overflow-hidden relative">
                       {imgSrc ? (
                         <img src={imgSrc} alt="" className="w-full h-full object-cover" />
                       ) : (
@@ -398,39 +453,39 @@ Bài ${i + 1}/${postCount}. Hãy viết nội dung hấp dẫn, chuyên nghiệp
                         </div>
                       )}
                       <div className="absolute top-4 left-4">
-                        <span className="nm-flat-sm text-[9px] font-black text-soft-blue uppercase tracking-widest px-4 py-2">Node {idx + 1}</span>
+                        <span className="nm-flat-sm text-[9px] font-bold text-[#2563EB] dark:text-blue-400 uppercase px-4 py-2">Node {idx + 1}</span>
                       </div>
                     </div>
                   </div>
                   
                   <div className="p-8 flex-1 flex flex-col gap-6">
                     {isEditing ? (
-                      <textarea
-                        className="nm-input min-h-[160px] resize-none text-sm"
+                      <Textarea
+                        className="w-full min-h-[160px] p-4 font-bold text-sm resize-none custom-scrollbar rounded-lg border border-black/10 dark:border-white/10 bg-slate-200/50 dark:bg-slate-950/40 text-slate-900 dark:text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-600 dark:placeholder:text-slate-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:border-indigo-500 transition-all"
                         value={post.content}
                         onChange={e => setGeneratedPosts(prev => prev.map((p, i) => i === idx ? { ...p, content: e.target.value } : p))}
                       />
                     ) : (
-                      <div className="nm-inset p-6 rounded-2xl flex-1">
-                        <p className="text-[13px] text-text-secondary font-medium leading-relaxed italic line-clamp-6">"{post.content}"</p>
+                      <div className="bg-[#F3F4F6] dark:bg-white/8 border border-[#D1D5DB] dark:border-white/12 rounded-lg p-6 rounded-lg flex-1">
+                        <p className="text-[13px] text-[#6B7280] dark:text-gray-400 font-medium leading-relaxed italic line-clamp-6">"{post.content}"</p>
                       </div>
                     )}
                     
                     <div className="flex items-center gap-4">
                       {isQueued ? (
-                        <div className="flex-1 flex items-center justify-center gap-3 py-4 bg-emerald-50 text-emerald-500 rounded-2xl text-[10px] font-black uppercase tracking-widest">
+                        <div className="flex-1 flex items-center justify-center gap-3 py-4 bg-emerald-50 text-emerald-500 rounded-lg text-[10px] font-bold uppercase">
                           <Check size={16} /> Deployed to Queue
                         </div>
                       ) : (
                         <>
                           <button 
                             onClick={() => setEditingIndex(isEditing ? null : idx)}
-                            className={`flex-1 flex items-center justify-center gap-3 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${isEditing ? 'nm-button text-soft-blue' : 'nm-flat-sm hover:text-soft-blue'}`}
+                            className={`flex-1 flex items-center justify-center gap-3 py-4 rounded-lg text-[10px] font-bold uppercase transition-all ${isEditing ? 'border border-[#D1D5DB] dark:border-white/12 rounded-lg text-[#2563EB] dark:text-blue-400' : 'nm-flat-sm hover:text-[#2563EB] dark:text-blue-400'}`}
                           >
                             {isEditing ? <><Check size={16} /> {t('save')}</> : <><Edit3 size={16} /> {t('editContent')}</>}
                           </button>
                           {isEditing && (
-                            <button onClick={() => setEditingIndex(null)} className="w-12 h-12 nm-button flex items-center justify-center text-soft-pink">
+                            <button onClick={() => setEditingIndex(null)} className="w-12 h-12 border border-[#D1D5DB] dark:border-white/12 rounded-lg flex items-center justify-center text-soft-pink">
                               <X size={18} />
                             </button>
                           )}

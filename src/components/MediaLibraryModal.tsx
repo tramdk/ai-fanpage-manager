@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { X, Upload, Image as ImageIcon, Search, History as HistoryIcon, Loader2, Cloud, Check, Play } from 'lucide-react';
 import { ApiService } from '../api';
 import { toast } from 'sonner';
+import { Input } from '@/components/ui/input';
 
 interface MediaFile {
   name: string;
@@ -109,13 +110,13 @@ export const MediaLibraryModal: React.FC<MediaLibraryModalProps> = ({ api, onSel
                <label className="text-[10px] font-black text-text-muted uppercase tracking-widest ml-1 opacity-50">Filter Node</label>
                <div className="relative">
                  <Search className="w-4 h-4 absolute left-5 top-1/2 -translate-y-1/2 text-text-muted" />
-                 <input 
-                    type="text" 
-                    placeholder="Search artifacts..." 
-                    value={search}
-                    onChange={e => setSearch(e.target.value)}
-                    className="nm-input w-full pl-14 pr-6 py-4 text-xs text-text-primary"
-                 />
+                 <Input 
+                     type="text" 
+                     placeholder="Search artifacts..." 
+                     value={search}
+                     onChange={e => setSearch(e.target.value)}
+                     className="flex h-12 w-full rounded-2xl border border-black/10 dark:border-white/10 bg-slate-200/50 dark:bg-slate-950/40 pl-14 pr-6 py-4 text-xs text-slate-900 dark:text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-600 dark:placeholder:text-slate-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:border-indigo-500 transition-all"
+                  />
                </div>
              </div>
 

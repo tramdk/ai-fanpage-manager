@@ -209,18 +209,18 @@ export const HistoryView = ({ api }: { api: ApiService }) => {
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center p-32 gap-6">
-        <Activity className="w-12 h-12 text-soft-blue animate-pulse opacity-40" />
-        <p className="text-sm font-bold text-text-muted uppercase tracking-widest">Synching Neural Logs...</p>
+        <Activity className="w-12 h-12 text-[#2563EB] dark:text-blue-400 animate-pulse opacity-40" />
+        <p className="text-sm font-bold text-[#6B7280] dark:text-gray-400 uppercase">Synching Neural Logs...</p>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="nm-flat border-red-500/20 text-red-400 p-10 rounded-[32px] max-w-2xl mx-auto flex items-center gap-8">
-        <div className="w-16 h-16 nm-flat flex items-center justify-center text-red-500 font-black text-xl">!</div>
+      <div className="nm-flat border-red-500/20 text-red-400 p-10 rounded-lg max-w-2xl mx-auto flex items-center gap-8">
+        <div className="w-16 h-16 nm-flat flex items-center justify-center text-red-500 font-bold text-xl">!</div>
         <div>
-          <div className="font-bold uppercase text-xs tracking-widest mb-1 opacity-60">Neural Network Disruption</div>
+          <div className="font-bold uppercase text-xs tracking-normal mb-1 opacity-60">Neural Network Disruption</div>
           <p className="text-sm font-bold">{error}</p>
         </div>
       </div>
@@ -229,42 +229,42 @@ export const HistoryView = ({ api }: { api: ApiService }) => {
 
   return (
     <div className="flex flex-col h-full space-y-8 sm:space-y-12 mx-auto animate-in fade-in slide-in-from-bottom-4 duration-700">
-      <div className="flex justify-between items-center nm-flat p-10 rounded-[48px] overflow-hidden relative">
-        <div className="absolute top-0 right-0 w-96 h-96 bg-soft-blue/5 blur-[120px] -mr-48 -mt-48"></div>
+      <div className="flex justify-between items-center nm-flat p-10 rounded-xl overflow-hidden relative">
+        <div className="absolute top-0 right-0 w-96 h-96 bg-[#2563EB]/5 blur-[120px] -mr-48 -mt-48"></div>
         <div className="flex items-center gap-8 relative z-10">
-          <div className="w-20 h-20 nm-flat flex items-center justify-center text-soft-blue">
+          <div className="w-20 h-20 nm-flat flex items-center justify-center text-[#2563EB] dark:text-blue-400">
             <History className="w-10 h-10" />
           </div>
           <div>
-            <h2 className="text-3xl font-black text-text-primary tracking-tight">{t('activityFeed')}</h2>
-            <p className="text-xs font-semibold text-text-muted mt-2 opacity-60">System Synchrone Monitor</p>
+            <h2 className="text-2xl font-bold text-[#111827] dark:text-gray-100 ">{t('activityFeed')}</h2>
+            <p className="text-xs font-semibold text-[#6B7280] dark:text-gray-400 mt-2 opacity-60">System Synchrone Monitor</p>
           </div>
         </div>
         <div className="relative z-10">
-          <div className="nm-inset px-8 py-4 rounded-3xl flex items-center gap-4">
-            <Layers size={18} className="text-soft-blue" />
-            <span className="text-xs text-text-primary font-bold uppercase tracking-widest">Active Nodes: {posts.length}</span>
+          <div className="bg-[#F3F4F6] dark:bg-white/8 border border-[#D1D5DB] dark:border-white/12 rounded-lg px-8 py-4 rounded-xl flex items-center gap-4">
+            <Layers size={18} className="text-[#2563EB] dark:text-blue-400" />
+            <span className="text-xs text-[#111827] dark:text-gray-100 font-bold uppercase">Active Nodes: {posts.length}</span>
           </div>
         </div>
       </div>
 
-      <div className="nm-flat rounded-[48px] p-2 overflow-hidden flex-1 flex flex-col min-h-0">
+      <div className="nm-flat rounded-xl p-2 overflow-hidden flex-1 flex flex-col min-h-0">
         {posts.length === 0 ? (
-          <div className="p-32 text-center nm-inset m-4 rounded-[48px] flex-1">
-            <History className="w-20 h-20 mx-auto mb-10 text-text-muted/20" />
-            <p className="text-sm font-bold text-text-muted uppercase tracking-widest">{t('noData')}</p>
+          <div className="p-32 text-center bg-[#F3F4F6] dark:bg-white/8 border border-[#D1D5DB] dark:border-white/12 rounded-lg m-4 rounded-xl flex-1">
+            <History className="w-20 h-20 mx-auto mb-10 text-[#6B7280] dark:text-gray-400/20" />
+            <p className="text-sm font-bold text-[#6B7280] dark:text-gray-400 uppercase">{t('noData')}</p>
           </div>
         ) : (
           <div className="flex-1 flex flex-col min-h-0">
             {/* Desktop Table View */}
-            <div className="hidden md:block overflow-auto custom-scrollbar m-4 nm-inset rounded-[32px] flex-1">
+            <div className="hidden md:block overflow-auto custom-scrollbar m-4 bg-[#F3F4F6] dark:bg-white/8 border border-[#D1D5DB] dark:border-white/12 rounded-lg rounded-lg flex-1">
               <table className="w-full text-left border-collapse table-fixed relative">
                 <thead className="sticky top-0 z-20 bg-app-bg shadow-sm">
-                  <tr className="text-text-muted text-xs font-bold uppercase tracking-widest border-b border-text-muted/5">
+                  <tr className="text-[#6B7280] dark:text-gray-400 text-xs font-bold uppercase border-b border-text-muted/5">
                     {[
-                      { id: 'fanpage', label: t('fanpages'), icon: <Target size={14} className="text-soft-blue"/> },
+                      { id: 'fanpage', label: t('fanpages'), icon: <Target size={14} className="text-[#2563EB] dark:text-blue-400"/> },
                       { id: 'topic', label: t('topicsKeywords'), icon: null },
-                      { id: 'date', label: t('lastSync'), icon: <Clock size={14} className="text-soft-blue"/> },
+                      { id: 'date', label: t('lastSync'), icon: <Clock size={14} className="text-[#2563EB] dark:text-blue-400"/> },
                       { id: 'studio', label: t('creativeStudio'), icon: null },
                       { id: 'logic', label: 'Instructional Logic', icon: null },
                       { id: 'status', label: t('statusActive'), icon: null },
@@ -280,7 +280,7 @@ export const HistoryView = ({ api }: { api: ApiService }) => {
                         </div>
                         <div 
                           onMouseDown={() => setResizing(col.id)}
-                          className={`absolute right-0 top-0 bottom-0 w-1.5 cursor-col-resize hover:bg-soft-blue/30 transition-colors z-20 ${resizing === col.id ? 'bg-soft-blue/50' : ''}`}
+                          className={`absolute right-0 top-0 bottom-0 w-1.5 cursor-col-resize hover:bg-[#2563EB]/30 transition-colors z-20 ${resizing === col.id ? 'bg-[#2563EB]/50' : ''}`}
                         ></div>
                       </th>
                     ))}
@@ -288,21 +288,21 @@ export const HistoryView = ({ api }: { api: ApiService }) => {
                 </thead>
                 <tbody>
                   {posts.map((post) => (
-                    <tr key={post.id} className="group hover:bg-soft-blue/5 transition-all duration-500 border-b border-text-muted/5 last:border-0">
+                    <tr key={post.id} className="group hover:bg-[#2563EB]/5 transition-all duration-500 border-b border-text-muted/5 last:border-0">
                       <td className="px-6 py-6 truncate">
-                         <div className="text-sm font-bold text-text-primary truncate">{post.fanpageName || 'Neural Hub'}</div>
-                         <div className="text-[10px] font-semibold text-text-muted mt-1">NODE {post.id.substring(0, 8)}</div>
+                         <div className="text-sm font-bold text-[#111827] dark:text-gray-100 truncate">{post.fanpageName || 'Neural Hub'}</div>
+                         <div className="text-[10px] font-semibold text-[#6B7280] dark:text-gray-400 mt-1">NODE {post.id.substring(0, 8)}</div>
                       </td>
                       <td className="px-6 py-6">
-                        <span className="nm-flat px-3 py-1 rounded-lg text-xs font-bold text-soft-blue tracking-wide bg-white/20">
+                        <span className="nm-flat px-3 py-1 rounded-lg text-xs font-bold text-[#2563EB] dark:text-blue-400 tracking-wide bg-white/20">
                           {post.topic}
                         </span>
                       </td>
                       <td className="px-6 py-6">
-                        <div className="text-sm font-bold text-text-primary font-mono">
+                        <div className="text-sm font-bold text-[#111827] dark:text-gray-100 font-mono">
                           {new Date(post.createdAt).toLocaleDateString()}
                         </div>
-                        <div className="text-[10px] text-text-muted font-semibold mt-1">
+                        <div className="text-[10px] text-[#6B7280] dark:text-gray-400 font-semibold mt-1">
                           {new Date(post.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                         </div>
                       </td>
@@ -318,30 +318,30 @@ export const HistoryView = ({ api }: { api: ApiService }) => {
                             }
                           }
                           return (
-                            <div className="w-12 h-12 nm-inset p-1.5 rounded-xl overflow-hidden relative group-hover:scale-110 transition-transform duration-700">
+                            <div className="w-12 h-12 bg-[#F3F4F6] dark:bg-white/8 border border-[#D1D5DB] dark:border-white/12 rounded-lg p-1.5 rounded-xl overflow-hidden relative group-hover:scale-110 transition-transform duration-700">
                               {parsed.length > 0 ? (
                                  <img src={parsed[0].data} className="w-full h-full object-cover rounded-lg" />
                               ) : (
-                                 <div className="w-full h-full flex items-center justify-center text-[8px] font-black uppercase text-text-muted/20 italic">No Node</div>
+                                 <div className="w-full h-full flex items-center justify-center text-[8px] font-bold uppercase text-[#6B7280] dark:text-gray-400/20 italic">No Node</div>
                               )}
                             </div>
                           );
                         })()}
                       </td>
-                      <td className="px-6 py-6 text-sm text-text-secondary font-medium italic opacity-80" title={post.content}>
+                      <td className="px-6 py-6 text-sm text-[#6B7280] dark:text-gray-400 font-medium italic opacity-80" title={post.content}>
                         <div className="truncate">"{post.content || 'Empty automated generation'}"</div>
                       </td>
                       <td className="px-6 py-6">
                          <div className="nm-flat px-4 py-2 rounded-xl flex items-center gap-3">
-                            <div className={`w-2 h-2 rounded-full shadow-lg ${post.status === 'published' ? 'bg-emerald-500 shadow-emerald-500/50' : post.status === 'failed' ? 'bg-soft-pink shadow-soft-pink/50' : 'bg-soft-blue animate-pulse shadow-soft-blue/50'}`}></div>
-                            <span className="text-[10px] font-bold uppercase tracking-wider text-text-muted">{post.status}</span>
+                            <div className={`w-2 h-2 rounded-full shadow-lg ${post.status === 'published' ? 'bg-emerald-500 shadow-emerald-500/50' : post.status === 'failed' ? 'bg-soft-pink shadow-soft-pink/50' : 'bg-[#2563EB] animate-pulse shadow-soft-blue/50'}`}></div>
+                            <span className="text-[10px] font-bold uppercase text-[#6B7280] dark:text-gray-400">{post.status}</span>
                          </div>
                       </td>
                       <td className="px-6 py-6 text-right">
                         <div className="flex justify-end gap-3">
                           <button
                             onClick={() => handleVideoAction(post)}
-                            className="nm-button p-2.5 rounded-xl text-soft-blue hover:scale-110 transition-all active:scale-95"
+                            className="border border-[#D1D5DB] dark:border-white/12 rounded-lg p-2.5 rounded-xl text-[#2563EB] dark:text-blue-400 hover:scale-110 transition-all active:scale-95"
                             title={post.imageUrl?.includes('cloudinary') ? "View/Publish Video" : "Generate AI Video"}
                           >
                             <Video size={18} className={isGeneratingVideo && activePost?.id === post.id ? 'animate-bounce' : ''} />
@@ -349,12 +349,12 @@ export const HistoryView = ({ api }: { api: ApiService }) => {
                           {post.status === 'queued' ? (
                             <button
                               onClick={() => setEditingPost(post)}
-                              className="nm-button px-5 py-2.5 rounded-xl text-xs font-bold text-text-muted hover:text-soft-blue transition-all active:scale-95"
+                              className="border border-[#D1D5DB] dark:border-white/12 rounded-lg px-5 py-2.5 rounded-xl text-xs font-bold text-[#6B7280] dark:text-gray-400 hover:text-[#2563EB] dark:text-blue-400 transition-all active:scale-95"
                             >
                               {t('creativeStudio')}
                             </button>
                           ) : (
-                            <div className="nm-inset px-5 py-2.5 rounded-xl text-[10px] uppercase font-bold text-text-muted/30 tracking-widest inline-block">
+                            <div className="bg-[#F3F4F6] dark:bg-white/8 border border-[#D1D5DB] dark:border-white/12 rounded-lg px-5 py-2.5 rounded-xl text-[10px] uppercase font-bold text-[#6B7280] dark:text-gray-400/30 tracking-normal inline-block">
                               LOCKED
                             </div>
                           )}
@@ -369,7 +369,7 @@ export const HistoryView = ({ api }: { api: ApiService }) => {
             {/* Mobile Card View */}
             <div className="md:hidden overflow-y-auto custom-scrollbar p-4 space-y-6 flex-1">
                {posts.map((post) => (
-                 <div key={post.id} className="nm-flat p-6 rounded-[32px] space-y-5 animate-in slide-in-from-bottom-4 duration-500">
+                 <div key={post.id} className="nm-flat p-6 rounded-lg space-y-5 animate-in slide-in-from-bottom-4 duration-500">
                     <div className="flex justify-between items-start">
                        <div className="flex items-center gap-4">
                           {(() => {
@@ -379,41 +379,41 @@ export const HistoryView = ({ api }: { api: ApiService }) => {
                                catch (e) { parsed = [{ data: post.imageUrl }]; }
                              }
                              return (
-                               <div className="w-14 h-14 nm-inset p-1 rounded-xl overflow-hidden flex-shrink-0">
+                               <div className="w-14 h-14 bg-[#F3F4F6] dark:bg-white/8 border border-[#D1D5DB] dark:border-white/12 rounded-lg p-1 rounded-xl overflow-hidden flex-shrink-0">
                                   {parsed.length > 0 ? <img src={parsed[0].data} className="w-full h-full object-cover rounded-lg" /> : <div className="w-full h-full bg-text-muted/5" />}
                                </div>
                              );
                           })()}
                           <div>
-                             <h4 className="text-sm font-black text-text-primary truncate max-w-[150px]">{post.fanpageName || 'Neural Hub'}</h4>
-                             <p className="text-[10px] font-bold text-text-muted uppercase tracking-widest mt-1">{new Date(post.createdAt).toLocaleDateString()} • {new Date(post.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
+                             <h4 className="text-sm font-bold text-[#111827] dark:text-gray-100 truncate max-w-[150px]">{post.fanpageName || 'Neural Hub'}</h4>
+                             <p className="text-[10px] font-bold text-[#6B7280] dark:text-gray-400 uppercase mt-1">{new Date(post.createdAt).toLocaleDateString()} • {new Date(post.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
                           </div>
                        </div>
-                       <div className={`w-3 h-3 rounded-full shadow-lg ${post.status === 'published' ? 'bg-emerald-500 shadow-emerald-500/50' : post.status === 'failed' ? 'bg-soft-pink shadow-soft-pink/50' : 'bg-soft-blue animate-pulse shadow-soft-blue/50'}`}></div>
+                       <div className={`w-3 h-3 rounded-full shadow-lg ${post.status === 'published' ? 'bg-emerald-500 shadow-emerald-500/50' : post.status === 'failed' ? 'bg-soft-pink shadow-soft-pink/50' : 'bg-[#2563EB] animate-pulse shadow-soft-blue/50'}`}></div>
                     </div>
                     
                     <div className="flex flex-wrap gap-2">
-                       <span className="nm-inset px-3 py-1 rounded-lg text-[9px] font-black text-soft-blue uppercase tracking-widest">{post.topic}</span>
-                       <span className="nm-inset px-3 py-1 rounded-lg text-[9px] font-black text-text-muted uppercase tracking-widest">Protocol {post.status}</span>
+                       <span className="bg-[#F3F4F6] dark:bg-white/8 border border-[#D1D5DB] dark:border-white/12 rounded-lg px-3 py-1 rounded-lg text-[9px] font-bold text-[#2563EB] dark:text-blue-400 uppercase">{post.topic}</span>
+                       <span className="bg-[#F3F4F6] dark:bg-white/8 border border-[#D1D5DB] dark:border-white/12 rounded-lg px-3 py-1 rounded-lg text-[9px] font-bold text-[#6B7280] dark:text-gray-400 uppercase">Protocol {post.status}</span>
                     </div>
 
-                    <p className="text-xs text-text-secondary font-medium leading-relaxed italic border-l-2 border-soft-blue/20 pl-4 py-1">
+                    <p className="text-xs text-[#6B7280] dark:text-gray-400 font-medium leading-relaxed italic border-l-2 border-soft-blue/20 pl-4 py-1">
                        "{post.content?.substring(0, 100)}{post.content?.length > 100 ? '...' : ''}"
                     </p>
 
                     <div className="pt-2 border-t border-text-muted/5 flex justify-between items-center">
-                       <span className="text-[9px] font-black text-text-muted uppercase tracking-widest opacity-40">Node ID: {post.id.substring(0, 8)}</span>
+                       <span className="text-[9px] font-bold text-[#6B7280] dark:text-gray-400 uppercase opacity-40">Node ID: {post.id.substring(0, 8)}</span>
                        <div className="flex gap-2">
                           <button
                             onClick={() => handleVideoAction(post)}
-                            className="nm-button p-2.5 rounded-xl text-soft-blue"
+                            className="border border-[#D1D5DB] dark:border-white/12 rounded-lg p-2.5 rounded-xl text-[#2563EB] dark:text-blue-400"
                           >
                             <Video size={16} />
                           </button>
                          {post.status === 'queued' && (
                            <button 
                              onClick={() => setEditingPost(post)}
-                             className="nm-button px-5 py-2 text-[10px] font-black uppercase text-soft-blue tracking-widest"
+                             className="border border-[#D1D5DB] dark:border-white/12 rounded-lg px-5 py-2 text-[10px] font-bold uppercase text-[#2563EB] dark:text-blue-400 tracking-normal"
                            >
                               {t('creativeStudio')}
                            </button>

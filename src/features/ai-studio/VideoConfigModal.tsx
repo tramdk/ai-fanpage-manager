@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { X, Play, Music, Mic, Layers, Info, Cpu } from 'lucide-react';
 import { ApiService } from '../../api';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Button } from '@/components/ui/button';
 
 interface VideoConfigModalProps {
   onConfirm: (config: any) => void;
@@ -75,135 +78,154 @@ export const VideoConfigModal: React.FC<VideoConfigModalProps> = ({ onConfirm, o
   const filteredVoices = options.voices.filter(v => v.provider === config.ttsProvider);
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 sm:p-12">
-      <div className="absolute inset-0 bg-black/60 backdrop-blur-md" onClick={onClose}></div>
-      
-      <div className="relative w-full max-w-3xl nm-flat rounded-[48px] overflow-hidden animate-in zoom-in-95 duration-500">
-        <div className="absolute top-0 right-0 w-64 h-64 bg-soft-blue/10 blur-[100px] -mr-32 -mt-32"></div>
-        
-        <div className="p-10 sm:p-16 space-y-10 relative z-10">
-          <div className="flex justify-between items-center">
-            <div className="flex items-center gap-6">
-              <div className="w-16 h-16 nm-inset flex items-center justify-center text-soft-blue rounded-2xl">
-                <Play size={28} />
+    <Dialog open={true} onOpenChange={(open) => { if (!open) onClose(); }}>
+      <DialogContent className="max-w-3xl p-0 overflow-hidden border-0 bg-transparent shadow-none" showCloseButton={false}>
+        <DialogHeader className="sr-only">
+          <DialogTitle>Neural Synthesis Configuration</DialogTitle>
+          <DialogDescription>Configure details for voiceover template synthesis</DialogDescription>
+        </DialogHeader>
+
+        <div className="relative w-full nm-flat rounded-xl overflow-hidden animate-in zoom-in-95 duration-500">
+          <div className="absolute top-0 right-0 size-64 bg-[#2563EB]/10 blur-[100px] -mr-32 -mt-32"></div>
+          
+          <div className="p-10 sm:p-16 flex flex-col gap-10 relative z-10">
+            <div className="flex justify-between items-center">
+              <div className="flex items-center gap-6">
+                <div className="size-16 bg-[#F3F4F6] dark:bg-white/8 border border-[#D1D5DB] dark:border-white/12 rounded-lg flex items-center justify-center text-[#2563EB] dark:text-blue-400 rounded-lg">
+                  <Play className="size-7" />
+                </div>
+                <div>
+                  <h3 className="text-2xl font-bold text-[#111827] dark:text-gray-100 ">Neural Synthesis Studio</h3>
+                  <p className="text-[10px] font-bold text-[#6B7280] dark:text-gray-400 uppercase tracking-[0.3em] mt-1">Configure Generation Protocol</p>
+                </div>
               </div>
-              <div>
-                <h3 className="text-2xl font-black text-text-primary uppercase tracking-tight">Neural Synthesis Studio</h3>
-                <p className="text-[10px] font-black text-text-muted uppercase tracking-[0.3em] mt-1">Configure Generation Protocol</p>
+              <Button onClick={onClose} variant="ghost" size="icon" className="size-12 border border-[#D1D5DB] dark:border-white/12 rounded-lg flex items-center justify-center text-[#6B7280] dark:text-gray-400 hover:text-soft-pink transition-all">
+                <X className="size-5" />
+              </Button>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-10">
+              {/* Template Selection */}
+              <div className="flex flex-col gap-4">
+                <label className="text-[10px] font-bold text-[#6B7280] dark:text-gray-400 uppercase ml-4 flex items-center gap-2">
+                  <Layers className="size-3.5 text-[#2563EB] dark:text-blue-400" /> Cinematic Template
+                </label>
+                <Select value={config.templateId} onValueChange={handleTemplateChange}>
+                  <SelectTrigger className="w-full h-auto bg-slate-900 border-2 border-white/5 rounded-lg p-4 text-white font-bold">
+                    <SelectValue placeholder="Select template" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-slate-950/95 border border-white/10 rounded-lg">
+                    {options.templates.map(t => (
+                      <SelectItem key={t.id} value={t.id} className="text-white hover:bg-slate-800">
+                        {t.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* BGM Selection */}
+              <div className="flex flex-col gap-4">
+                <label className="text-[10px] font-bold text-[#6B7280] dark:text-gray-400 uppercase ml-4 flex items-center gap-2">
+                  <Music className="size-3.5 text-[#2563EB] dark:text-blue-400" /> Audio Atmosphere (BGM)
+                </label>
+                <Select 
+                  value={config.bgmAssetId} 
+                  onValueChange={(val) => setConfig(prev => ({ ...prev, bgmAssetId: val }))}
+                  disabled={loading}
+                >
+                  <SelectTrigger className="w-full h-auto bg-slate-900 border-2 border-white/5 rounded-lg p-4 text-white font-bold">
+                    <SelectValue placeholder="Select BGM" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-slate-950/95 border border-white/10 rounded-lg">
+                    <SelectItem value="none" className="text-white hover:bg-slate-800">No Atmosphere (Silent)</SelectItem>
+                    {!loading && options.bgm.map(m => (
+                      <SelectItem key={m.id} value={m.id} className="text-white hover:bg-slate-800">
+                        {m.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* TTS Provider (Model) Selection */}
+              <div className="flex flex-col gap-4">
+                <label className="text-[10px] font-bold text-[#6B7280] dark:text-gray-400 uppercase ml-4 flex items-center gap-2">
+                  <Cpu className="size-3.5 text-[#2563EB] dark:text-blue-400" /> Neural Engine (Model)
+                </label>
+                <Select 
+                  value={config.ttsProvider} 
+                  onValueChange={(val) => {
+                    const firstVoiceOfProvider = options.voices.find(v => v.provider === val);
+                    setConfig(prev => ({ 
+                      ...prev, 
+                      ttsProvider: val, 
+                      ttsVoiceId: firstVoiceOfProvider ? (firstVoiceOfProvider.voiceId || firstVoiceOfProvider.id) : '' 
+                    }));
+                  }}
+                  disabled={loading}
+                >
+                  <SelectTrigger className="w-full h-auto bg-slate-900 border-2 border-white/5 rounded-lg p-4 text-white font-bold">
+                    <SelectValue placeholder="Select engine" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-slate-950/95 border border-white/10 rounded-lg">
+                    {options.providers.map(p => (
+                      <SelectItem key={p} value={p} className="text-white hover:bg-slate-800">
+                        {p.toUpperCase()} Engine
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Voice Selection */}
+              <div className="flex flex-col gap-4">
+                <label className="text-[10px] font-bold text-[#6B7280] dark:text-gray-400 uppercase ml-4 flex items-center gap-2">
+                  <Mic className="size-3.5 text-[#2563EB] dark:text-blue-400" /> Vocal Signature (Voice)
+                </label>
+                <Select 
+                  value={config.ttsVoiceId} 
+                  onValueChange={(val) => setConfig(prev => ({ ...prev, ttsVoiceId: val }))}
+                  disabled={loading}
+                >
+                  <SelectTrigger className="w-full h-auto bg-slate-900 border-2 border-white/5 rounded-lg p-4 text-white font-bold">
+                    <SelectValue placeholder="Select voice signature" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-slate-950/95 border border-white/10 rounded-lg">
+                    {filteredVoices.map(v => (
+                      <SelectItem key={v.id} value={v.voiceId || v.id} className="text-white hover:bg-slate-800">
+                        {v.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
-            <button onClick={onClose} className="w-12 h-12 nm-button flex items-center justify-center text-text-muted hover:text-soft-pink transition-all">
-              <X size={20} />
-            </button>
-          </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-10">
-            {/* Template Selection */}
-            <div className="space-y-4">
-              <label className="text-[10px] font-black text-text-muted uppercase tracking-widest ml-4 flex items-center gap-2">
-                <Layers size={12} className="text-soft-blue" /> Cinematic Template
-              </label>
-              <select 
-                className="nm-input font-bold text-text-primary"
-                value={config.templateId}
-                onChange={e => handleTemplateChange(e.target.value)}
+            <div className="bg-[#F3F4F6] dark:bg-white/8 border border-[#D1D5DB] dark:border-white/12 rounded-lg p-8 rounded-xl flex items-start gap-6 border-l border-soft-blue/40">
+              <Info className="size-5 text-[#2563EB] dark:text-blue-400 mt-1 flex-shrink-0" />
+              <div className="flex flex-col gap-1">
+                <p className="text-[11px] text-[#111827] dark:text-gray-100 font-bold uppercase">Synthesis Protocol Info</p>
+                <p className="text-[10px] text-[#6B7280] dark:text-gray-400 leading-relaxed font-medium uppercase">
+                  Sanitization active. Template "{config.templateId.toUpperCase()}" loaded with optimal neural parameters.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex justify-end pt-6 gap-6">
+              <Button onClick={onClose} variant="ghost" className="border border-[#D1D5DB] dark:border-white/12 rounded-lg px-10 py-5 text-[#6B7280] dark:text-gray-400 font-bold uppercase text-[11px] tracking-normal hover:text-soft-pink h-auto rounded-lg">
+                Cancel
+              </Button>
+              <Button 
+                onClick={() => onConfirm(config)} 
+                className="border border-[#D1D5DB] dark:border-white/12 rounded-lg px-14 py-5 bg-gradient-to-r from-soft-blue/20 to-indigo-600/20 border-soft-blue/30 text-[#2563EB] dark:text-blue-400 font-bold uppercase text-[11px] tracking-[0.2em] hover: transition-all h-auto rounded-lg"
               >
-                {options.templates.map(t => (
-                  <option key={t.id} value={t.id} className="bg-app-bg">{t.name}</option>
-                ))}
-              </select>
+                Initiate Synthesis
+              </Button>
             </div>
-
-            {/* BGM Selection */}
-            <div className="space-y-4">
-              <label className="text-[10px] font-black text-text-muted uppercase tracking-widest ml-4 flex items-center gap-2">
-                <Music size={12} className="text-soft-blue" /> Audio Atmosphere (BGM)
-              </label>
-              <select 
-                className="nm-input font-bold text-text-primary"
-                value={config.bgmAssetId}
-                onChange={e => {
-                  const val = e.target.value;
-                  setConfig(prev => ({ ...prev, bgmAssetId: val }));
-                }}
-                disabled={loading}
-              >
-                <option value="none" className="bg-app-bg">No Atmosphere (Silent)</option>
-                {!loading && options.bgm.map(m => (
-                  <option key={m.id} value={m.id} className="bg-app-bg">{m.name}</option>
-                ))}
-              </select>
-            </div>
-
-            {/* TTS Provider (Model) Selection */}
-            <div className="space-y-4">
-              <label className="text-[10px] font-black text-text-muted uppercase tracking-widest ml-4 flex items-center gap-2">
-                <Cpu size={12} className="text-soft-blue" /> Neural Engine (Model)
-              </label>
-              <select 
-                className="nm-input font-bold text-text-primary"
-                value={config.ttsProvider}
-                onChange={e => {
-                  const firstVoiceOfProvider = options.voices.find(v => v.provider === e.target.value);
-                  const provider = e.target.value;
-                  setConfig(prev => ({ 
-                    ...prev, 
-                    ttsProvider: provider, 
-                    ttsVoiceId: firstVoiceOfProvider ? (firstVoiceOfProvider.voiceId || firstVoiceOfProvider.id) : '' 
-                  }));
-                }}
-                disabled={loading}
-              >
-                {options.providers.map(p => (
-                  <option key={p} value={p} className="bg-app-bg">{p.toUpperCase()} Engine</option>
-                ))}
-              </select>
-            </div>
-
-            {/* Voice Selection */}
-            <div className="space-y-4">
-              <label className="text-[10px] font-black text-text-muted uppercase tracking-widest ml-4 flex items-center gap-2">
-                <Mic size={12} className="text-soft-blue" /> Vocal Signature (Voice)
-              </label>
-              <select 
-                className="nm-input font-bold text-text-primary"
-                value={config.ttsVoiceId}
-                onChange={e => {
-                  const val = e.target.value;
-                  setConfig(prev => ({ ...prev, ttsVoiceId: val }));
-                }}
-                disabled={loading}
-              >
-                {filteredVoices.map(v => (
-                  <option key={v.id} value={v.voiceId || v.id} className="bg-app-bg">{v.name}</option>
-                ))}
-              </select>
-            </div>
-          </div>
-
-          <div className="nm-inset p-8 rounded-3xl flex items-start gap-6 border-l border-soft-blue/40">
-            <Info size={20} className="text-soft-blue mt-1 flex-shrink-0" />
-            <div className="space-y-1">
-              <p className="text-[11px] text-text-primary font-black uppercase tracking-widest">Synthesis Protocol Info</p>
-              <p className="text-[10px] text-text-muted leading-relaxed font-medium uppercase tracking-wider">
-                Sanitization active. Template "{config.templateId.toUpperCase()}" loaded with optimal neural parameters.
-              </p>
-            </div>
-          </div>
-
-          <div className="flex justify-end pt-6 gap-6">
-            <button onClick={onClose} className="nm-button px-10 py-5 text-text-muted font-black uppercase text-[11px] tracking-widest hover:text-soft-pink">
-              Cancel
-            </button>
-            <button 
-              onClick={() => onConfirm(config)} 
-              className="nm-button px-14 py-5 bg-gradient-to-r from-soft-blue/20 to-indigo-600/20 border-soft-blue/30 text-soft-blue font-black uppercase text-[11px] tracking-[0.2em] hover:shadow-[0_0_40px_rgba(59,130,246,0.3)] transition-all"
-            >
-              Initiate Synthesis
-            </button>
           </div>
         </div>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 };
