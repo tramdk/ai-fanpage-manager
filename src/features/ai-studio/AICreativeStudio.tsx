@@ -106,6 +106,15 @@ export const AICreativeStudio: React.FC<AICreativeStudioProps> = memo(({ post, a
     setIsGeneratingVideo(true);
     const tid = toast.loading('Synthesizing neural video...');
     try {
+      try {
+        await api.posts.update(post.id, { 
+          content, 
+          imageUrl: media.length > 0 ? JSON.stringify(media) : null 
+        });
+      } catch (err) {
+        console.warn('Auto-save before video generation failed', err);
+      }
+      
       const res = await api.ai.generateVideo(post.id, videoConfig);
       if (res.alreadyExists) {
         toast.dismiss();
@@ -146,7 +155,7 @@ export const AICreativeStudio: React.FC<AICreativeStudioProps> = memo(({ post, a
     } finally {
       setIsGeneratingVideo(false);
     }
-  }, [post.id, api, content]);
+  }, [post.id, api, content, media]);
 
   const handlePublishVideo = async () => {
     if (!videoResult?.url) return;
