@@ -187,6 +187,11 @@ export async function generateVideoFromPost(postId: string, options: {
 
   const videoId = crypto.randomUUID();
 
+  const scriptJson = JSON.stringify({ 
+    scenes,
+    suggestedImages: allImages.length > 0 ? allImages.slice(0, 5) : []
+  });
+
   // 3. Publish to Event Bus
   await eb.publish('REEL_REQUESTED', {
     reelId: videoId,
@@ -194,10 +199,8 @@ export async function generateVideoFromPost(postId: string, options: {
     title,
     templateId: options.templateId || 'classic',
     content: cleanContent,
-    script: JSON.stringify({ 
-      scenes,
-      suggestedImages: allImages.length > 0 ? allImages.slice(0, 5) : []
-    }),
+    script: scriptJson,
+    customScript: scriptJson, // Send both for safety
     imageUrl: allImages[0] || null,
     ttsProvider: options.ttsProvider || 'edge',
     ttsVoiceId: options.ttsVoiceId || 'vi-VN-HoaiMyNeural',
@@ -287,26 +290,51 @@ export async function generateVideoBatch(items: { postId: string, options: any }
       const post = await prisma.post.findUnique({ where: { id: item.postId } });
       if (!post) throw new Error(`Post ${item.postId} not found`);
 
-      let imageUrl = null;
+      // Extract all available images from the post media list
+      let allImages: string[] = [];
       if (post.imageUrl) {
         try {
-          if (post.imageUrl.startsWith('[') || post.imageUrl.startsWith('{')) {
-            const media = JSON.parse(post.imageUrl);
-            const items = Array.isArray(media) ? media : [media];
-            imageUrl = items[0]?.data || items[0]?.url || post.imageUrl;
-          } else {
-            imageUrl = post.imageUrl;
-          }
+          const parsed = JSON.parse(post.imageUrl);
+          const mediaItems = Array.isArray(parsed) ? parsed : [parsed];
+          allImages = mediaItems
+            .filter(i => (i.type === 'image' || !(i.data || i.url || '').includes('/video/')))
+            .map(i => i.data || i.url)
+            .filter(url => !!url);
         } catch (e) {
-          imageUrl = post.imageUrl;
+          // If not JSON, check if it's a single raw image URL
+          if (!post.imageUrl.includes('/video/') && !post.imageUrl.startsWith('[')) {
+            allImages = [post.imageUrl];
+          }
         }
       }
+
+      // Sanitize content and split into scenes
+      const cleanContent = sanitizeText(post.content || '');
+      const topic = post.topic || 'lifestyle';
+      const lines = cleanContent
+        .split(/\. |\n/)
+        .map(line => line.trim())
+        .filter(line => line.length > 5);
+
+      const scenes = lines.map((line, idx) => ({
+        id: idx + 1,
+        type: idx === 0 ? 'hook' : (idx === lines.length - 1 ? 'outro' : 'body'),
+        voiceText: line,
+        imageKeyword: topic,
+        imageUrl: allImages.length > 0 ? allImages[idx % allImages.length] : ''
+      }));
+
+      const scriptJson = JSON.stringify({ 
+        scenes,
+        suggestedImages: allImages.length > 0 ? allImages.slice(0, 5) : []
+      });
 
       return {
         articleId: post.id,
         templateId: item.options.templateId,
-        content: sanitizeText(post.content || ''),
-        imageUrl: imageUrl,
+        content: cleanContent,
+        script: scriptJson,
+        imageUrl: allImages[0] || null,
         ttsProvider: item.options.ttsProvider,
         ttsVoiceId: item.options.ttsVoiceId,
         bgmAssetId: item.options.bgmAssetId,
@@ -325,10 +353,13 @@ export async function generateVideoBatch(items: { postId: string, options: any }
         title: data.content?.substring(0, 50) || 'Batch Video',
         templateId: data.templateId || 'classic',
         content: data.content,
+        script: data.script,
+        customScript: data.script, // Send both for safety
         imageUrl: data.imageUrl,
         ttsProvider: data.ttsProvider,
         ttsVoiceId: data.ttsVoiceId,
         bgmAssetId: data.bgmAssetId,
+        bgmVolume: 0.15,
         source: 'manager'
       });
 
