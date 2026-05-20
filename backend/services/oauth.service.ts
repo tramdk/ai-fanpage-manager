@@ -1,6 +1,7 @@
 import jwt from 'jsonwebtoken';
 import { prisma } from '../config/prisma.js';
 import { encrypt, decrypt } from '../utils/encryption.js';
+import axios from 'axios';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
 
@@ -44,8 +45,8 @@ export async function handleFacebookCallback(code: string, state: string) {
   const tokenUrl = `https://graph.facebook.com/v18.0/oauth/access_token?client_id=${appId}&redirect_uri=${encodeURIComponent(redirectUri)}&client_secret=${appSecret}&code=${code}`;
   
   try {
-    const tRes = await fetch(tokenUrl);
-    const tData: any = await tRes.json();
+    const tRes = await axios.get(tokenUrl, { validateStatus: () => true });
+    const tData = tRes.data;
     
     if (tData.error) {
       console.error('[OAUTH] Facebook Token Error:', tData.error);
@@ -56,15 +57,15 @@ export async function handleFacebookCallback(code: string, state: string) {
 
     // Exchange for long-lived token
     const lLUrl = `https://graph.facebook.com/v18.0/oauth/access_token?grant_type=fb_exchange_token&client_id=${appId}&client_secret=${appSecret}&fb_exchange_token=${tData.access_token}`;
-    const lLRes = await fetch(lLUrl);
-    const lLData: any = await lLRes.json();
+    const lLRes = await axios.get(lLUrl, { validateStatus: () => true });
+    const lLData = lLRes.data;
     const userAccessToken = lLData.access_token || tData.access_token;
     
     // Fetch managed pages
     console.log(`[OAUTH] Fetching managed pages for user: ${user.email}`);
     const pUrl = `https://graph.facebook.com/v18.0/me/accounts?access_token=${userAccessToken}&limit=100`;
-    const pRes = await fetch(pUrl);
-    const pData: any = await pRes.json();
+    const pRes = await axios.get(pUrl, { validateStatus: () => true });
+    const pData = pRes.data;
     
     if (pData.error) {
       console.error('[OAUTH] Facebook API Error (me/accounts):', pData.error);

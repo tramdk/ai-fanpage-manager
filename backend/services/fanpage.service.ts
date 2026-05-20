@@ -1,6 +1,7 @@
 import { prisma } from '../config/prisma.js';
 import { encrypt, decrypt } from '../utils/encryption.js';
 import { postToFacebook } from './facebook.service.js';
+import axios from 'axios';
 
 export async function listFanpages(userId: string) {
     return prisma.fanpage.findMany({ where: { userId } });
@@ -80,12 +81,9 @@ export async function publishVideoUrl(userId: string, pageId: string, videoUrl: 
     params.append('description', message || '');
     params.append('access_token', decryptedToken);
 
-    const fbRes = await fetch(`https://graph.facebook.com/v18.0/${pageId}/videos`, {
-        method: 'POST',
-        body: params
-    });
+    const fbRes = await axios.post(`https://graph.facebook.com/v18.0/${pageId}/videos`, params, { validateStatus: () => true });
 
-    const result = await fbRes.json();
+    const result = fbRes.data;
     if (result.error) {
         console.error('[FB_VIDEO_ERROR]', result.error);
         throw new Error(result.error.message);

@@ -5,6 +5,7 @@ import { Buffer } from 'buffer';
 import { prisma } from '../config/prisma.js';
 import { decrypt } from '../utils/encryption.js';
 import { EventBusClient } from './EventBusClient.js';
+import axios from 'axios';
 
 const eb = new EventBusClient();
 
@@ -74,10 +75,7 @@ export async function postToFacebook(queuedPost: any, fanpage: any, decryptedTok
            }
         }
         
-        fbRes = await fetch(`https://graph.facebook.com/v18.0/${fanpage.pageId}/${endpoint}`, {
-          method: 'POST',
-          body: formData
-        });
+        fbRes = await axios.post(`https://graph.facebook.com/v18.0/${fanpage.pageId}/${endpoint}`, formData, { validateStatus: () => true });
       } else {
         const parts = item.data.split(',');
         if (parts.length > 1) {
@@ -88,10 +86,7 @@ export async function postToFacebook(queuedPost: any, fanpage: any, decryptedTok
 
           formData.append('source', blob, item.type === 'video' ? 'video.mp4' : 'image.png');
 
-          fbRes = await fetch(`https://graph.facebook.com/v18.0/${fanpage.pageId}/${endpoint}`, {
-            method: 'POST',
-            body: formData
-          });
+          fbRes = await axios.post(`https://graph.facebook.com/v18.0/${fanpage.pageId}/${endpoint}`, formData, { validateStatus: () => true });
         } else {
           throw new Error('Invalid media data format');
         }
@@ -137,11 +132,8 @@ export async function postToFacebook(queuedPost: any, fanpage: any, decryptedTok
         }
 
         const uploadEndpoint = item.type === 'video' ? 'videos' : 'photos';
-        const uploadRes = await fetch(`https://graph.facebook.com/v18.0/${fanpage.pageId}/${uploadEndpoint}`, {
-          method: 'POST',
-          body: uploadFormData
-        });
-        const uploadData = await uploadRes.json();
+        const uploadRes = await axios.post(`https://graph.facebook.com/v18.0/${fanpage.pageId}/${uploadEndpoint}`, uploadFormData, { validateStatus: () => true });
+        const uploadData = uploadRes.data;
         if (uploadData.error) {
           console.error('[FACEBOOK] Upload error:', uploadData.error);
           throw new Error(uploadData.error.message);
@@ -149,30 +141,25 @@ export async function postToFacebook(queuedPost: any, fanpage: any, decryptedTok
         attachedMedia.push({ media_fbid: uploadData.id });
       }
 
-      fbRes = await fetch(`https://graph.facebook.com/v18.0/${fanpage.pageId}/feed`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          message: queuedPost.content || '',
-          access_token: decryptedToken,
-          attached_media: attachedMedia
-        })
-      });
+      fbRes = await axios.post(`https://graph.facebook.com/v18.0/${fanpage.pageId}/feed`, {
+        message: queuedPost.content || '',
+        access_token: decryptedToken,
+        attached_media: attachedMedia
+      }, { validateStatus: () => true });
     }
   } else {
     endpoint = 'feed';
-    fbRes = await fetch(`https://graph.facebook.com/v18.0/${fanpage.pageId}/feed`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ message: queuedPost.content, access_token: decryptedToken })
-    });
+    fbRes = await axios.post(`https://graph.facebook.com/v18.0/${fanpage.pageId}/feed`, {
+      message: queuedPost.content,
+      access_token: decryptedToken
+    }, { validateStatus: () => true });
   }
 
   if (!fbRes) {
     throw new Error('No response from Facebook API');
   }
 
-  const data = await fbRes.json();
+  const data = fbRes.data;
   if (data.error) {
     console.error(`[FACEBOOK] API Error (${endpoint}):`, JSON.stringify(data.error, null, 2));
     throw new Error(data.error.message);
