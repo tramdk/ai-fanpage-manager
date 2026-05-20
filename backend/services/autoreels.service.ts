@@ -201,7 +201,7 @@ export async function generateVideoFromPost(postId: string, options: {
     content: cleanContent,
     script: scriptJson,
     customScript: scriptJson, // Send both for safety
-    imageUrl: allImages[0] || null,
+    imageUrl: post.imageUrl || null,
     ttsProvider: options.ttsProvider || 'edge',
     ttsVoiceId: options.ttsVoiceId || 'vi-VN-HoaiMyNeural',
     bgmAssetId: options.bgmAssetId || 'none',
@@ -334,7 +334,7 @@ export async function generateVideoBatch(items: { postId: string, options: any }
         templateId: item.options.templateId,
         content: cleanContent,
         script: scriptJson,
-        imageUrl: allImages[0] || null,
+        imageUrl: post.imageUrl || null,
         ttsProvider: item.options.ttsProvider,
         ttsVoiceId: item.options.ttsVoiceId,
         bgmAssetId: item.options.bgmAssetId,
