@@ -9,6 +9,8 @@ import { ApiService } from '../../api';
 import { toast } from 'sonner';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
 
 // [rerender-no-inline-components] - Move QueueModal out of main view and memoize
 const QueueModal = memo(({
@@ -68,74 +70,80 @@ const QueueModal = memo(({
   }, [api, fetchPosts]);
 
   return (
-    <div className="fixed inset-0 bg-black/20 backdrop-blur-md z-[200] flex items-center justify-center p-4 sm:p-6">
-      <div className="nm-flat w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col animate-in zoom-in-95 duration-300 rounded-lg sm:rounded-xl">
-        <div className="px-6 sm:px-10 py-6 sm:py-8 flex justify-between items-center">
-          <div className="flex items-center gap-4 sm:gap-6">
-            <div className="w-12 h-12 sm:w-14 sm:h-14 nm-flat flex items-center justify-center text-[#2563EB] dark:text-blue-400">
-              <Layers size={20} sm:size={24} />
-            </div>
-            <div>
-              <h3 className="text-lg sm:text-xl font-bold text-[#111827] dark:text-gray-100 ">{t('automation')} Queue</h3>
-              <p className="text-[9px] sm:text-[10px] text-[#6B7280] dark:text-gray-400 font-bold uppercase mt-1 opacity-60">{schedule.topic} • {schedule.time}</p>
-            </div>
-          </div>
-          <button onClick={onClose} className="w-10 h-10 sm:w-12 sm:h-12 border border-[#D1D5DB] dark:border-white/12 rounded-lg flex items-center justify-center text-[#6B7280] dark:text-gray-400 hover:text-soft-pink transition-colors">
-            <X size={20} sm:size={24} />
-          </button>
-        </div>
-
-        <div className="flex-1 overflow-y-auto p-6 sm:p-10 space-y-4 sm:space-y-6 custom-scrollbar">
-          {loading ? (
-            <div className="flex flex-col justify-center items-center py-32 gap-6">
-              <RefreshCw className="w-10 h-10 text-[#2563EB] dark:text-blue-400 animate-spin opacity-30" />
-              <p className="text-[10px] font-bold text-[#6B7280] dark:text-gray-400 uppercase">{t('loading')}</p>
-            </div>
-          ) : posts.length === 0 ? (
-            <div className="text-center py-32 bg-[#F3F4F6] dark:bg-white/8 border border-[#D1D5DB] dark:border-white/12 rounded-lg rounded-xl">
-              <Bot size={48} className="mx-auto mb-6 text-[#6B7280] dark:text-gray-400 opacity-10" />
-              <p className="text-[10px] font-bold text-[#6B7280] dark:text-gray-400 uppercase tracking-[0.3em]">{t('noData')}</p>
-            </div>
-          ) : (
-            posts.map((post, index) => (
-              <div key={post.id} className="nm-flat p-6 flex items-center gap-8 group hover:scale-[1.01] transition-all">
-                <div className="flex flex-col items-center gap-2">
-                  <button onClick={() => handleMove(index, 'up')} disabled={index === 0 || isUpdating} className="w-8 h-8 border border-[#D1D5DB] dark:border-white/12 rounded-lg flex items-center justify-center text-[#6B7280] dark:text-gray-400 hover:text-[#2563EB] dark:text-blue-400 disabled:opacity-20">
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 15l7-7 7 7" /></svg>
-                  </button>
-                  <div className="w-10 h-10 bg-[#F3F4F6] dark:bg-white/8 border border-[#D1D5DB] dark:border-white/12 rounded-lg flex items-center justify-center font-bold text-xs text-[#2563EB] dark:text-blue-400">{index + 1}</div>
-                  <button onClick={() => handleMove(index, 'down')} disabled={index === posts.length - 1 || isUpdating} className="w-8 h-8 border border-[#D1D5DB] dark:border-white/12 rounded-lg flex items-center justify-center text-[#6B7280] dark:text-gray-400 hover:text-[#2563EB] dark:text-blue-400 disabled:opacity-20">
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M19 9l-7 7-7-7" /></svg>
-                  </button>
-                </div>
-
-                {post.imageUrl ? (
-                  <div className="w-24 h-24 rounded-xl bg-[#F3F4F6] dark:bg-white/8 border border-[#D1D5DB] dark:border-white/12 rounded-lg p-2 overflow-hidden flex-shrink-0">
-                    <img src={(() => { try { const m = JSON.parse(post.imageUrl); return Array.isArray(m) ? m[0].data : post.imageUrl; } catch(e) { return post.imageUrl } })()} className="w-full h-full object-cover rounded-lg" />
-                  </div>
-                ) : null}
-
-                <div className="flex-1 min-w-0 py-2">
-                  <p className="text-sm font-bold text-[#111827] dark:text-gray-100 line-clamp-2 leading-relaxed ">{post.content}</p>
-                  <div className="mt-4 flex items-center gap-6">
-                    <div className="bg-[#F3F4F6] dark:bg-white/8 border border-[#D1D5DB] dark:border-white/12 rounded-lg px-3 py-1 rounded-lg text-[9px] font-bold text-emerald-500 uppercase">Queued</div>
-                    <div className="flex items-center text-[9px] font-bold text-[#6B7280] dark:text-gray-400 uppercase"><Clock size={12} className="mr-2" /> {new Date(post.createdAt).toLocaleDateString()}</div>
-                  </div>
-                </div>
+    <Dialog open={true} onOpenChange={(open) => { if (!open) onClose(); }}>
+      <DialogContent className="max-w-4xl sm:max-w-4xl p-0 overflow-hidden border-0 bg-transparent shadow-none" showCloseButton={false}>
+        <DialogHeader className="sr-only">
+          <DialogTitle>Automation Queue</DialogTitle>
+          <DialogDescription>View and manage schedule queue items</DialogDescription>
+        </DialogHeader>
+        <div className="nm-flat w-full max-h-[90vh] overflow-hidden flex flex-col animate-in zoom-in-95 duration-300 rounded-xl relative">
+          <div className="px-6 sm:px-10 py-6 sm:py-8 flex justify-between items-center">
+            <div className="flex items-center gap-4 sm:gap-6">
+              <div className="w-12 h-12 sm:w-14 sm:h-14 nm-flat flex items-center justify-center text-[#2563EB] dark:text-blue-400 rounded-xl">
+                <Layers size={20} className="sm:size-6" />
               </div>
-            )
-          ))}
-        </div>
+              <div>
+                <h3 className="text-lg sm:text-xl font-bold text-[#111827] dark:text-gray-100 uppercase">{t('automation')} Queue</h3>
+                <p className="text-[9px] sm:text-[10px] text-[#6B7280] dark:text-gray-400 font-bold uppercase mt-1 opacity-60">{schedule.topic} • {schedule.time}</p>
+              </div>
+            </div>
+            <Button onClick={onClose} variant="ghost" size="icon" className="w-10 h-10 sm:w-12 sm:h-12 border border-[#D1D5DB] dark:border-white/12 rounded-lg flex items-center justify-center text-[#6B7280] dark:text-gray-400 hover:text-soft-pink transition-colors rounded-xl p-0 hover:bg-transparent">
+              <X size={20} className="sm:size-6" />
+            </Button>
+          </div>
 
-        <div className="px-10 py-8 border-t border-text-muted/5 flex justify-between items-center">
-          <p className="text-[9px] text-[#6B7280] dark:text-gray-400 font-bold uppercase tracking-[0.2em]">{t('sortingNotice')}</p>
-          <button onClick={onClose} className="border border-[#D1D5DB] dark:border-white/12 rounded-lg px-10 py-4 font-bold uppercase text-[10px] tracking-normal text-[#111827] dark:text-gray-100">
-            {t('finishedManagement')}
-          </button>
+          <div className="flex-1 overflow-y-auto p-6 sm:p-10 space-y-4 sm:space-y-6 custom-scrollbar">
+            {loading ? (
+              <div className="flex flex-col justify-center items-center py-32 gap-6">
+                <RefreshCw className="w-10 h-10 text-[#2563EB] dark:text-blue-400 animate-spin opacity-30" />
+                <p className="text-[10px] font-bold text-[#6B7280] dark:text-gray-400 uppercase">{t('loading')}</p>
+              </div>
+            ) : posts.length === 0 ? (
+              <div className="text-center py-32 bg-[#F3F4F6] dark:bg-white/8 border border-[#D1D5DB] dark:border-white/12 rounded-lg rounded-xl">
+                <Bot size={48} className="mx-auto mb-6 text-[#6B7280] dark:text-gray-400 opacity-10" />
+                <p className="text-[10px] font-bold text-[#6B7280] dark:text-gray-400 uppercase tracking-[0.3em]">{t('noData')}</p>
+              </div>
+            ) : (
+              posts.map((post, index) => (
+                <div key={post.id} className="nm-flat p-6 flex items-center gap-8 group hover:scale-[1.01] transition-all rounded-xl">
+                  <div className="flex flex-col items-center gap-2">
+                    <button onClick={() => handleMove(index, 'up')} disabled={index === 0 || isUpdating} className="w-8 h-8 border border-[#D1D5DB] dark:border-white/12 rounded-lg flex items-center justify-center text-[#6B7280] dark:text-gray-400 hover:text-[#2563EB] dark:text-blue-400 disabled:opacity-20 cursor-pointer">
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 15l7-7 7 7" /></svg>
+                    </button>
+                    <div className="w-10 h-10 bg-[#F3F4F6] dark:bg-white/8 border border-[#D1D5DB] dark:border-white/12 rounded-lg flex items-center justify-center font-bold text-xs text-[#2563EB] dark:text-blue-400 rounded-lg">{index + 1}</div>
+                    <button onClick={() => handleMove(index, 'down')} disabled={index === posts.length - 1 || isUpdating} className="w-8 h-8 border border-[#D1D5DB] dark:border-white/12 rounded-lg flex items-center justify-center text-[#6B7280] dark:text-gray-400 hover:text-[#2563EB] dark:text-blue-400 disabled:opacity-20 cursor-pointer">
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M19 9l-7 7-7-7" /></svg>
+                    </button>
+                  </div>
+
+                  {post.imageUrl ? (
+                    <div className="w-24 h-24 rounded-xl bg-[#F3F4F6] dark:bg-white/8 border border-[#D1D5DB] dark:border-white/12 rounded-lg p-2 overflow-hidden flex-shrink-0">
+                      <img src={(() => { try { const m = JSON.parse(post.imageUrl); return Array.isArray(m) ? m[0].data : post.imageUrl; } catch(e) { return post.imageUrl } })()} className="w-full h-full object-cover rounded-lg" />
+                    </div>
+                  ) : null}
+
+                  <div className="flex-1 min-w-0 py-2">
+                    <p className="text-sm font-bold text-[#111827] dark:text-gray-100 line-clamp-2 leading-relaxed ">{post.content}</p>
+                    <div className="mt-4 flex items-center gap-6">
+                      <div className="bg-[#F3F4F6] dark:bg-white/8 border border-[#D1D5DB] dark:border-white/12 rounded-lg px-3 py-1 rounded-lg text-[9px] font-bold text-emerald-500 uppercase">Queued</div>
+                      <div className="flex items-center text-[9px] font-bold text-[#6B7280] dark:text-gray-400 uppercase"><Clock size={12} className="mr-2" /> {new Date(post.createdAt).toLocaleDateString()}</div>
+                    </div>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+
+          <div className="px-10 py-8 border-t border-text-muted/5 flex justify-between items-center shrink-0">
+            <p className="text-[9px] text-[#6B7280] dark:text-gray-400 font-bold uppercase tracking-[0.2em]">{t('sortingNotice')}</p>
+            <Button onClick={onClose} className="border border-[#D1D5DB] dark:border-white/12 rounded-lg px-10 py-4 font-bold uppercase text-[10px] tracking-normal text-[#111827] dark:text-gray-100 hover:text-soft-pink h-auto bg-transparent hover:bg-transparent">
+              {t('finishedManagement')}
+            </Button>
+          </div>
         </div>
-      </div>
+      </DialogContent>
       <style>{`.custom-scrollbar::-webkit-scrollbar { width: 5px; } .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.05); border-radius: 10px; }`}</style>
-    </div>
+    </Dialog>
   );
 });
 
@@ -551,11 +559,16 @@ export const AutomationView = ({ fanpages, api, initialFanpageId }: { fanpages: 
       ) : null}
 
       {/* Batch Conflict Resolution Modal */}
-      {batchConflict && (
-        <div className="fixed inset-0 bg-black/20 backdrop-blur-md z-[200] flex items-center justify-center p-6">
-          <div className="nm-flat max-w-lg w-full p-10 animate-in zoom-in-95 duration-300">
+      <Dialog open={!!batchConflict} onOpenChange={(open) => { if (!open) setBatchConflict(null); }}>
+        <DialogContent className="max-w-lg sm:max-w-lg p-0 overflow-hidden border-0 bg-transparent shadow-none" showCloseButton={false}>
+          <DialogHeader className="sr-only">
+            <DialogTitle>Queue Status Conflict</DialogTitle>
+            <DialogDescription>Resolve queued posts conflict by appending or purging</DialogDescription>
+          </DialogHeader>
+
+          <div className="nm-flat w-full p-10 animate-in zoom-in-95 duration-300 rounded-xl relative">
             <div className="flex items-center gap-6 mb-8">
-              <div className="w-14 h-14 nm-flat flex items-center justify-center text-amber-500">
+              <div className="w-14 h-14 nm-flat flex items-center justify-center text-amber-500 rounded-xl">
                 <AlertCircle size={28} />
               </div>
               <div>
@@ -565,19 +578,19 @@ export const AutomationView = ({ fanpages, api, initialFanpageId }: { fanpages: 
             </div>
             
             <p className="text-sm text-[#6B7280] dark:text-gray-400 mb-8 leading-relaxed">
-              Hàng đợi hiện đang có <span className="font-bold text-soft-pink">{batchConflict.existingCount} bài chưa đăng</span>. Bạn muốn mở rộng hàng đợi hay thay thế toàn bộ?
+              Hàng đợi hiện đang có <span className="font-bold text-soft-pink">{batchConflict?.existingCount} bài chưa đăng</span>. Bạn muốn mở rộng hàng đợi hay thay thế toàn bộ?
             </p>
 
             <div className="grid grid-cols-1 gap-6">
               <button
-                onClick={() => handleGenerateBatch(batchConflict.schedule, 'add')}
+                onClick={() => batchConflict && handleGenerateBatch(batchConflict.schedule, 'add')}
                 className="border border-[#D1D5DB] dark:border-white/12 rounded-lg w-full py-5 text-[10px] font-bold uppercase text-[#111827] dark:text-gray-100 hover:text-[#2563EB] dark:text-blue-400 transition-all flex items-center justify-center gap-4"
               >
                  <Plus size={16} />
-                 Append ({batchConflict.existingCount} + {batchConflict.schedule.runCount})
+                 Append ({batchConflict?.existingCount} + {batchConflict?.schedule.runCount})
               </button>
               <button
-                onClick={() => handleGenerateBatch(batchConflict.schedule, 'replace')}
+                onClick={() => batchConflict && handleGenerateBatch(batchConflict.schedule, 'replace')}
                 className="w-full py-5 bg-soft-pink text-white rounded-xl font-bold uppercase text-[10px] tracking-normal shadow-xl hover:brightness-110 transition-all flex items-center justify-center gap-4"
               >
                 <Trash2 size={16} />
@@ -588,8 +601,8 @@ export const AutomationView = ({ fanpages, api, initialFanpageId }: { fanpages: 
               </button>
             </div>
           </div>
-        </div>
-      )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

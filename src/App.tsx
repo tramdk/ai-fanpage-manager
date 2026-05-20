@@ -11,6 +11,8 @@ import { CONFIG } from './config';
 import { useApiService } from './hooks/useApiService';
 import { Toaster, toast } from 'sonner';
 import { Input } from '@/components/ui/input';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
 
 // --- TYPES ---
 import { User, Fanpage, AuthFetch } from './types';
@@ -407,35 +409,41 @@ export default function App() {
       </div>
 
       {/* Modals - Adapted for Neumorphism */}
-      {showAppPicker && (
-        <div className="fixed inset-0 bg-black/20 backdrop-blur-md flex items-center justify-center z-[200] p-6">
-          <div className="nm-flat p-12 max-w-md w-full animate-in zoom-in-95 duration-300 relative">
-            <button onClick={() => setShowAppPicker(false)} className="absolute top-8 right-8 text-text-muted hover:text-text-primary transition-colors"><X size={24} /></button>
-            <div className="mb-10 text-center">
-              <div className="w-16 h-16 nm-flat text-soft-blue flex items-center justify-center mx-auto mb-6">
-                <Facebook size={32} />
-              </div>
-              <h3 className="text-2xl font-black text-text-primary tracking-tight">{t('connectNewPage')}</h3>
-              <p className="text-xs font-bold text-text-secondary mt-2">{t('chooseAppBridge')}</p>
+      <Dialog open={showAppPicker} onOpenChange={setShowAppPicker}>
+         <DialogContent className="max-w-md sm:max-w-md p-0 overflow-hidden border-0 bg-transparent shadow-none" showCloseButton={false}>
+            <DialogHeader className="sr-only">
+               <DialogTitle>{t('connectNewPage')}</DialogTitle>
+               <DialogDescription>{t('chooseAppBridge')}</DialogDescription>
+            </DialogHeader>
+            <div className="nm-flat p-12 w-full animate-in zoom-in-95 duration-300 relative rounded-xl">
+               <Button onClick={() => setShowAppPicker(false)} variant="ghost" size="icon" className="absolute top-8 right-8 size-12 border border-[#D1D5DB] dark:border-white/12 rounded-lg flex items-center justify-center text-[#6B7280] dark:text-gray-400 hover:text-soft-pink transition-colors rounded-xl p-0 hover:bg-transparent">
+                  <X className="size-6" />
+               </Button>
+               <div className="mb-10 text-center">
+                 <div className="w-16 h-16 nm-flat text-soft-blue flex items-center justify-center mx-auto mb-6 rounded-xl">
+                   <Facebook size={32} />
+                 </div>
+                 <h3 className="text-2xl font-bold text-[#111827] dark:text-gray-100 tracking-tight uppercase">{t('connectNewPage')}</h3>
+                 <p className="text-[10px] font-bold text-[#6B7280] dark:text-gray-400 uppercase tracking-widest mt-2">{t('chooseAppBridge')}</p>
+               </div>
+               <div className="space-y-4">
+                 {fbApps.map(app => (
+                   <button
+                     key={app.id}
+                     onClick={() => handleConnectFacebook(app.id)}
+                     className="w-full flex items-center justify-between p-6 nm-button hover:text-[#2563EB] dark:hover:text-blue-400 group rounded-xl cursor-pointer"
+                   >
+                     <div className="text-left">
+                       <p className="text-[11px] font-bold uppercase tracking-widest">{app.name}</p>
+                       <p className="text-[9px] text-[#6B7280] dark:text-gray-400 mt-1">APP ID: {app.appId}</p>
+                     </div>
+                     <Plus size={18} className="group-hover:rotate-90 transition-transform text-[#2563EB] dark:text-blue-400" />
+                   </button>
+                 ))}
+               </div>
             </div>
-            <div className="space-y-4">
-              {fbApps.map(app => (
-                <button
-                  key={app.id}
-                  onClick={() => handleConnectFacebook(app.id)}
-                  className="w-full flex items-center justify-between p-6 nm-button hover:text-soft-blue group"
-                >
-                  <div className="text-left">
-                    <p className="text-[11px] font-black uppercase tracking-widest">{app.name}</p>
-                    <p className="text-[9px] text-text-secondary mt-1">APP ID: {app.appId}</p>
-                  </div>
-                  <Plus size={18} className="group-hover:rotate-90 transition-transform" />
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
+         </DialogContent>
+      </Dialog>
     </div>
   );
 }

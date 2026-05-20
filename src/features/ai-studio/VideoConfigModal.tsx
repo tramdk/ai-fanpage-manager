@@ -79,7 +79,7 @@ export const VideoConfigModal: React.FC<VideoConfigModalProps> = ({ onConfirm, o
 
   return (
     <Dialog open={true} onOpenChange={(open) => { if (!open) onClose(); }}>
-      <DialogContent className="max-w-3xl p-0 overflow-hidden border-0 bg-transparent shadow-none" showCloseButton={false}>
+      <DialogContent className="max-w-3xl sm:max-w-3xl p-0 overflow-hidden border-0 bg-transparent shadow-none" showCloseButton={false}>
         <DialogHeader className="sr-only">
           <DialogTitle>Neural Synthesis Configuration</DialogTitle>
           <DialogDescription>Configure details for voiceover template synthesis</DialogDescription>

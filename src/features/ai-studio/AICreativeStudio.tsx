@@ -8,6 +8,8 @@ import { VideoPlayerModal } from './VideoPlayerModal';
 import { AnimatePresence } from 'motion/react';
 import { toast } from 'sonner';
 import { Textarea } from '@/components/ui/textarea';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+
 
 interface AICreativeStudioProps {
   post: any;
@@ -168,9 +170,15 @@ export const AICreativeStudio: React.FC<AICreativeStudioProps> = memo(({ post, a
   };
 
   return (
-    <div className="fixed inset-0 bg-app-bg/80 backdrop-blur-md flex items-center justify-center z-[200] p-4">
-      <div className="bg-card-bg border border-card-border rounded-lg shadow-3xl w-full max-w-4xl max-h-[90vh] flex flex-col animate-in zoom-in-95 duration-200 overflow-hidden relative">
-        <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/5 blur-[100px] -mr-32 -mt-32"></div>
+    <Dialog open={true} onOpenChange={(open) => { if (!open) onClose(); }}>
+      <DialogContent className="max-w-4xl sm:max-w-4xl p-0 overflow-hidden border-0 bg-transparent shadow-none" showCloseButton={false}>
+        <DialogHeader className="sr-only">
+          <DialogTitle>{title}</DialogTitle>
+          <DialogDescription>AI content customization and neural synthesis studio</DialogDescription>
+        </DialogHeader>
+
+        <div className="bg-card-bg border border-card-border rounded-lg shadow-3xl w-full max-h-[90vh] flex flex-col overflow-hidden relative">
+          <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/5 blur-[100px] -mr-32 -mt-32"></div>
 
         {/* Header */}
         <div className="px-8 py-6 border-b border-card-border flex justify-between items-center bg-card-bg/50 relative z-10">
@@ -351,7 +359,8 @@ export const AICreativeStudio: React.FC<AICreativeStudioProps> = memo(({ post, a
       </AnimatePresence>
 
       <style>{`.custom-scrollbar::-webkit-scrollbar { width: 4px; height: 4px; } .custom-scrollbar::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 10px; } .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }`}</style>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 });
 

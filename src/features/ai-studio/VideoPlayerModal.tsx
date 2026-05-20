@@ -39,7 +39,7 @@ export const VideoPlayerModal: React.FC<VideoPlayerModalProps> = ({ url, onClose
 
   return (
     <Dialog open={!!url} onOpenChange={(open) => { if (!open) onClose(); }}>
-      <DialogContent className="max-w-4xl p-0 overflow-hidden border-0 bg-transparent shadow-none" showCloseButton={false}>
+      <DialogContent className="max-w-4xl sm:max-w-4xl p-0 overflow-hidden border-0 bg-transparent shadow-none" showCloseButton={false}>
         <DialogHeader className="sr-only">
           <DialogTitle>Video Preview</DialogTitle>
           <DialogDescription>Previewing the generated AI Video</DialogDescription>
@@ -47,7 +47,7 @@ export const VideoPlayerModal: React.FC<VideoPlayerModalProps> = ({ url, onClose
 
         <div className="relative w-full nm-flat rounded-xl overflow-hidden animate-in zoom-in-95 duration-500 flex flex-col md:flex-row">
           {/* Video Side */}
-          <div className="flex-1 bg-slate-950 flex items-center justify-center min-h-[400px]">
+          <div className="flex-1 w-full md:w-[500px] min-w-[280px] md:min-w-[450px] bg-slate-950 flex items-center justify-center min-h-[400px] md:min-h-[500px]">
             <video 
               src={cleanUrl}
               controls 

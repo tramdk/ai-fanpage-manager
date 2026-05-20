@@ -5,6 +5,8 @@ import { useLanguage } from '../../LanguageContext';
 import { StatusBadge } from '../../components/StatusBadge';
 import { ApiService } from '../../api';
 import { Textarea } from '@/components/ui/textarea';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
 
 export const FanpageView = ({ fanpages, onConnect, onConfigure, api }: { fanpages: Fanpage[], onConnect: () => void, onConfigure: (id: string) => void, api: ApiService }) => {
   const { t } = useLanguage();
@@ -253,79 +255,83 @@ export const FanpageView = ({ fanpages, onConnect, onConfigure, api }: { fanpage
       )}
 
       {/* Token Update Modal */}
-      {showTokenModal && (
-        <div className="fixed inset-0 bg-black/20 backdrop-blur-md flex items-center justify-center z-[200] p-6">
-          <div className="nm-flat max-w-2xl w-full p-10 relative animate-in zoom-in-95 duration-300">
-            <button onClick={() => setShowTokenModal(false)} className="absolute top-8 right-8 w-12 h-12 border border-[#D1D5DB] dark:border-white/12 rounded-lg flex items-center justify-center text-[#6B7280] dark:text-gray-400 hover:text-soft-pink transition-colors">
-              <X size={24} />
-            </button>
-
-            <div className="flex items-center gap-6 mb-10">
-               <div className="w-16 h-16 nm-flat flex items-center justify-center text-[#2563EB] dark:text-blue-400">
-                  <ShieldCheck size={32} />
+      <Dialog open={showTokenModal} onOpenChange={setShowTokenModal}>
+         <DialogContent className="max-w-2xl sm:max-w-2xl p-0 overflow-hidden border-0 bg-transparent shadow-none" showCloseButton={false}>
+            <DialogHeader className="sr-only">
+               <DialogTitle>Update Access Token</DialogTitle>
+               <DialogDescription>Instructions and input for page token updates</DialogDescription>
+            </DialogHeader>
+            <div className="nm-flat w-full p-10 relative animate-in zoom-in-95 duration-300 rounded-xl">
+               <Button onClick={() => setShowTokenModal(false)} variant="ghost" size="icon" className="absolute top-8 right-8 size-12 border border-[#D1D5DB] dark:border-white/12 rounded-lg flex items-center justify-center text-[#6B7280] dark:text-gray-400 hover:text-soft-pink transition-colors rounded-xl p-0 hover:bg-transparent">
+                  <X size={24} />
+               </Button>
+      
+               <div className="flex items-center gap-6 mb-10">
+                  <div className="w-16 h-16 nm-flat flex items-center justify-center text-[#2563EB] dark:text-blue-400 rounded-xl">
+                     <ShieldCheck size={32} />
+                  </div>
+                  <div>
+                     <h3 className="text-2xl font-bold text-[#111827] dark:text-gray-100  leading-none">Update Access Token</h3>
+                     <p className="text-[10px] font-bold text-[#6B7280] dark:text-gray-400 uppercase mt-2">Updating Access: {targetPage?.name}</p>
+                  </div>
                </div>
-               <div>
-                  <h3 className="text-2xl font-bold text-[#111827] dark:text-gray-100  leading-none">Update Access Token</h3>
-                  <p className="text-[10px] font-bold text-[#6B7280] dark:text-gray-400 uppercase mt-2">Updating Access: {targetPage?.name}</p>
+      
+               <div className="space-y-8">
+                  <div className="bg-[#F3F4F6] dark:bg-white/8 border border-[#D1D5DB] dark:border-white/12 rounded-lg p-8 rounded-xl space-y-6">
+                     <div className="flex items-center gap-3 text-[#2563EB] dark:text-blue-400">
+                        <Info size={18} />
+                        <span className="text-[10px] font-bold uppercase tracking-[0.2em]">Update Instructions</span>
+                     </div>
+      
+                     <div className="space-y-4">
+                        {[
+                           "Access Meta Developers & Graph API Explorer.",
+                           "Authorize: pages_manage_posts, pages_read_engagement.",
+                           "Select Fanpage.",
+                           "Copy the long-lived Page Access Token."
+                        ].map((step, i) => (
+                           <div key={i} className="flex items-start gap-4">
+                              <div className="w-6 h-6 rounded-lg nm-flat flex flex-shrink-0 items-center justify-center text-[10px] font-bold text-[#2563EB] dark:text-blue-400">{i + 1}</div>
+                              <p className="text-[11px] font-bold text-[#6B7280] dark:text-gray-400 pt-0.5 leading-relaxed ">{step}</p>
+                           </div>
+                        ))}
+                     </div>
+                  </div>
+      
+                  <form onSubmit={handleUpdateTokenSubmit} className="space-y-8">
+                     <div className="space-y-4">
+                        <label className="text-[10px] font-bold text-[#6B7280] dark:text-gray-400 uppercase ml-3">Page Access Token</label>
+                        <Textarea
+                           required
+                           className="w-full min-h-[120px] p-6 font-mono text-xs rounded-lg border border-black/10 dark:border-white/10 bg-slate-200/50 dark:bg-slate-950/40 text-slate-900 dark:text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-600 dark:placeholder:text-slate-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:border-indigo-500 transition-all rounded-2xl"
+                           placeholder="EAA..."
+                           value={newToken}
+                           onChange={(e) => setNewToken(e.target.value)}
+                        />
+                     </div>
+      
+                     <div className="flex gap-6">
+                        <Button
+                           type="button"
+                           onClick={() => setShowTokenModal(false)}
+                           className="flex-1 border border-[#D1D5DB] dark:border-white/12 rounded-lg py-5 text-[10px] font-bold uppercase text-[#6B7280] dark:text-gray-400 hover:text-soft-pink transition-colors h-auto rounded-lg bg-transparent hover:bg-transparent"
+                        >
+                           Cancel
+                        </Button>
+                        <Button
+                           type="submit"
+                           disabled={isUpdatingToken || !newToken.trim()}
+                           className="flex-[2] bg-[#2563EB] text-white py-5 rounded-xl font-bold uppercase text-[11px] shadow-xl hover:brightness-110 active:scale-95 transition-all flex items-center justify-center gap-4 disabled:opacity-30 h-auto rounded-xl"
+                        >
+                           {isUpdatingToken ? <RefreshCw className="w-5 h-5 animate-spin" /> : <CheckCircle2 size={20} />}
+                           <span>{isUpdatingToken ? 'SAVING...' : 'UPDATE TOKEN'}</span>
+                        </Button>
+                     </div>
+                  </form>
                </div>
             </div>
-
-            <div className="space-y-8">
-              <div className="bg-[#F3F4F6] dark:bg-white/8 border border-[#D1D5DB] dark:border-white/12 rounded-lg p-8 rounded-xl space-y-6">
-                <div className="flex items-center gap-3 text-[#2563EB] dark:text-blue-400">
-                  <Info size={18} />
-                  <span className="text-[10px] font-bold uppercase tracking-[0.2em]">Update Instructions</span>
-                </div>
-
-                <div className="space-y-4">
-                  {[
-                    "Access Meta Developers & Graph API Explorer.",
-                    "Authorize: pages_manage_posts, pages_read_engagement.",
-                    "Select Fanpage.",
-                    "Copy the long-lived Page Access Token."
-                  ].map((step, i) => (
-                    <div key={i} className="flex items-start gap-4">
-                      <div className="w-6 h-6 rounded-lg nm-flat flex flex-shrink-0 items-center justify-center text-[10px] font-bold text-[#2563EB] dark:text-blue-400">{i + 1}</div>
-                      <p className="text-[11px] font-bold text-[#6B7280] dark:text-gray-400 pt-0.5 leading-relaxed ">{step}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <form onSubmit={handleUpdateTokenSubmit} className="space-y-8">
-                <div className="space-y-4">
-                  <label className="text-[10px] font-bold text-[#6B7280] dark:text-gray-400 uppercase ml-3">Page Access Token</label>
-                  <Textarea
-                    required
-                    className="w-full min-h-[120px] p-6 font-mono text-xs rounded-lg border border-black/10 dark:border-white/10 bg-slate-200/50 dark:bg-slate-950/40 text-slate-900 dark:text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-600 dark:placeholder:text-slate-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:border-indigo-500 transition-all"
-                    placeholder="EAA..."
-                    value={newToken}
-                    onChange={(e) => setNewToken(e.target.value)}
-                  />
-                </div>
-
-                <div className="flex gap-6">
-                  <button
-                    type="button"
-                    onClick={() => setShowTokenModal(false)}
-                    className="flex-1 border border-[#D1D5DB] dark:border-white/12 rounded-lg py-5 text-[10px] font-bold uppercase"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={isUpdatingToken || !newToken.trim()}
-                    className="flex-[2] bg-[#2563EB] text-white py-5 rounded-xl font-bold uppercase text-[11px] shadow-xl hover:brightness-110 transition-all flex items-center justify-center gap-4 disabled:opacity-30"
-                  >
-                    {isUpdatingToken ? <RefreshCw className="w-5 h-5 animate-spin" /> : <CheckCircle2 size={20} />}
-                    <span>{isUpdatingToken ? 'SAVING...' : 'UPDATE TOKEN'}</span>
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
-        </div>
-      )}
+         </DialogContent>
+      </Dialog>
     </div>
   );
 };

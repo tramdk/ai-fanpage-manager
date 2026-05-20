@@ -312,7 +312,7 @@ export const SettingsView = ({ api }: { api: ApiService }) => {
 
          {/* Security Modal */}
          <Dialog open={showEditModal} onOpenChange={(open) => { if (!open) setShowEditModal(false); }}>
-            <DialogContent className="max-w-4xl p-0 overflow-hidden border-0 bg-transparent shadow-none" showCloseButton={false}>
+            <DialogContent className="max-w-4xl sm:max-w-4xl p-0 overflow-hidden border-0 bg-transparent shadow-none" showCloseButton={false}>
                <DialogHeader className="sr-only">
                   <DialogTitle>Identity & Credentials Protocol</DialogTitle>
                   <DialogDescription>Modify security configurations and name identity</DialogDescription>
