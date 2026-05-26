@@ -49,8 +49,8 @@ const GET_NAV_ITEMS = (t: any, role?: string) => [
 ];
 
 export default function App() {
-  const [token, setToken] = useState<string | null>(() => localStorage.getItem('token'));
   const [user, setUser] = useState<User | null>(null);
+  const [loadingAuth, setLoadingAuth] = useState(true);
   
   const navigate = useNavigate();
   const location = useLocation();
@@ -80,7 +80,6 @@ export default function App() {
   // [rerender-functional-setstate] - Stable callback for authFetch
   const authFetch: AuthFetch = useCallback(async (url: string, options: RequestInit = {}) => {
     const headers = new Headers(options.headers as any);
-    if (token) headers.set('Authorization', `Bearer ${token}`);
     if (!headers.has('Content-Type') && options.body && !(options.body instanceof FormData)) {
       headers.set('Content-Type', 'application/json');
     }
@@ -89,42 +88,42 @@ export default function App() {
       ...options,
       headers
     } as any);
-  }, [token]);
+  }, []);
 
   const api = useApiService(authFetch);
 
-  const handleLogin = useCallback((newToken: string, userData: any) => {
-    localStorage.setItem('token', newToken);
-    setToken(newToken);
-    setUser(userData);
-  }, []);
-
   const handleLogout = useCallback(() => {
-    localStorage.removeItem('token');
-    setToken(null); setUser(null); setFanpages([]);
+    setUser(null); setFanpages([]);
     fetch(CONFIG.getApiUrl('/api/auth/logout'), { method: 'POST', credentials: 'same-origin' }).catch(() => {});
   }, []);
 
   const fetchData = useCallback(async () => {
-    if (!token) return;
     try {
-      // [async-parallel] - Parallelize initial bootstrap fetches
-      const [userData, fanpagesData, fbAppsData] = await Promise.all([
-        api.users.getMe(),
+      const userData = await api.users.getMe();
+      setUser(userData);
+      
+      // Parallelize subsequent bootstrap fetches
+      const [fanpagesData, fbAppsData] = await Promise.all([
         api.fanpages.list(),
         api.fbApps.list()
       ]);
-      setUser(userData);
       setFanpages(fanpagesData);
       setFbApps(fbAppsData);
     } catch (err: any) {
       console.warn('Bootstrap Error:', err?.message || 'Unknown Error');
-      // If unauthorized or forbidden, logout
+      setUser(null);
       if (err?.statusCode === 401 || err?.statusCode === 403) {
         handleLogout();
       }
+    } finally {
+      setLoadingAuth(false);
     }
-  }, [token, api, handleLogout]);
+  }, [api, handleLogout]);
+
+  const handleLogin = useCallback((userData: any) => {
+    setUser(userData);
+    fetchData();
+  }, [fetchData]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
@@ -175,7 +174,7 @@ export default function App() {
       const actualId = fbAppRecordId || (fbApps.length === 1 ? fbApps[0].id : undefined);
 
       const origin = encodeURIComponent(window.location.origin);
-      let url = `/api/auth/facebook/url?origin=${origin}&token=${token}`;
+      let url = `/api/auth/facebook/url?origin=${origin}`;
       if (actualId) url += `&fbAppRecordId=${actualId}`;
 
       const res = await api.fetch(url);
@@ -194,7 +193,7 @@ export default function App() {
       window.open(authUrl, 'facebook_oauth', `width=${width},height=${height},left=${left},top=${top},status=yes,scrollbars=yes`);
       setShowAppPicker(false);
     } catch (err: any) { toast.error(err.message || 'Connect Error'); }
-  }, [fbApps, token, authFetch]);
+  }, [fbApps, api, navigate]);
 
   const handleTabChange = (tabId: string) => {
     const item = navItems.find(i => i.id === tabId);
@@ -228,7 +227,16 @@ export default function App() {
     ];
   }, [navItems]);
 
-  if (!token) {
+  if (loadingAuth) {
+    return (
+      <div className="min-h-screen bg-app-bg flex flex-col items-center justify-center space-y-4">
+        <Loader2 className="w-10 h-10 text-indigo-500 animate-spin" />
+        <p className="text-[10px] font-bold text-[#6B7280] dark:text-gray-400 uppercase tracking-widest">Checking Authorization...</p>
+      </div>
+    );
+  }
+
+  if (!user) {
     const isResetPath = location.pathname === '/reset-password';
     
     return (

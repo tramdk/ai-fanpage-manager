@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { FieldGroup, Field, FieldLabel } from '@/components/ui/field';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 
-export const AuthView = ({ onLogin }: { onLogin: (token: string, user: any) => void }) => {
+export const AuthView = ({ onLogin }: { onLogin: (user: any) => void }) => {
   const [isLogin, setIsLogin] = useState(true);
   const [isForgotPassword, setIsForgotPassword] = useState(false);
   const [email, setEmail] = useState('');
@@ -51,7 +51,7 @@ export const AuthView = ({ onLogin }: { onLogin: (token: string, user: any) => v
       if (!res.ok) throw new Error(data.error || 'Identity verification failed');
 
       if (isLogin) {
-        onLogin(data.token, data.user);
+        onLogin(data.user);
       } else {
         setSuccess(t('regSuccess'));
         setIsLogin(true);
@@ -114,7 +114,7 @@ export const AuthView = ({ onLogin }: { onLogin: (token: string, user: any) => v
               });
               const data = await res.json();
               if (res.ok) {
-                 onLogin(data.token, data.user);
+                 onLogin(data.user);
               } else {
                  window.location.reload();
               }
