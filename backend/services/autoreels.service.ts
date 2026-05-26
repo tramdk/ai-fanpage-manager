@@ -233,9 +233,13 @@ export async function getVideoStatus(videoId: string) {
     const res = await fetch(`${AUTOREELS_URL}/api/videos/${videoId}`, {
       headers: { 'X-API-Key': AUTOREELS_TOKEN }
     });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error || 'Failed to fetch video status');
+    
+    if (!res.ok) {
+      const errText = await res.text().catch(() => '');
+      throw new Error(`Failed to fetch video status: ${res.status}. ${errText.substring(0, 100)}`);
+    }
 
+    const data = await res.json();
     // AutoReels typically returns { id, status, videoUrl, ... }
     return data;
   } catch (err) {
@@ -257,12 +261,13 @@ export async function getVideoStatusBatch(videoIds: string[]) {
       body: JSON.stringify({ ids: videoIds })
     });
 
-    const data = await res.json();
-
     if (!res.ok) {
-      console.error('[AUTOREELS] Bulk status API error:', data);
+      const errText = await res.text().catch(() => '');
+      console.error(`[AUTOREELS] Bulk status API error: ${res.status}. ${errText.substring(0, 200)}`);
       return [];
     }
+
+    const data = await res.json();
 
     // Defensive mapping: Ensure every item has an 'id' field (some endpoints might use videoId)
     const normalizedData = Array.isArray(data) ? data.map(item => ({
