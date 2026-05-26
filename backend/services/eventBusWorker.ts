@@ -26,6 +26,10 @@ export async function startEventBusWorker() {
         return;
       }
       console.error('❌ [EVENT BUS] Error creating group:', err.message);
+      if (err.message.includes('max requests limit exceeded')) {
+        console.warn('⚠️ [EVENT BUS] Redis limit exceeded. Sleeping for 15 minutes before retrying group creation...');
+        await new Promise(resolve => setTimeout(resolve, 15 * 60 * 1000));
+      }
     }
   };
 
@@ -73,7 +77,12 @@ export async function startEventBusWorker() {
       }
       
       // Wait before retrying to avoid spamming
-      await new Promise(resolve => setTimeout(resolve, 5000));
+      let delay = 5000;
+      if (err && err.message && err.message.includes('max requests limit exceeded')) {
+        console.warn('⚠️ [EVENT BUS] Redis limit exceeded. Sleeping for 15 minutes to prevent spamming...');
+        delay = 15 * 60 * 1000; // 15 minutes
+      }
+      await new Promise(resolve => setTimeout(resolve, delay));
     }
   }
 }
