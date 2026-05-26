@@ -84,7 +84,11 @@ export default function App() {
     if (!headers.has('Content-Type') && options.body && !(options.body instanceof FormData)) {
       headers.set('Content-Type', 'application/json');
     }
-    return fetch(CONFIG.getApiUrl(url), { ...options, headers } as any);
+    return fetch(CONFIG.getApiUrl(url), {
+      credentials: 'same-origin',
+      ...options,
+      headers
+    } as any);
   }, [token]);
 
   const api = useApiService(authFetch);
@@ -98,6 +102,7 @@ export default function App() {
   const handleLogout = useCallback(() => {
     localStorage.removeItem('token');
     setToken(null); setUser(null); setFanpages([]);
+    fetch(CONFIG.getApiUrl('/api/auth/logout'), { method: 'POST', credentials: 'same-origin' }).catch(() => {});
   }, []);
 
   const fetchData = useCallback(async () => {

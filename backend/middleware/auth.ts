@@ -12,11 +12,34 @@ if (!JWT_SECRET) {
   process.exit(1);
 }
 
+const parseCookies = (cookieHeader: string): Record<string, string> => {
+  const cookies: Record<string, string> = {};
+  cookieHeader.split(';').forEach(cookie => {
+    const parts = cookie.split('=');
+    const name = parts[0].trim();
+    if (name) {
+      cookies[name] = parts.slice(1).join('=').trim();
+    }
+  });
+  return cookies;
+};
+
 export const authenticateToken = (req: any, res: Response, next: NextFunction) => {
+  let token = null;
+
   const authHeader = req.headers['authorization'];
-  const token = authHeader && authHeader.split(' ')[1];
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    token = authHeader.split(' ')[1];
+  }
+
+  if (!token && req.headers.cookie) {
+    const cookies = parseCookies(req.headers.cookie);
+    token = cookies['token'];
+  }
 
   if (token == null) return res.status(401).json({ error: 'Unauthorized' });
+
+  req.token = token;
 
   jwt.verify(token, JWT_SECRET, async (err: any, decoded: any) => {
     if (err) return res.status(403).json({ error: 'Forbidden' });

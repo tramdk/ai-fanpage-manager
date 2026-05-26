@@ -24,13 +24,28 @@ router.post('/login', async (req, res) => {
   if (!email || !password) return res.status(400).json({ error: 'Email and password are required' });
   try {
     const result = await authService.login(email, password);
-    res.json(result);
+    res.cookie('token', result.token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+    });
+    res.json(result); // Return the full result including token for backward compatibility
   } catch (error: any) {
     if (error.message === 'INVALID_CREDENTIALS') return res.status(400).json({ error: 'Invalid credentials' });
     if (error.message === 'ACCOUNT_INACTIVE') return res.status(403).json({ error: 'Account is pending activation.' });
     if (error.message === 'PASSWORD_CHANGE_REQUIRED') return res.status(403).json({ error: 'PASSWORD_CHANGE_REQUIRED', setupToken: error.setupToken, user: error.user });
     res.status(500).json({ error: error.message });
   }
+});
+
+router.post('/logout', (req, res) => {
+  res.clearCookie('token', {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax'
+  });
+  res.json({ message: 'Logged out successfully' });
 });
 
 router.post('/setup-password', async (req, res) => {
@@ -53,12 +68,10 @@ router.get('/me', authenticateToken, async (req: any, res) => {
   }
 });
 
-router.get('/facebook/url', async (req, res) => {
-  const { token, origin, fbAppRecordId } = req.query as Record<string, string>;
-  if (!token) return res.status(401).json({ error: 'Authentication required' });
+router.get('/facebook/url', authenticateToken, async (req: any, res) => {
+  const { origin, fbAppRecordId } = req.query as Record<string, string>;
   try {
-    const decoded = jwt.verify(token, JWT_SECRET) as any;
-    const url = await authService.getFacebookOAuthUrl(decoded.id, token, origin || '', fbAppRecordId);
+    const url = await authService.getFacebookOAuthUrl(req.user.id, req.token, origin || '', fbAppRecordId);
     res.json({ url });
   } catch (error: any) {
     if (error.requires_config) return res.status(400).json({ error: error.message, requires_config: true });

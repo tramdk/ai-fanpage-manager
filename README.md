@@ -9,70 +9,75 @@ pinned: false
 
 # 🤖 Fanpage AI Manager
 
-
-> **Nền tảng quản lý & tự động hóa nội dung Facebook Fanpage bằng AI** — đăng bài thông minh, lập lịch tự động, sinh nội dung bằng Gemini AI & tìm kiếm hình ảnh chất lượng cao từ Internet.
+> **Nền tảng quản lý & tự động hóa nội dung Facebook Fanpage thông minh** — Tích hợp hệ sinh thái AI sinh văn bản (Gemini AI), tìm kiếm hình ảnh tự động, dựng video tự động (AutoReels), quản lý thư viện truyền thông CDN (Cloudinary), thiết kế chiến dịch trực quan bằng Node-Based Workflows và đồng bộ trạng thái thời gian thực qua Event Bus (Redis Streams).
 
 ---
 
 ## 📖 Tổng quan dự án
 
-**Fanpage AI Manager** là một ứng dụng web full-stack giúp các cá nhân và doanh nghiệp quản lý nhiều Facebook Fanpage từ một giao diện duy nhất. Thay vì thủ công tạo nội dung và đăng bài, hệ thống tự động sinh bài viết chất lượng cao bằng Google Gemini AI, lên lịch đăng bài theo khung giờ tùy chỉnh, và theo dõi toàn bộ lịch sử hoạt động.
+**Fanpage AI Manager** là một hệ thống full-stack chuyên nghiệp giúp doanh nghiệp và các cá nhân tối ưu hóa quy trình vận hành chuỗi Fanpage Facebook. Hệ thống giải phóng thời gian xây dựng nội dung bằng cách tự động hóa từ bước lên chiến lược, phác thảo bài viết, tìm kiếm hình ảnh liên quan, dựng Reels, phê duyệt bài viết, lập lịch đăng tự động cho tới báo cáo phân tích hiệu năng.
 
-### 🎯 Mục tiêu nghiệp vụ
+### 🎯 Vấn đề & Giải pháp
 
-| Vấn đề                                         | Giải pháp                                                    |
-|------------------------------------------------|--------------------------------------------------------------|
-| Tốn thời gian tạo nội dung thủ công            | AI sinh content tự động + tìm ảnh liên quan từ Internet     |
-| Khó quản lý nhiều Fanpage cùng lúc             | Dashboard tập trung, kết nối đa Fanpage qua Facebook API     |
-| Thiếu nhất quán trong lịch đăng bài            | Hệ thống lập lịch (Cron Job) tự động hóa theo giờ cố định   |
-| Không có chiến lược nội dung dài hạn           | AI Campaign Architect tạo chuỗi bài theo phễu marketing       |
-| Rủi ro bảo mật khi quản lý nhiều token         | Multi-tenant, mỗi user quản lý token của riêng mình         |
+| Vấn đề | Giải pháp của Fanpage AI Manager |
+| :--- | :--- |
+| **Sản xuất video thủ công tốn kém** | Tích hợp công nghệ **AutoReels API** tự động chia phân cảnh, ghép giọng đọc AI (TTS) và nhạc nền (BGM) để tạo Reels tự động từ văn bản. |
+| **Mất nhiều thời gian tạo bài viết** | Công nghệ **Gemini AI Copywriting** tự động lập dàn ý theo 3 cấu trúc chuyên sâu: Educational, Sales/Promo, và Storytelling. |
+| **Quản lý đa kênh rời rạc** | Giao diện quản trị tập trung (Soft UI), phân luồng phân quyền và cấu hình an toàn cho nhiều Fanpage qua Facebook Graph API. |
+| **Chuỗi chiến dịch phức tạp** | **AI Strategy Workflow Builder** cho phép thiết kế kịch bản tiếp thị trực quan dạng Node kéo thả, tự động liên kết tài nguyên. |
+| **Lịch đăng bài không nhất quán** | **Engine Cron Job & Fast-Follow Sync** chạy ngầm, tự động đăng bài đúng khung giờ kèm bộ lọc xử lý "bù giờ" (catch-up) nếu hệ thống gián đoạn. |
+| **Bảo mật thông tin tài khoản** | Mã hóa bất đối xứng AES toàn bộ Access Token của Fanpage kết hợp mã hóa một chiều Bcrypt cho mật khẩu người dùng. |
 
 ---
 
-## ✨ Tính năng chính (Premium Upgrade)
+## ✨ Tính năng nổi bật (Premium Capabilities)
 
-### 🎨 TDK 
-- **Giao diện Tactile cao cấp**: Toàn bộ hệ thống được xây dựng trên ngôn ngữ thiết kế Soft UI hiện đại, mang lại cảm giác chiều sâu và tương tác vật lý chân thực.
-- **Dark Mode First**: Ưu tiên giao diện tối (Obsidian Dark) để bảo vệ mắt và tăng tính thẩm mỹ, hỗ trợ chuyển đổi Light/Dark linh hoạt.
-- **Hệ thống Design System nhất quán**: Sử dụng CSS variables cho toàn bộ màu sắc, đổ bóng và spacing, đảm bảo tính thẩm mỹ đồng bộ trên mọi module.
+### 🎨 Ngôn ngữ thiết kế Soft UI (Dark Mode First)
+- **Soft UI & Tactile Experience**: Giao diện mang hơi hướng Neumorphism/Soft UI tinh tế với chiều sâu thị giác và phản hồi xúc giác động khi tương tác.
+- **Obsidian Dark Theme**: Tối ưu hóa giao diện tối để giảm mỏi mắt khi vận hành hệ thống trong thời gian dài.
+- **Micro-Animations**: Hiệu ứng chuyển động mượt mà bằng CSS Hardware Acceleration giúp gia tăng trải nghiệm người dùng.
 
-### 🏠 Dashboard & Analytics (Responsive)
-- **Grid linh hoạt**: Dashboard tự động điều chỉnh layout (1/2/3 cột) dựa trên kích thước màn hình.
-- **Neural Stats Cards**: Hiển thị số liệu tổng quan với hiệu ứng hover động và scaling thông minh.
-- **Performance Trends**: Biểu đồ xu hướng dữ liệu với khả năng scale mượt mà trên cả tablet và desktop.
+### 🗺️ AI Strategy Workflow Architect (Visual Node Builder)
+- **Node-Based Editor**: Thiết kế chiến lược nội dung thông qua hệ thống sơ đồ tư duy kéo thả trực quan.
+- **Loại node hỗ trợ**:
+  - **Trigger Node**: Xác định khung giờ đăng bài, tần suất chiến dịch và chu kỳ chạy.
+  - **AI Text Node**: Chỉ định cấu trúc bài viết, tông giọng (tone), từ khóa chủ đề và hướng dẫn chi tiết cho Gemini.
+  - **AI Image Node**: Tự động hóa việc gom ảnh vệ tinh từ các kho ảnh miễn phí lớn.
+  - **AI Video Node**: Thiết lập cấu hình dựng Reels bằng AutoReels (template, giọng nói đọc truyện, nhạc nền).
+  - **Publish Node**: Chỉ định Fanpage đích và trạng thái lưu trữ hàng đợi.
 
-### 🗺️ AI Strategy Workflow Architect
-- **Visual Node Builder**: Xây dựng chiến lược nội dung bằng bản đồ tư duy trực quan. Kéo thả các Neural Node để thiết kế kịch bản marketing.
-- **Theme-Aware Connectors**: Hệ thống dây nối thông minh tự động thay đổi độ sáng và màu sắc theo theme, hỗ trợ hiệu ứng glow khi hover.
-- **Protocol Settings Panel**: Panel cấu hình node chuyên sâu với hiệu ứng backdrop-blur và shadow định hướng, giúp tinh chỉnh chi tiết từng bước trong quy trình.
+### 🎞️ AutoReels & Event-Driven Short Video Engine
+- **Scene-Splitting Parser**: Tự động phân tách nội dung bài viết thành các phân cảnh: Hook (Mở bài giữ chân), Body (Nội dung cốt lõi), Outro (Lời kêu gọi hành động CTA).
+- **TTS & BGM Customization**: Hỗ trợ lựa chọn đa dạng giọng đọc AI truyền cảm (Edge TTS, v.v.) và hàng loạt thư viện âm nhạc nền phù hợp với từng định dạng nội dung.
+- **Redis Event Bus Worker**: Lắng nghe và cập nhật tiến trình dựng video từ hàng đợi sự kiện ngầm thông qua Redis Streams.
+- **Fast-Publish Catch-up**: Tự động đẩy bài viết lên Facebook ngay khi video dựng xong nếu lịch đăng quy định đã trôi qua.
 
-### 🤖 Social Discover Studio
-- **Neural Draft Generator**: Sinh bài viết Facebook từ chủ đề và từ khóa tùy chỉnh bằng Gemini AI với giọng văn đa dạng.
-- **Media Asset Sourcing**: Tự động tìm kiếm hình ảnh chất lượng cao từ Unsplash, Pexels, LoremFlickr — tiết kiệm chi phí so với AI generation.
-- **Advanced Creative Editor**: Chỉnh sửa nội dung và media trong một không gian làm việc tập trung, hỗ trợ preview thời gian thực.
+### 📁 Media Library & Deduplication
+- **Cloudinary Integration**: Tự động lưu trữ và tối ưu hóa tài nguyên hình ảnh/video qua Cloudinary CDN.
+- **MD5 Hash Deduplication**: Tạo mã băm nội dung tập tin khi tải lên, ngăn chặn trùng lặp tài nguyên vật lý trong cơ sở dữ liệu để tối ưu hóa không gian lưu trữ và băng thông.
 
-### 📊 Hoạt động & Lịch sử (Advanced Grid)
-- **Resizable Columns**: Lưới dữ liệu cho phép người dùng **tùy chỉnh độ rộng cột** bằng cách kéo thả thủ công, tối ưu hóa không gian hiển thị thông tin.
-- **Sticky Strategic Header**: Tiêu đề bảng cố định khi cuộn, giúp theo dõi các cột dữ liệu trong danh sách dài một cách dễ dàng.
-- **Fluid Height Scroll**: Hệ thống lưới tự động scale theo chiều cao màn hình và cuộn nội dung bên trong, giữ cho UI luôn gọn gàng.
+### 📅 Lập lịch thông minh & Catch-up Engine
+- **Precision Scheduling**: Tự động hóa đăng tải nội dung theo múi giờ được chỉ định (`Asia/Ho_Chi_Minh` mặc định).
+- **Missed Slot Catch-up**: Tự động kiểm tra và đăng bù các bài viết bị lỡ lịch do sự cố mất kết nối mạng hoặc tắt nguồn máy chủ.
+- **Queue Reordering**: Thay đổi thứ tự ưu tiên của các bài viết trong hàng đợi bằng thao tác kéo thả mượt mà trên lưới dữ liệu.
 
-### 📅 Automation & Lập lịch
-- **Cron Job Engine**: Tự động hóa việc đăng bài theo lịch trình chính xác.
-- **Advanced Prompting**: Tinh chỉnh AI cho từng lịch trình cụ thể (giọng văn, chỉ dẫn đặc biệt).
-- **Queue Management**: Quản lý hàng đợi bài viết với khả năng kéo thả sắp xếp lại thứ tự ưu tiên.
+### 📊 Quản trị viên & Phân quyền
+- **Role-Based Security**: Phân quyền chi tiết giữa Quản trị viên hệ thống (Admin) và Người vận hành (User).
+- **Account Controls**: Quản trị viên có quyền kích hoạt/vô hiệu hóa người dùng, reset mật khẩu tạm thời hoặc ép buộc người dùng đổi mật khẩu trong lần đăng nhập đầu tiên để bảo vệ an toàn hệ thống.
 
 ---
 
 ## 🏗️ Kiến trúc hệ thống
+
+Dưới đây là sơ đồ kiến trúc tổng quan của dự án, mô tả cách Client giao tiếp với Express Server và các dịch vụ bên thứ ba:
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
 │                        CLIENT (Browser)                         │
 │  React 19 + TypeScript  ·  Vite 6  ·  TailwindCSS 4            │
 │  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐        │
-│  │Dashboard │  │  AI      │  │Campaign  │  │Settings  │        │
-│  │ View     │  │ Studio   │  │Architect │  │  View    │        │
+│  │Dashboard │  │Campaign  │  │Workflow  │  │Media     │        │
+│  │ View     │  │ Studio   │  │ Builder  │  │ Library  │        │
 │  └──────────┘  └──────────┘  └──────────┘  └──────────┘        │
 │                   ApiService Layer (centralized)                 │
 └──────────────────────────┬──────────────────────────────────────┘
@@ -82,107 +87,108 @@ pinned: false
 │                                                                  │
 │  ┌─────────────────────────────────────────────────────────┐    │
 │  │                  Route Layer (Thin)                      │    │
-│  │  auth · fanpage · ai · schedule · post · admin · ...    │    │
+│  │  auth · users · ai · schedules · posts · admin · ...    │    │
 │  └───────────────────────┬─────────────────────────────────┘    │
 │                          │ delegates to                          │
 │  ┌───────────────────────▼─────────────────────────────────┐    │
 │  │                 Service Layer (Business Logic)           │    │
-│  │  AuthService  ·  AiService  ·  FanpageService           │    │
-│  │  ScheduleService  ·  PostService  ·  OAuthService        │    │
-│  │  AdminService  ·  FbAppService  ·  FacebookService       │    │
+│  │  AuthService · AiService · FanpageService · CronService │    │
+│  │  WorkflowEngine · AutoreelsService · MediaService       │    │
+│  │  EmailService · FacebookService · OAuthService          │    │
 │  └───────────────────────┬─────────────────────────────────┘    │
 │                          │                                       │
 │  ┌───────────────────────▼─────────────────────────────────┐    │
 │  │              Infrastructure Layer                        │    │
-│  │  Prisma ORM  ·  node-cron  ·  Cloudinary  ·  Multer     │    │
+│  │  Prisma ORM (PostgreSQL)  ·  Redis Streams (Event Bus)  │    │
+│  │  Cloudinary CDN · node-cron · SMTP (Nodemailer)         │    │
 │  └─────────────────────────────────────────────────────────┘    │
-│                                                                  │
 └──────────────────────────────────────────────────────────────────┘
 ```
 
-### Luồng tìm kiếm hình ảnh (Image Discovery)
+### 1. Luồng xử lý AutoReels & Đồng bộ Event Bus
+
+Quá trình sinh video ngắn được phân tách nhiệm vụ và xử lý bất đồng bộ để tránh nghẽn luồng HTTP của máy chủ:
 
 ```
-User yêu cầu tìm ảnh
+[Client]                      [Manager API]                [Redis Event Bus]             [AutoReels Service]
+   │                               │                               │                              │
+   │─── Yêu cầu tạo Video ────────▶│                               │                              │
+   │    (hoặc qua Workflow)        │─── Đăng ký Event ────────────▶│                              │
+   │                               │    REEL_REQUESTED             │─── Chuyển tiếp Request ─────▶│
+   │                               │                               │                              │ (Tiến hành dựng video,
+   │                               │                               │                              │  ghép voice & nhạc nền)
+   │                               │                               │◀── Gửi REEL_PROCESSING ──────│
+   │                               │                               │                              │
+   │                               │◀── Đọc tin nhắn bằng Worker ──│                              │
+   │                               │    (Cập nhật VideoQueue DB)   │                              │
+   │                               │                               │◀── Gửi REEL_COMPLETED ───────│
+   │                               │                               │    (Kèm Link Tải Video)      │
+   │                               │◀── Đọc tin nhắn hoàn tất ─────│                              │
+   │                               │    (Cập nhật Post.imageUrl)   │                              │
+   │                               │                               │                              │
+   │                               │─── Tự động kiểm tra giờ ──────│                              │
+   │                               │    (Đăng ngay nếu lỡ lịch)    │                              │
+   │                               │                               │                              │
+   │◀── Cập nhật trạng thái UI ────│                               │                              │
+```
+
+### 2. Sơ đồ xử lý tài nguyên hình ảnh (Image Discovery)
+
+Hệ thống cung cấp luồng fallback thông minh khi tìm kiếm hình ảnh minh họa cho bài viết:
+
+```
+[Chủ đề bài viết]
        │
-       ├── Có Keywords (từ Automation Settings)? → Dùng Keywords làm search query
-       └── Không có Keywords? → Dùng Topic Name làm search query
+       ├── Có Từ khóa (Keywords từ Cấu hình)? ──▶ Sử dụng Keywords làm truy vấn tìm kiếm
+       └── Không có từ khóa? ────────────────────▶ Sử dụng Tên Chủ đề làm truy vấn
        │
        ▼
-  Unsplash API (ưu tiên 1, cần API Key) ──▶ Thất bại?
-       │                                               │
-       ▼ Thành công                                    ▼
-  Tải buffer → Upload Cloudinary             Pexels API (ưu tiên 2, cần API Key)
-       │                                               │
-       ▼                                               ▼ Thất bại?
-  Trả imageUrl                               LoremFlickr (fallback miễn phí)
-                                                       │
-                                                       ▼ Thất bại?
-                                               Picsum (fallback cuối)
-```
-
-> **Lưu ý**: Không sử dụng AI để sinh ảnh (zero AI cost cho hình ảnh). Chỉ dùng Gemini cho việc sinh văn bản.
-
-### Luồng đăng bài tự động (Cron Job)
-
-```
-Cron Job kích hoạt đúng giờ (node-cron)
-       │
-       ├──▶ Lấy bài "queued" đầu tiên trong hàng đợi
-       │
-       ├──▶ Giải mã Access Token (AES encryption)
-       │
-       ├──▶ Gọi Facebook Graph API v18.0
-       │         ├── Text only → /feed
-       │         ├── 1 ảnh    → /photos
-       │         └── n ảnh    → /feed + attached_media
-       │
-       └──▶ Cập nhật trạng thái Post
-                 ├── Thành công → status: published
-                 └── Thất bại   → status: failed + ghi lỗi
+ ┌───────────┐
+ │ Ưu tiên 1 │  Unsplash API (Yêu cầu API Key) ──▶ Lỗi/Hết hạn?
+ └─────┬─────┘                                            │
+       │ Thành công                                       ▼
+       │                                            ┌───────────┐
+       ▼ Tải tệp tạm & Upload                       │ Ưu tiên 2 │  Pexels API (Yêu cầu API Key) ──▶ Lỗi?
+ [Cloudinary CDN Url]                               └─────┬─────┘                                    │
+       │                                                  │ Thành công                               ▼
+       ▼ Trả về ứng dụng                                  │                                    ┌───────────┐
+                                                          ▼ Tải tệp & Upload                   │ Ưu tiên 3 │  LoremFlickr (Không Key)
+                                                    [Cloudinary CDN Url]                       └─────┬─────┘
+                                                                                                     │ Thất bại?
+                                                                                                     ▼
+                                                                                               ┌───────────┐
+                                                                                               │ Fallback  │  Picsum Photos (Ngẫu nhiên)
+                                                                                               └─────┬─────┘
+                                                                                                     │ Thành công
+                                                                                                     ▼
+                                                                                                [Picsum Url]
 ```
 
 ---
 
-## 🛠️ Tech Stack
+## 🛠️ Công nghệ cốt lõi
 
-### Frontend
-| Công nghệ             | Phiên bản  | Mục đích                                          |
-|-----------------------|------------|---------------------------------------------------|
-| **React**             | ^19.0.0    | UI framework chính                                |
-| **TypeScript**        | ~5.8.2     | Type safety toàn bộ codebase                      |
-| **Vite**              | ^6.2.0     | Build tool & Dev server (HMR)                     |
-| **TailwindCSS**       | ^4.1.14    | Utility-first CSS framework                       |
-| **Lucide React**      | ^0.546.0   | Icon library                                      |
+### Frontend Stack
+- **React 19.0.0**: Xây dựng giao diện hướng thành phần hiệu năng cao.
+- **Vite 6.2.0**: Máy chủ phát triển HMR siêu tốc và trình biên dịch đóng gói sản phẩm.
+- **TailwindCSS 4.1.14**: Thiết kế giao diện ứng dụng nhanh, nhất quán và responsive.
+- **React Router DOM 7.2.0**: Điều hướng ứng dụng SPA.
+- **Lucide React 0.546.0**: Hệ thống icon vector tối giản, sắc nét.
+- **Sonner**: Quản lý và hiển thị thông báo góc màn hình trực quan.
 
-### Backend
-| Công nghệ             | Phiên bản  | Mục đích                                          |
-|-----------------------|------------|---------------------------------------------------|
-| **Node.js + Express** | ^4.21.2    | HTTP server & REST API                            |
-| **tsx**               | ^4.21.0    | TypeScript execution (dev mode)                   |
-| **node-cron**         | ^4.2.1     | Cron job scheduler (tự động đăng bài)             |
-| **Multer**            | ^2.1.1     | File upload (ảnh, video)                          |
-| **bcryptjs**          | ^3.0.3     | Hash mật khẩu người dùng                         |
-| **jsonwebtoken**      | ^9.0.3     | Xác thực JWT                                      |
-| **Cloudinary**        | ^2.5.1     | Lưu trữ hình ảnh trên đám mây                    |
-| **@google/genai**     | ^1.29.0    | Google Gemini AI SDK                              |
+### Backend Stack
+- **Node.js (Express 4.21.2)**: Xây dựng RESTful API ổn định.
+- **TypeScript & tsx**: Biên dịch và chạy trực tiếp mã TypeScript mà không cần tạo file trung gian trong quá trình phát triển.
+- **Redis (ioredis)**: Quản lý hàng đợi và đồng bộ hóa Redis Streams.
+- **node-cron**: Công cụ cấu hình lập lịch tác vụ ngầm định kỳ.
+- **Multer**: Xử lý tệp tin tải lên (Multipart Form-Data).
+- **google-genai 1.29.0**: Tích hợp mô hình ngôn ngữ lớn Google Gemini AI.
+- **Nodemailer**: Gửi email kích hoạt tài khoản và lấy lại mật khẩu qua máy chủ SMTP.
+- **Cloudinary SDK**: Quản lý hình ảnh và video đám mây.
 
-### Database & ORM
-| Công nghệ       | Phiên bản  | Mục đích                                              |
-|-----------------|------------|-------------------------------------------------------|
-| **Prisma ORM**  | ^6.19.3    | Type-safe database client                             |
-| **PostgreSQL**  | -          | Database production                                   |
-
-### Image Discovery & Tích hợp bên thứ ba
-| Dịch vụ                     | Mục đích                                              |
-|-----------------------------|-------------------------------------------------------|
-| **Google Gemini AI**        | Sinh nội dung văn bản (chỉ text, không dùng cho ảnh)  |
-| **Unsplash API**            | Tìm kiếm ảnh chất lượng cao — ưu tiên số 1 (miễn phí)|
-| **Pexels API**              | Tìm kiếm ảnh chất lượng cao — ưu tiên số 2 (miễn phí)|
-| **LoremFlickr**             | Fallback tìm ảnh miễn phí (không cần API key)         |
-| **Picsum**                  | Fallback cuối cùng (ảnh ngẫu nhiên, luôn khả dụng)    |
-| **Facebook Graph API v18**  | Đăng bài lên Fanpage, OAuth Fanpage connection        |
-| **Cloudinary**              | Lưu trữ và tối ưu hóa hình ảnh                       |
+### Database Layer
+- **PostgreSQL**: Cơ sở dữ liệu quan hệ lưu trữ dữ liệu người dùng, fanpage và bài viết.
+- **Prisma ORM 6.19.3**: Công cụ truy vấn cơ sở dữ liệu an toàn kiểu dữ liệu (Type-safe SQL Client).
 
 ---
 
@@ -191,165 +197,177 @@ Cron Job kích hoạt đúng giờ (node-cron)
 ```
 fanpage-ai-manager/
 ├── prisma/
-│   └── schema.prisma             # DB schema (User, Fanpage, Schedule, Post, Topic)
+│   └── schema.prisma             # Định nghĩa mô hình PostgreSQL (Prisma Schema)
 ├── public/
-│   └── uploads/                  # Ảnh local (fallback nếu Cloudinary không khả dụng)
-├── backend/                      # Express Server (Service-Oriented Architecture)
-│   ├── index.ts                  # Entry point: khởi động server & load schedules
-│   ├── app.ts                    # Express app config & route mounting
-│   ├── routes/                   # HTTP Route handlers (thin — chỉ điều phối)
-│   │   ├── auth.routes.ts        # Đăng nhập, đăng ký, setup password, OAuth URL
-│   │   ├── admin.routes.ts       # Quản lý người dùng (admin only)
-│   │   ├── ai.routes.ts          # Sinh content & hình ảnh bằng AI
-│   │   ├── fanpage.routes.ts     # Quản lý Fanpage & đăng bài thủ công
-│   │   ├── fbapp.routes.ts       # Quản lý Facebook App credentials
-│   │   ├── oauth.routes.ts       # Facebook OAuth callback handler
-│   │   ├── post.routes.ts        # Lịch sử, hàng đợi, sắp xếp bài viết
-│   │   ├── schedule.routes.ts    # Tạo & quản lý lịch trình tự động
-│   │   ├── topic.routes.ts       # Quản lý chủ đề & từ khóa
-│   │   ├── dashboard.routes.ts   # Số liệu tổng quan
-│   │   └── user.routes.ts        # Cập nhật hồ sơ người dùng
-│   ├── services/                 # Business logic layer (tái sử dụng được)
-│   │   ├── ai.service.ts         # generateText(), generateImage() — image discovery từ Internet
-│   │   ├── auth.service.ts       # login(), register(), setupPassword(), getMe()
-│   │   ├── admin.service.ts      # listUsers(), setUserStatus(), resetPassword()
-│   │   ├── fanpage.service.ts    # listFanpages(), updateToken(), postDirectly()
-│   │   ├── fbapp.service.ts      # listApps(), createApp(), deleteApp()
-│   │   ├── facebook.service.ts   # postToFacebook() — xử lý đa media cho Graph API
-│   │   ├── oauth.service.ts      # handleFacebookCallback() — token exchange & sync
-│   │   ├── post.service.ts       # getPostHistory(), queuePost(), reorderPosts()
-│   │   ├── schedule.service.ts   # createSchedule(), deleteSchedule(), updateStatus()
-│   │   ├── topic.service.ts      # listTopics(), createTopic(), deleteTopic()
-│   │   └── cron.service.ts       # scheduleJob() — cron job engine
-│   ├── tests/                    # Backend Test Suite
-│   │   └── ai-service.test.ts    # Test: text gen, image discovery, keywords, Cloudinary
+│   └── uploads/                  # Bộ nhớ lưu ảnh tạm thời cục bộ (Local fallback)
+├── backend/                      # Máy chủ Express & Xử lý nghiệp vụ ngầm
+│   ├── index.ts                  # Điểm khởi đầu: Quét Database, nạp cron jobs & chạy Worker
+│   ├── app.ts                    # Cấu hình Express Middleware, Helmet, CORS & Routing
+│   ├── config/                   # Quản lý cấu hình dịch vụ bên thứ ba
+│   │   ├── prisma.ts             # Khởi tạo Prisma Client Singleton
+│   │   └── cloudinary.ts         # Khởi tạo Cloudinary Uploader
 │   ├── middleware/
-│   │   └── auth.ts               # authenticateToken(), authenticateAdmin()
-│   ├── config/
-│   │   ├── prisma.ts             # Prisma client singleton
-│   │   └── cloudinary.ts         # Cloudinary upload helper
-│   └── utils/
-│       └── encryption.ts         # AES encrypt/decrypt cho Access Tokens
-├── src/                          # React Frontend
+│   │   └── auth.ts               # Bộ lọc phân quyền JWT (User / Admin)
+│   ├── utils/
+│   │   └── encryption.ts         # Mã hóa đối xứng AES-256 bảo vệ Access Token Facebook
+│   ├── routes/                   # Router nhận HTTP Request
+│   │   ├── auth.routes.ts        # Đăng ký, Đăng nhập, Yêu cầu và xác nhận Reset Password
+│   │   ├── user.routes.ts        # Hồ sơ người dùng
+│   │   ├── admin.routes.ts       # Quản trị tài khoản (Danh sách, khóa, reset mật khẩu)
+│   │   ├── fanpage.routes.ts     # Quản lý fanpage và đăng bài trực tiếp
+│   │   ├── fbapp.routes.ts       # Quản lý Facebook App đăng ký trong hệ thống
+│   │   ├── oauth.routes.ts       # Nhận và xử lý OAuth Callback từ Facebook
+│   │   ├── ai.routes.ts          # Tạo nội dung chữ (Gemini) và ảnh (Unsplash)
+│   │   ├── schedule.routes.ts    # Lập lịch tự động
+│   │   ├── post.routes.ts        # Quản lý hàng đợi, lịch sử, sắp xếp bài viết
+│   │   ├── workflow.routes.ts    # Thiết lập, lưu và chạy quy trình chiến dịch tự động
+│   │   ├── media.routes.ts       # Tải lên và truy vấn thư viện truyền thông
+│   │   └── dashboard.routes.ts   # Tổng hợp dữ liệu phân tích hệ thống
+│   └── services/                 # Tầng logic xử lý chính (Service Layer)
+│       ├── auth.service.ts       # Nghiệp vụ tài khoản, phân quyền
+│       ├── admin.service.ts      # Nghiệp vụ quản trị hệ thống
+│       ├── fanpage.service.ts    # Đồng bộ thông tin trang từ Graph API
+│       ├── fbapp.service.ts      # Liên kết Facebook App Bridge
+│       ├── ai.service.ts         # Logic kết nối Gemini & Tìm kiếm ảnh đa nguồn
+│       ├── schedule.service.ts   # Tạo và sửa đổi lịch đăng bài
+│       ├── post.service.ts       # Quản lý hàng đợi bài đăng
+│       ├── workflow.service.ts   # Workflow Engine điều hành các node chiến dịch
+│       ├── autoreels.service.ts  # Ghép nối API AutoReels, chuyển văn bản thành Reels
+│       ├── EventBusClient.ts     # Trình phát sự kiện lên Redis Streams
+│       ├── eventBusWorker.ts     # Redis Worker ngầm lắng nghe trạng thái kết quả dựng Reels
+│       ├── media.service.ts      # Xử lý tệp tin tải lên, mã hóa MD5 loại bỏ trùng lặp
+│       ├── email.service.ts      # Tạo và gửi mail qua SMTP
+│       ├── facebook.service.ts   # Kết nối trực tiếp Facebook Graph API đăng ảnh/video
+│       ├── oauth.service.ts      # Trao đổi mã xác thực lấy Access Token dài hạn
+│       └── cron.service.ts       # Lập lịch CronJob và đồng bộ trạng thái video hàng loạt
+├── src/                          # React Frontend Source Code
+│   ├── main.tsx                  # Điểm khởi tạo ứng dụng React
+│   ├── App.tsx                   # Thiết lập Layout, Định tuyến SPA, Sidebar & Header
+│   ├── index.css                 # File CSS chính định nghĩa Soft UI Design Tokens
+│   ├── LanguageContext.tsx       # Cấu hình đa ngôn ngữ (VI/EN Context)
+│   ├── translations.ts           # Kho từ điển dịch thuật
+│   ├── types.ts                  # Tập hợp định nghĩa TypeScript Interfaces
+│   ├── config.ts                 # Cài đặt cấu hình môi trường phía Client
 │   ├── api/
-│   │   └── index.ts              # ApiService — tầng giao tiếp Backend tập trung
-│   ├── components/
-│   │   ├── AIContentView.tsx     # Social Discover — sinh bài & tìm ảnh từ Internet
-│   │   ├── AICreativeStudio.tsx  # Editor chỉnh sửa bài viết cao cấp
-│   │   ├── AdminView.tsx         # Quản lý người dùng (admin only)
-│   │   ├── AuthView.tsx          # Đăng nhập / Đăng ký
-│   │   ├── AutomationSettings.tsx# Component cấu hình AI cho lịch trình
-│   │   ├── AutomationView.tsx    # Quản lý lịch đăng bài tự động
-│   │   ├── CampaignPlannerView.tsx # AI Campaign Architect
-│   │   ├── DashboardView.tsx     # Tổng quan số liệu
-│   │   ├── FanpageView.tsx       # Kết nối & quản lý Fanpage
-│   │   ├── HistoryView.tsx       # Lịch sử bài đăng
-│   │   ├── SettingsView.tsx      # Cài đặt tài khoản & Facebook App
-│   │   └── StatusBadge.tsx       # Badge hiển thị trạng thái
-│   ├── App.tsx                   # Root component, routing & auth state
-│   ├── LanguageContext.tsx       # i18n context (VI/EN)
-│   ├── config.ts                 # Cấu hình ứng dụng
-│   ├── translations.ts           # Nội dung đa ngôn ngữ
-│   └── types.ts                  # TypeScript interfaces chung
-├── .env.example                  # Mẫu biến môi trường
-├── docker-compose.yml            # Docker config (PostgreSQL)
-├── vite.config.ts                # Vite configuration
-└── package.json
+│   │   └── index.ts              # Lớp trung gian ApiService giao tiếp REST API tập trung
+│   ├── features/                 # Các module màn hình chức năng của hệ thống
+│   │   ├── admin/                # Quản trị tài khoản người dùng
+│   │   ├── ai-studio/            # Trình tạo bài viết thủ công & Theo dõi Video Queue
+│   │   ├── approvals/            # Duyệt bài trước khi đưa vào hàng đợi đăng tải
+│   │   ├── auth/                 # Đăng nhập, đổi mật khẩu bắt buộc, reset mật khẩu
+│   │   ├── automation/           # Đặt lịch tự động
+│   │   ├── dashboard/            # Bảng số liệu thống kê tổng hợp
+│   │   ├── fanpages/             # Quản lý kết nối các trang Facebook
+│   │   ├── history/              # Xem lịch sử đăng bài và log lỗi
+│   │   ├── planner/              # Kế hoạch chiến dịch
+│   │   ├── settings/             # Thiết lập tài khoản cá nhân & App Facebook Bridge
+│   │   ├── strategy/             # Visual Builder thiết kế kịch bản Node-Based
+│   │   └── studio/               # Studio lên kế hoạch nội dung hàng loạt
+│   └── components/               # Các UI Components dùng chung
+│       ├── ui/                   # Các thành phần giao diện cơ bản (Button, Input, Dialog...)
+│       ├── MediaLibraryModal.tsx # Giao diện Thư viện đa phương tiện dùng chung
+│       └── StatusBadge.tsx       # Nhãn hiển thị trạng thái tiêu chuẩn
+└── docker-compose.yml            # Docker Compose chạy PostgreSQL & Redis nhanh
 ```
 
 ---
 
-## ⚙️ Data Models (Prisma Schema)
+## ⚙️ Chi tiết mô hình dữ liệu (Prisma Schema)
 
-| Model           | Mô tả                                                                      |
-|-----------------|----------------------------------------------------------------------------|
-| `User`          | Tài khoản người dùng, phân quyền `user` / `admin`                         |
-| `FacebookApp`   | Facebook App (App ID + Secret) do người dùng đăng ký                      |
-| `Fanpage`       | Fanpage đã kết nối, lưu Access Token mã hóa và Page ID                    |
-| `Schedule`      | Lịch trình đăng bài tự động (topic, time, runCount, advancedPrompt, status)|
-| `Post`          | Bài viết (content, imageUrl, status, fbPostId, error log)                 |
-| `Topic`         | Chủ đề nội dung với từ khóa, dùng cho lập kế hoạch chiến dịch            |
+| Tên Model | Mô tả nghiệp vụ | Các trường dữ liệu chính |
+| :--- | :--- | :--- |
+| **`User`** | Lưu trữ thông tin tài khoản người dùng trong hệ thống. | `id`, `email`, `password`, `role`, `isActive`, `requirePasswordChange`, `resetToken` |
+| **`FacebookApp`** | Lưu thông tin ứng dụng Facebook (App ID + App Secret) làm cầu nối OAuth. | `id`, `appId`, `appSecret`, `name`, `userId` |
+| **`Fanpage`** | Lưu các Fanpage đã liên kết của người dùng, chứa token Facebook được mã hóa. | `id`, `pageId`, `name`, `accessToken` (Mã hóa), `status`, `userId`, `facebookAppId` |
+| **`Schedule`** | Cài đặt cấu hình lịch trình đăng bài tự động của người dùng cho từng trang. | `id`, `topic`, `time`, `advancedPrompt`, `runCount`, `status`, `fanpageId`, `workflowId` |
+| **`Post`** | Các bài viết được tạo ra, lưu trữ trạng thái, đường dẫn ảnh/video và ID bài đăng Facebook sau khi thành công. | `id`, `topic`, `content`, `imageUrl` (chứa URL ảnh hoặc đường dẫn video), `status`, `fbPostId`, `videoId`, `scheduleId` |
+| **`Topic`** | Lưu trữ chủ đề và các từ khóa liên quan phục vụ cho công tác gợi ý nội dung. | `id`, `name`, `keywords`, `userId` |
+| **`Workflow`** | Lưu trữ cấu trúc sơ đồ chiến dịch Node-Based kéo thả dưới dạng chuỗi JSON. | `id`, `name`, `description`, `nodesData` (JSON String), `edgesData` (JSON String), `userId` |
+| **`Media`** | Lưu trữ thư viện ảnh và video đã tải lên Cloudinary để tái sử dụng. | `id`, `name`, `url`, `hash` (MD5 độc bản), `size`, `type`, `userId` |
+| **`VideoQueue`** | Hàng đợi quản lý tiến trình render video của AutoReels. | `id`, `postId`, `videoId`, `status` (`processing` / `ready` / `error`) |
 
 ---
 
-## 🚀 Hướng dẫn cài đặt
+## 🚀 Hướng dẫn cài đặt & Triển khai
 
-### Yêu cầu
-- **Node.js** >= 18.x
-- Tài khoản **Google AI Studio** để lấy Gemini API Key
-- **Facebook Developer App** với quyền `pages_manage_posts`
-- **Docker** (để chạy PostgreSQL) hoặc chuỗi kết nối PostgreSQL sẵn có
-- **Cloudinary** (Tùy chọn) để lưu trữ ảnh bền vững
+### Điều kiện tiên quyết
+- **Node.js** phiên bản 18.x trở lên.
+- **Docker** và **Docker Compose** cài đặt sẵn trên máy.
+- Tài khoản **Google AI Studio** để lấy mã `GEMINI_API_KEY`.
+- Ứng dụng **Facebook Developer App** cấu hình quyền `pages_manage_posts`, `pages_read_engagement`, `pages_show_list`.
+- Tài khoản **Cloudinary** (để lưu trữ ảnh thư viện).
+- Khóa truy cập **Unsplash** và **Pexels** (nếu muốn tự động lấy ảnh chất lượng cao).
 
-### 1. Cài đặt dependencies
-
+### Bước 1: Tải dependencies
 ```bash
 npm install
 ```
 
-### 2. Cấu hình biến môi trường
-
-Tạo file `.env` từ mẫu:
-
+### Bước 2: Cài đặt biến môi trường
+Tạo tệp `.env` tại thư mục gốc dự án dựa trên tệp `.env.example`:
 ```bash
 cp .env.example .env
 ```
 
-Điền các giá trị vào `.env`:
-
+Điền đầy đủ thông tin chi tiết vào các biến sau:
 ```env
-# === BẮT BUỘC ===
-DATABASE_URL="postgresql://user:password@localhost:5433/fanpage_ai_manager"
-GEMINI_API_KEY="your_gemini_api_key"     # Chỉ dùng cho sinh văn bản
+# === DATABASE & APP CONFIG ===
+DATABASE_URL="postgresql://postgres:postgres@localhost:5433/fanpage_ai_manager?schema=public"
+PORT=3000
 APP_URL="http://localhost:3000"
+TIMEZONE="Asia/Ho_Chi_Minh"
 
-# === TÙY CHỌN (nhưng khuyến nghị) ===
-ADMIN_EMAIL="admin@yourdomain.com"
-ADMIN_PASSWORD="your_secure_password"
+# === REDIS & EVENT BUS ===
+REDIS_URL="redis://localhost:6379"
+EVENT_BUS_URL="http://localhost:4000"
 
-# Cloudinary (lưu trữ ảnh tìm được)
-CLOUDINARY_CLOUD_NAME=""
-CLOUDINARY_API_KEY=""
-CLOUDINARY_API_SECRET=""
+# === GOOGLE GEMINI AI ===
+GEMINI_API_KEY="your_gemini_api_key"
 
-# Stock Photo API Keys (MIỄN PHÍ — khuyến nghị để có ảnh chất lượng cao)
-# Đăng ký tại: https://unsplash.com/developers
-UNSPLASH_ACCESS_KEY=""
-# Đăng ký tại: https://www.pexels.com/api/
-PEXELS_API_KEY=""
+# === ROOT ADMIN SETUP ===
+ADMIN_EMAIL="admin@floral.com"
+ADMIN_PASSWORD="secure_admin_password"
+
+# === CLOUDINARY CDN CONFIG ===
+CLOUDINARY_CLOUD_NAME="your_cloud_name"
+CLOUDINARY_API_KEY="your_api_key"
+CLOUDINARY_API_SECRET="your_api_secret"
+
+# === STOCK PHOTO API KEYS ===
+UNSPLASH_ACCESS_KEY="your_unsplash_access_key"
+PEXELS_API_KEY="your_pexels_api_key"
+
+# === AUTOREELS VIDEO INTEGRATION ===
+AUTOREELS_URL="http://localhost:3003"
+AUTOREELS_TOKEN="your_autoreels_api_token"
+
+# === SMTP MAIL HOST (Nodemailer) ===
+SMTP_HOST="smtp.gmail.com"
+SMTP_PORT=587
+SMTP_SECURE="false"
+SMTP_USER="your_email@gmail.com"
+SMTP_PASS="your_app_password"
 ```
 
-### 3. Khởi động Database (Docker)
-
+### Bước 3: Khởi chạy PostgreSQL & Redis (Docker)
 ```bash
 docker-compose up -d
 ```
+Lệnh này sẽ khởi tạo cơ sở dữ liệu PostgreSQL chạy tại cổng `5433` và Redis chạy tại cổng `6379`.
 
-### 4. Khởi tạo database schema
-
+### Bước 4: Đồng bộ cấu trúc Database
 ```bash
 npx prisma db push
 npx prisma generate
 ```
 
-### 5. Chạy test suite
-
-```bash
-npm test
-```
-
-Đảm bảo tất cả test case đều pass trước khi chạy hoặc commit.
-
-### 6. Chạy ứng dụng (Development)
-
+### Bước 5: Khởi động hệ thống (Development Mode)
 ```bash
 npm run dev
 ```
+Ứng dụng khách (React SPA) và máy chủ (Express Server) sẽ cùng khởi động tại địa chỉ: `http://localhost:3000`. Hệ thống sẽ tự động tạo tài khoản Admin gốc dựa trên các biến `ADMIN_EMAIL` và `ADMIN_PASSWORD` trong file `.env` ở lần khởi chạy đầu tiên.
 
-Ứng dụng sẽ khởi động tại: `http://localhost:3000`
-
-### 7. Build production
-
+### Bước 6: Build & Chạy chế độ Production
 ```bash
 npm run build
 npm start
@@ -357,98 +375,94 @@ npm start
 
 ---
 
-## 🔐 Bảo mật
+## 🔐 Cơ chế bảo mật & Quy tắc nghiệp vụ
 
-- **JWT Authentication**: mọi API đều yêu cầu Bearer token, trừ `/api/auth/login` và `/api/auth/register`.
-- **Role-based Access Control**: endpoint `/api/admin/*` chỉ cho phép role `admin`.
-- **Server-side AI**: Gemini API Key chỉ được dùng phía server — không bao giờ expose ra client.
-- **Token Encryption**: Access Token Facebook được mã hóa bằng AES trước khi lưu DB.
-- **Token isolation**: token của mỗi user chỉ dùng được trong phạm vi tài khoản đó.
-- **Password hashing**: mật khẩu được hash bằng `bcryptjs` (salt rounds: 10).
-- **Mandatory Password Change**: Admin có thể yêu cầu người dùng đổi mật khẩu ngay lần đăng nhập tiếp theo.
-
----
-
-## 🌐 API Endpoints
-
-### Auth
-| Method | Endpoint                      | Mô tả                                  |
-|--------|-------------------------------|----------------------------------------|
-| POST   | `/api/auth/register`          | Đăng ký tài khoản mới                  |
-| POST   | `/api/auth/login`             | Đăng nhập, trả về JWT                  |
-| POST   | `/api/auth/setup-password`    | Đổi mật khẩu lần đầu (setup token)    |
-| GET    | `/api/auth/me`                | Lấy thông tin user hiện tại            |
-| GET    | `/api/auth/facebook/url`      | Lấy URL Facebook OAuth                 |
-
-### Fanpage
-| Method | Endpoint                      | Mô tả                                  |
-|--------|-------------------------------|----------------------------------------|
-| GET    | `/api/fanpages`               | Danh sách Fanpage đã kết nối           |
-| PATCH  | `/api/fanpages/:id/token`     | Cập nhật Access Token                  |
-| DELETE | `/api/fanpages/:id`           | Xóa kết nối Fanpage                    |
-| POST   | `/api/facebook/post`          | Đăng bài lên Fanpage ngay lập tức      |
-
-### AI
-| Method | Endpoint                      | Mô tả                                  |
-|--------|-------------------------------|----------------------------------------|
-| POST   | `/api/ai/generate-text`       | Sinh nội dung bài viết bằng Gemini     |
-| POST   | `/api/ai/generate-image`      | Tìm hình ảnh từ Internet (Unsplash → Pexels → LoremFlickr). Body: `{ topic, prompt?, keywords? }` |
-
-### Posts
-| Method | Endpoint                      | Mô tả                                  |
-|--------|-------------------------------|----------------------------------------|
-| GET    | `/api/posts`                  | Lịch sử bài đăng (kèm tên Fanpage)    |
-| PUT    | `/api/posts/:id`              | Chỉnh sửa bài đang queued             |
-| POST   | `/api/posts/queue`            | Thêm bài vào hàng đợi                 |
-| POST   | `/api/posts/reorder`          | Sắp xếp lại thứ tự hàng đợi          |
-
-### Schedules
-| Method | Endpoint                       | Mô tả                                  |
-|--------|--------------------------------|----------------------------------------|
-| GET    | `/api/schedules`               | Danh sách lịch trình                   |
-| POST   | `/api/schedules`               | Tạo lịch trình mới                     |
-| GET    | `/api/schedules/:id/posts`     | Bài trong hàng đợi của lịch trình      |
-| PATCH  | `/api/schedules/:id/status`    | Cập nhật trạng thái (active/suspended) |
-| DELETE | `/api/schedules/:id`           | Xóa lịch trình                         |
-
-### Topics & Facebook Apps
-| Method | Endpoint                      | Mô tả                                  |
-|--------|-------------------------------|----------------------------------------|
-| GET    | `/api/topics`                 | Danh sách chủ đề                       |
-| POST   | `/api/topics`                 | Tạo chủ đề mới                         |
-| DELETE | `/api/topics/:id`             | Xóa chủ đề                             |
-| GET    | `/api/facebook-apps`          | Danh sách Facebook App đã đăng ký     |
-| POST   | `/api/facebook-apps`          | Thêm Facebook App mới                  |
-| DELETE | `/api/facebook-apps/:id`      | Xóa Facebook App                       |
-
-### Admin
-| Method | Endpoint                            | Mô tả                                  |
-|--------|-------------------------------------|----------------------------------------|
-| GET    | `/api/admin/users`                  | Danh sách người dùng                   |
-| PUT    | `/api/admin/users/:id/status`       | Kích hoạt / vô hiệu hóa tài khoản     |
-| POST   | `/api/admin/users/:id/reset-password` | Reset mật khẩu tạm thời             |
-| POST   | `/api/admin/users/:id/revoke`       | Thu hồi quyền truy cập                 |
+1. **Token Encryption**: Token Fanpage liên kết với Graph API luôn được mã hóa đối xứng AES-256 thông qua một khóa kết hợp với Email riêng biệt của người dùng trước khi ghi xuống PostgreSQL.
+2. **Password Policy & Admin Actions**: 
+   - Mật khẩu được mã hóa băm Bcrypt 10 rounds.
+   - Khi Admin kích hoạt tùy chọn `requirePasswordChange` trên tài khoản, người dùng sẽ bị chặn ở mọi màn hình và buộc phải thực hiện cập nhật mật khẩu mới tại màn hình Force Password Change trước khi tiếp tục thao tác.
+   - Mã token khôi phục mật khẩu gửi qua email có thời hạn hết hiệu lực là 1 giờ.
+3. **Bandwidth Optimization**: File tải lên thư viện truyền thông bắt buộc đi qua hàm kiểm tra MD5 Hash. Nếu phát hiện tệp tin đã tồn tại trong thư viện của hệ thống, máy chủ sẽ lập tức hủy ghi file vật lý mới và trả về đường dẫn hiện hữu để giảm thiểu rác dữ liệu.
+4. **Fast-Follow Video Delivery**: Nếu một video render hoàn tất muộn hơn thời gian đăng bài định sẵn của Schedule (ví dụ: do hàng đợi render quá dài), worker sẽ kích hoạt tiến trình đăng bài ngay lập tức để giảm độ trễ kế hoạch.
 
 ---
 
-## 🧪 Testing
+## 🌐 Danh sách API Endpoints
 
-Dự án sử dụng hệ thống test tự viết nằm trong `backend/tests/`. Chạy toàn bộ test suite bằng:
+### 1. Xác thực tài khoản (Auth)
+| Method | Endpoint | Mô tả |
+| :--- | :--- | :--- |
+| `POST` | `/api/auth/register` | Đăng ký tài khoản người dùng mới. |
+| `POST` | `/api/auth/login` | Đăng nhập hệ thống, trả về Token JWT và thông tin người dùng. |
+| `POST` | `/api/auth/setup-password` | Đổi mật khẩu tài khoản lần đầu (sử dụng setup token). |
+| `GET` | `/api/auth/me` | Truy vấn thông tin người dùng đang đăng nhập dựa vào Token JWT. |
+| `GET` | `/api/auth/facebook/url` | Lấy URL đăng nhập OAuth Facebook được cấu hình qua App Bridge. |
 
+### 2. Quản lý Trang (Fanpage)
+| Method | Endpoint | Mô tả |
+| :--- | :--- | :--- |
+| `GET` | `/api/fanpages` | Danh sách các Fanpage Facebook đã kết nối thành công. |
+| `PATCH` | `/api/fanpages/:id/token` | Cập nhật Access Token thủ công cho Fanpage. |
+| `DELETE` | `/api/fanpages/:id` | Xóa kết nối Fanpage ra khỏi tài khoản hệ thống. |
+| `POST` | `/api/facebook/post` | Đăng bài viết (ảnh/nhiều ảnh/video) trực tiếp lên Fanpage ngay lập tức. |
+
+### 3. Trợ lý AI (AI Content Generator)
+| Method | Endpoint | Mô tả |
+| :--- | :--- | :--- |
+| `POST` | `/api/ai/generate-text` | Gửi prompt yêu cầu Gemini AI sinh nội dung bài viết. |
+| `POST` | `/api/ai/generate-image` | Tìm kiếm ảnh liên quan từ Internet (Unsplash -> Pexels -> LoremFlickr). |
+
+### 4. Quy trình Tự động hóa (Workflows)
+| Method | Endpoint | Mô tả |
+| :--- | :--- | :--- |
+| `GET` | `/api/workflows` | Lấy danh sách các Workflows của người dùng. |
+| `GET` | `/api/workflows/:id` | Xem chi tiết cấu trúc Node-Based của Workflow. |
+| `POST` | `/api/workflows` | Tạo mới hoặc cập nhật lưu trữ cấu trúc Workflow hiện có. |
+| `POST` | `/api/workflows/:id/execute` | Chạy trực tiếp Workflow Engine (hỗ trợ gom cụm batch video gửi AutoReels). |
+
+### 5. Hàng đợi & Lịch trình (Posts & Schedules)
+| Method | Endpoint | Mô tả |
+| :--- | :--- | :--- |
+| `GET` | `/api/schedules` | Danh sách lịch đăng bài tự động hiện có. |
+| `POST` | `/api/schedules` | Thiết lập lịch tự động mới cho Fanpage. |
+| `PATCH` | `/api/schedules/:id/status` | Tạm ngưng (`suspended`) hoặc kích hoạt lại (`active`) lịch đăng bài. |
+| `DELETE` | `/api/schedules/:id` | Xóa cấu hình lịch đăng bài. |
+| `GET` | `/api/posts` | Lịch sử đăng bài (bao gồm bài thành công, bài thất bại và bài đang đợi). |
+| `POST` | `/api/posts/queue` | Đẩy bài viết vào hàng đợi đăng tự động. |
+| `POST` | `/api/posts/reorder` | Cập nhật lại chỉ mục sắp xếp (`orderIndex`) của hàng đợi bài đăng. |
+| `PUT` | `/api/posts/:id` | Chỉnh sửa nội dung hoặc hình ảnh của bài viết đang ở hàng đợi. |
+
+### 6. Thư viện truyền thông (Media Library)
+| Method | Endpoint | Mô tả |
+| :--- | :--- | :--- |
+| `GET` | `/api/media-library` | Danh sách hình ảnh, video đã tải lên trong thư viện cá nhân. |
+| `POST` | `/api/media-library/upload` | Tải lên tệp đa phương tiện mới (Có MD5 Hash kiểm tra trùng lặp). |
+
+### 7. Quản trị hệ thống (Admin Control)
+| Method | Endpoint | Mô tả |
+| :--- | :--- | :--- |
+| `GET` | `/api/admin/users` | Lấy danh sách người dùng trong hệ thống (chỉ Admin). |
+| `PUT` | `/api/admin/users/:id/status` | Kích hoạt hoặc vô hiệu hóa tài khoản của người dùng. |
+| `POST` | `/api/admin/users/:id/reset-password` | Tạo mật khẩu tạm thời mới cho người dùng. |
+| `POST` | `/api/admin/users/:id/revoke` | Thu hồi toàn bộ quyền truy cập và token đăng nhập của tài khoản. |
+
+---
+
+## 🧪 Quy trình Kiểm thử & Phát triển
+
+Dự án tích hợp bộ kiểm thử đơn vị và tích hợp nằm trong thư mục `backend/tests/`.
+
+Chạy kiểm thử:
 ```bash
 npm test
 ```
 
-### Test coverage hiện tại
-
-| File                          | Nội dung kiểm thử                                            |
-|-------------------------------|--------------------------------------------------------------|
-| `ai-service.test.ts`          | Text generation, Image discovery (keywords ưu tiên, topic fallback), Cloudinary upload |
-
-> **Quy tắc**: Mọi thay đổi phải pass toàn bộ test case trước khi commit.
+### Nội dung kiểm thử chính:
+- **`ai-service.test.ts`**: Kiểm tra kết nối sinh văn bản với Gemini, luồng fallback tìm ảnh của Unsplash/Pexels và luồng tải lên Cloudinary.
+- **Nguyên tắc phát triển**: Mọi tính năng mới hoặc chỉnh sửa mã nguồn nghiệp vụ phải vượt qua toàn bộ các bài kiểm tra tự động trước khi thực hiện pull request hoặc đóng gói ứng dụng.
 
 ---
 
-## 📝 License
+## 📝 Bản quyền
 
-MIT License — dự án mã nguồn mở, tự do sử dụng và phát triển.
+Dự án phát triển dưới giấy phép **MIT License**. Bạn được toàn quyền sử dụng, sao chép, chỉnh sửa và phân phối sản phẩm này cho các mục đích thương mại và phi thương mại.

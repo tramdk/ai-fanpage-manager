@@ -34,7 +34,10 @@ app.use(helmet({
   crossOriginEmbedderPolicy: false
 }));
 
-app.use(cors());
+app.use(cors({
+  origin: true,
+  credentials: true
+}));
 
 const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
