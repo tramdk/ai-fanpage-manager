@@ -2,7 +2,24 @@ import Redis from 'ioredis';
 import { prisma } from '../config/prisma.js';
 import { decrypt } from '../utils/encryption.js';
 
-const redis = new Redis(process.env.REDIS_URL || 'redis://localhost:6379');
+const redisUrl = process.env.REDIS_URL || 'redis://localhost:6379';
+const redis = new Redis(redisUrl, {
+  maxRetriesPerRequest: null, // Required for blocking commands like XREADGROUP
+  retryStrategy(times) {
+    const delay = Math.min(times * 2000, 30000); // Max 30s between retries
+    console.log(`🔄 [EVENT BUS] Redis reconnecting in ${delay/1000}s (attempt ${times})...`);
+    return delay;
+  },
+  lazyConnect: true, // Don't connect until we call .connect()
+});
+
+redis.on('error', (err) => {
+  console.error(`⚠️ [EVENT BUS] Redis error: ${err.message}`);
+});
+
+redis.on('connect', () => {
+  console.log('✅ [EVENT BUS] Redis connected.');
+});
 
 const STREAM_NAME = 'reels_stream';
 const GROUP_NAME = 'manager_workers';
@@ -14,6 +31,14 @@ const CONSUMER_NAME = `manager_${Math.random().toString(36).substring(7)}`;
  */
 export async function startEventBusWorker() {
   console.log(`📡 [EVENT BUS] Manager Worker ${CONSUMER_NAME} starting...`);
+
+  // 0. Connect to Redis (with lazyConnect)
+  try {
+    await redis.connect();
+  } catch (err: any) {
+    console.error(`⚠️ [EVENT BUS] Initial Redis connect failed: ${err.message}. Worker will retry in background.`);
+    return; // Don't block server startup; ioredis retryStrategy handles reconnection
+  }
 
   // Helper to create group
   const createGroup = async () => {
