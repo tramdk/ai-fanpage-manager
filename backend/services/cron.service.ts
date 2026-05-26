@@ -230,7 +230,17 @@ export function scheduleJob(scheduleObj: any) {
 /**
  * Background worker to sync statuses of all pending videos using a dedicated queue
  */
+// Cooldown state: when Autoreels returns 429, skip polling until this time passes
+let _autoreelsCooldownUntil = 0;
+
 export async function syncVideoStatuses() {
+  // Check cooldown before doing anything
+  if (Date.now() < _autoreelsCooldownUntil) {
+    const remaining = Math.round((_autoreelsCooldownUntil - Date.now()) / 1000);
+    console.log(`[CRON-SYNC] Autoreels rate-limited. Skipping sync (${remaining}s remaining).`);
+    return;
+  }
+
   console.log('[CRON-SYNC] Checking VideoQueue for pending renders...');
   try {
     // 0. Auto-cleanup for stuck videos (stale for > 2 hours)
@@ -258,6 +268,13 @@ export async function syncVideoStatuses() {
     const autoreelsService = await import('./autoreels.service.js');
     const statuses = await autoreelsService.getVideoStatusBatch(videoIds);
     
+    // Handle rate-limit signal from the API layer
+    if (statuses === '__RATE_LIMITED__') {
+      _autoreelsCooldownUntil = Date.now() + 15 * 60 * 1000; // 15 minute cooldown
+      console.warn('[CRON-SYNC] Autoreels rate-limited. Entering 15-minute cooldown.');
+      return;
+    }
+
     if (!Array.isArray(statuses)) {
       console.error('[CRON-SYNC] Statuses response is not an array:', statuses);
       return;
@@ -345,13 +362,13 @@ export async function syncVideoStatuses() {
     }
 
 
-    // Fast-follow: if any items were processed, check again soon
+    // Fast-follow: if any items were processed, check again soon (but not too aggressively)
     if (statuses.length > 0) {
       const anyFinished = statuses.some(v => v.status === 'ready' || v.status === 'completed' || v.videoUrl || v.status === 'not_found' || v.status === 'error');
       if (anyFinished) {
         setTimeout(() => {
           syncVideoStatuses().catch(() => { });
-        }, 10000); // 10 seconds fast-follow
+        }, 30000); // 30 seconds fast-follow (was 10s)
       }
     }
   } catch (err) {

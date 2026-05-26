@@ -236,6 +236,10 @@ export async function getVideoStatus(videoId: string) {
     
     if (!res.ok) {
       const errText = await res.text().catch(() => '');
+      if (res.status === 429) {
+        console.warn('[AUTOREELS] Rate limited (429). Backing off.');
+        return { status: 'rate_limited', error: 'Too many requests' };
+      }
       throw new Error(`Failed to fetch video status: ${res.status}. ${errText.substring(0, 100)}`);
     }
 
@@ -262,6 +266,10 @@ export async function getVideoStatusBatch(videoIds: string[]) {
     });
 
     if (!res.ok) {
+      if (res.status === 429) {
+        console.warn('[AUTOREELS] Bulk status rate limited (429). Will retry later.');
+        return '__RATE_LIMITED__' as any;
+      }
       const errText = await res.text().catch(() => '');
       console.error(`[AUTOREELS] Bulk status API error: ${res.status}. ${errText.substring(0, 200)}`);
       return [];
