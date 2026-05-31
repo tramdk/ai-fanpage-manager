@@ -423,33 +423,91 @@ export const AIContentView = memo(({ fanpages, api }: { fanpages: Fanpage[], api
             )}
 
             <div className="space-y-12 relative z-10">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-10 items-end">
                 <div className="space-y-4">
                   <label className="text-[10px] font-bold text-[#6B7280] dark:text-gray-400 uppercase tracking-[0.2em] ml-4 flex items-center gap-2">
                     <Target size={12} className="text-[#2563EB] dark:text-blue-400" />
                     {t('topicsKeywords')}
                   </label>
                   <div className="relative group">
-                  <Select value={selectedTopic} onValueChange={setSelectedTopic}>
-                    <SelectTrigger className="flex h-12 w-full rounded-lg border border-black/10 dark:border-white/10 bg-slate-200/50 dark:bg-slate-950/40 px-6 py-3 text-sm font-bold text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all justify-between [&>span]:line-clamp-1">
-                      <SelectValue placeholder={`-- ${t('selectProtocol')} --`} />
-                    </SelectTrigger>
-                    <SelectContent className="bg-slate-900 border border-white/10 rounded-lg text-white">
-                      {topics.map(t => (
-                        <SelectItem key={t.id} value={t.id} className="text-white hover:bg-slate-800 focus:bg-slate-800 rounded-xl cursor-pointer">
-                          {t.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                    <Select value={selectedTopic} onValueChange={setSelectedTopic}>
+                      <SelectTrigger className="flex h-12 w-full rounded-lg border border-black/10 dark:border-white/10 bg-slate-200/50 dark:bg-slate-950/40 px-6 py-3 text-sm font-bold text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all justify-between [&>span]:line-clamp-1">
+                        <SelectValue placeholder={`-- ${t('selectProtocol')} --`} />
+                      </SelectTrigger>
+                      <SelectContent className="bg-slate-900 border border-white/10 rounded-lg text-white">
+                        {topics.map(t => (
+                          <SelectItem key={t.id} value={t.id} className="text-white hover:bg-slate-800 focus:bg-slate-800 rounded-xl cursor-pointer">
+                            {t.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
                 </div>
-                <AutomationSettings
-                  config={automationConfig}
-                  onChange={setAutomationConfig}
-                  show={showAdvanced}
-                  onToggle={() => setShowAdvanced(prev => !prev)}
-                />
+
+                <div className="space-y-4">
+                  <label className="text-[10px] font-bold text-[#6B7280] dark:text-gray-400 uppercase tracking-[0.3em] ml-4">Automation Layer</label>
+                  <button 
+                    onClick={() => setShowAdvanced(prev => !prev)} 
+                    className={`w-full h-12 border border-[#D1D5DB] dark:border-white/12 rounded-lg px-8 py-3 flex items-center justify-between font-bold text-[10px] uppercase transition-all bg-slate-200/50 dark:bg-slate-950/40 text-slate-900 dark:text-white ${showAdvanced ? 'text-[#2563EB] dark:text-blue-400 border-[#2563EB] dark:border-blue-400 bg-slate-300/30 dark:bg-slate-900/60' : 'hover:text-[#2563EB] dark:hover:text-blue-400'}`}
+                  >
+                    <div className="flex items-center gap-4">
+                      <Sparkles size={20} className={showAdvanced ? 'text-[#2563EB] dark:text-blue-400 animate-pulse' : 'text-[#6B7280] dark:text-gray-400'} /> 
+                      {showAdvanced ? t('cancelProtocol') : t('configureAutomation')}
+                    </div>
+                    {showAdvanced ? <X size={20} /> : <Plus size={20} />}
+                  </button>
+                </div>
+
+                {showAdvanced && (
+                  <div className="md:col-span-2 animate-in slide-in-from-top-4 duration-500">
+                    <div className="bg-[#F3F4F6] dark:bg-white/8 border border-[#D1D5DB] dark:border-white/12 rounded-lg p-8 sm:p-12 space-y-10 rounded-xl">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+                        {/* Tone */}
+                        <div className="space-y-4">
+                          <label className="text-[10px] font-bold text-[#6B7280] dark:text-gray-400 uppercase tracking-[0.2em] block ml-4">Neural Tone / Ngữ điệu</label>
+                          <Select value={automationConfig.tone} onValueChange={(val) => setAutomationConfig({ ...automationConfig, tone: val })}>
+                            <SelectTrigger className="flex h-12 w-full rounded-lg border border-black/10 dark:border-white/10 bg-slate-200/50 dark:bg-slate-950/40 px-6 py-3 text-sm font-bold text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all justify-between [&>span]:line-clamp-1">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent className="bg-slate-900 border border-white/10 rounded-lg text-white">
+                              <SelectItem value="professional and elegant" className="text-white hover:bg-slate-800 focus:bg-slate-800 rounded-xl cursor-pointer">Professional & Elegant</SelectItem>
+                              <SelectItem value="fun and energetic" className="text-white hover:bg-slate-800 focus:bg-slate-800 rounded-xl cursor-pointer">Fun & Energetic</SelectItem>
+                              <SelectItem value="storytelling" className="text-white hover:bg-slate-800 focus:bg-slate-800 rounded-xl cursor-pointer">Storytelling</SelectItem>
+                              <SelectItem value="direct and promotional" className="text-white hover:bg-slate-800 focus:bg-slate-800 rounded-xl cursor-pointer">Direct & Promotional</SelectItem>
+                              <SelectItem value="urgent and compelling" className="text-white hover:bg-slate-800 focus:bg-slate-800 rounded-xl cursor-pointer">Urgent & Compelling</SelectItem>
+                              <SelectItem value="empathetic" className="text-white hover:bg-slate-800 focus:bg-slate-800 rounded-xl cursor-pointer">Empathetic / Sâu lắng</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        
+                        {/* Keywords */}
+                        <div className="space-y-4">
+                          <label className="text-[10px] font-bold text-[#6B7280] dark:text-gray-400 uppercase tracking-[0.2em] block ml-4">Neural Keywords / Từ khóa</label>
+                          <Input 
+                            type="text"
+                            placeholder="e.g. sale, premium, summer..."
+                            className="flex h-12 w-full rounded-lg border border-black/10 dark:border-white/10 bg-slate-200/50 dark:bg-slate-950/40 px-6 py-3 text-sm font-bold text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:border-indigo-500 disabled:cursor-not-allowed disabled:opacity-50 transition-all" 
+                            value={automationConfig.keywords} 
+                            onChange={e => setAutomationConfig({ ...automationConfig, keywords: e.target.value })}
+                          />
+                        </div>
+                      </div>
+
+                      {/* Instructions */}
+                      <div className="space-y-4">
+                        <label className="text-[10px] font-bold text-[#6B7280] dark:text-gray-400 uppercase tracking-[0.2em] block ml-4">Strategic Instructions / Chỉ dẫn phụ</label>
+                        <Textarea 
+                          className="w-full min-h-[140px] p-4 font-bold text-sm resize-none custom-scrollbar rounded-lg border border-black/10 dark:border-white/10 bg-slate-200/50 dark:bg-slate-950/40 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:border-indigo-500 transition-all" 
+                          rows={3}
+                          placeholder="e.g. Hãy thêm call to action (kêu gọi hành động) ở cuối bài, sử dụng nhiều emoji..."
+                          value={automationConfig.instructions} 
+                          onChange={e => setAutomationConfig({ ...automationConfig, instructions: e.target.value })}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div className="flex justify-center pt-6">
