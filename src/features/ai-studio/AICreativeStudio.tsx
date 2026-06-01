@@ -157,18 +157,17 @@ export const AICreativeStudio: React.FC<AICreativeStudioProps> = memo(({ post, a
     }
   }, [post.id, api, content, media]);
 
-  const handlePublishVideo = async () => {
+  const handlePublishVideo = async (targetFanpageId?: string) => {
     if (!videoResult?.url) return;
+    const fId = targetFanpageId || post.schedule?.fanpageId || post.fanpageId;
+    if (!fId) {
+      toast.error('Please select a target Fanpage first.');
+      return;
+    }
     setIsPublishingVideo(true);
     const tid = toast.loading('Publishing video to Fanpage...');
     try {
-      // For standalone studio, we need a fanpage context if available, 
-      // but if not specified, we can't publish directly easily.
-      // However, AICreativeStudio usually has a post context which has a schedule -> fanpage
-      const fanpageId = post.schedule?.fanpageId;
-      if (!fanpageId) throw new Error('No target fanpage linked to this content.');
-
-      await api.ai.publishVideo(fanpageId, videoResult.url, content);
+      await api.ai.publishVideo(fId, videoResult.url, content);
       toast.success('Video published successfully!', { id: tid });
       setShowPlayer(false);
     } catch (err: any) {
@@ -180,13 +179,13 @@ export const AICreativeStudio: React.FC<AICreativeStudioProps> = memo(({ post, a
 
   return (
     <Dialog open={true} onOpenChange={(open) => { if (!open) onClose(); }}>
-      <DialogContent className="max-w-4xl sm:max-w-4xl p-0 overflow-hidden border-0 bg-transparent shadow-none" showCloseButton={false}>
+      <DialogContent className="max-w-4xl md:max-w-5xl xl:max-w-6xl p-0 overflow-hidden border-0 bg-transparent shadow-none ring-0 rounded-[2.5rem]" showCloseButton={false}>
         <DialogHeader className="sr-only">
           <DialogTitle>{title}</DialogTitle>
           <DialogDescription>AI content customization and neural synthesis studio</DialogDescription>
         </DialogHeader>
 
-        <div className="bg-card-bg border border-card-border rounded-lg shadow-3xl w-full max-h-[90vh] flex flex-col overflow-hidden relative">
+        <div className="bg-card-bg border border-card-border rounded-[2.5rem] shadow-3xl w-full max-h-[90vh] flex flex-col overflow-hidden relative">
           <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/5 blur-[100px] -mr-32 -mt-32"></div>
 
         {/* Header */}
@@ -363,6 +362,7 @@ export const AICreativeStudio: React.FC<AICreativeStudioProps> = memo(({ post, a
             onClose={() => setShowPlayer(false)}
             onPublish={handlePublishVideo}
             isPublishing={isPublishingVideo}
+            api={api}
           />
         )}
       </AnimatePresence>

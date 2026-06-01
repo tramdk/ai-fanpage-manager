@@ -1,9 +1,9 @@
 import React, { useState, useCallback, useEffect, useTransition, useMemo } from 'react';
 import {
-  LayoutDashboard, Facebook, Settings, Bell, Search, Menu,
-  Activity, History, User as UserIcon, Clock, Bot, LogOut,
+  LayoutDashboard, Facebook, Settings, Search, Menu,
+  History, User as UserIcon, Clock, Bot, LogOut,
   Plus, X, Sparkles, Loader2, Workflow, Sun, Moon, CheckCircle2, ListChecks,
-  ChevronDown, HelpCircle
+  ChevronDown, HelpCircle, Laptop
 } from 'lucide-react';
 import { Routes, Route, useNavigate, useLocation, Navigate } from 'react-router-dom';
 import { useLanguage } from './LanguageContext';
@@ -102,7 +102,6 @@ export default function App() {
       const userData = await api.users.getMe();
       setUser(userData);
       
-      // Parallelize subsequent bootstrap fetches
       const [fanpagesData, fbAppsData] = await Promise.all([
         api.fanpages.list(),
         api.fbApps.list()
@@ -139,21 +138,19 @@ export default function App() {
   useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
       console.log('[App.tsx] Received postMessage:', event.data);
-      // Validate origin if needed, but for now we accept from our own popup
       if (event.data?.type === 'FACEBOOK_AUTH_SUCCESS') {
         console.log('🚀 Facebook Connection Success Message Received:', event.data.payload);
         toast.success(t('connectSuccess') || 'Kết nối Fanpage thành công!');
-        fetchData(); // Automatically refresh fanpages list
+        fetchData(); 
       } else if (event.data?.type === 'FACEBOOK_AUTH_ERROR') {
         console.error('❌ Facebook Connection Error Message Received:', event.data.error);
-        toast.error('Facebook Error: ' + event.data.error);
+        toast.error('Facebook Connection Error: ' + event.data.error);
       }
     };
     
-    // Fallback check for redirect-based success
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.get('auth_success') === 'true') {
-      toast.success('Authentication completed via redirect.');
+      toast.success('Authentication completed successfully.');
       fetchData();
       window.history.replaceState({}, document.title, window.location.pathname);
     }
@@ -164,7 +161,6 @@ export default function App() {
 
   const handleConnectFacebook = useCallback(async (fbAppRecordId?: string) => {
     try {
-      // [REDIRECT-TO-SETTINGS] If no apps configured, go to settings instead of modal
       if (fbApps.length === 0) {
         navigate('/settings');
         return;
@@ -229,9 +225,9 @@ export default function App() {
 
   if (loadingAuth) {
     return (
-      <div className="min-h-screen bg-app-bg flex flex-col items-center justify-center space-y-4">
-        <Loader2 className="w-10 h-10 text-indigo-500 animate-spin" />
-        <p className="text-[10px] font-bold text-[#6B7280] dark:text-gray-400 uppercase tracking-widest">Checking Authorization...</p>
+      <div className="min-h-[100dvh] bg-[#f9fafb] dark:bg-[#09090b] flex flex-col items-center justify-center space-y-4">
+        <Loader2 className="w-8 h-8 text-blue-500 animate-spin" />
+        <p className="text-[10px] font-mono font-extrabold text-zinc-400 uppercase tracking-widest">Checking Authorization...</p>
       </div>
     );
   }
@@ -242,7 +238,7 @@ export default function App() {
     return (
       <>
         <Toaster position="top-right" expand={true} richColors theme={theme === 'dark' ? 'dark' : 'light'} />
-        <React.Suspense fallback={<div className="min-h-screen bg-app-bg flex items-center justify-center"><Loader2 className="w-10 h-10 text-indigo-500 animate-spin" /></div>}>
+        <React.Suspense fallback={<div className="min-h-[100dvh] bg-[#f9fafb] dark:bg-[#09090b] flex items-center justify-center"><Loader2 className="w-8 h-8 text-blue-500 animate-spin" /></div>}>
           <Routes>
             <Route path="/reset-password" element={<ResetPasswordView api={api} onSuccess={() => navigate('/')} />} />
             <Route path="*" element={<AuthView onLogin={handleLogin} />} />
@@ -262,53 +258,53 @@ export default function App() {
   }
 
   return (
-    <div className="h-screen overflow-hidden bg-app-bg flex font-sans selection:bg-blue-500/10 p-0 gap-0 relative transition-colors duration-300">
+    <div className="h-screen overflow-hidden bg-[#f9fafb] dark:bg-[#09090b] flex font-sans selection:bg-blue-500/10 p-0 gap-0 relative transition-colors duration-300">
       <Toaster position="top-right" expand={true} richColors theme={theme === 'dark' ? 'dark' : 'light'} />
       
       {/* Mobile Sidebar Overlay */}
       {isMobileMenuOpen && (
         <div 
-          className="fixed inset-0 bg-black/30 z-[90] lg:hidden animate-in fade-in duration-200"
+          className="fixed inset-0 bg-zinc-950/40 backdrop-blur-sm z-[90] lg:hidden animate-in fade-in duration-200"
           onClick={() => setIsMobileMenuOpen(false)}
         />
       )}
 
-      {/* Sidebar — Clean Minimal Flat */}
+      {/* Sidebar — Premium Sleek Left Navigation */}
       <aside 
         className={`
         h-full transition-all duration-300 z-[100] flex flex-col overflow-hidden shrink-0
-        border-r border-[#D1D5DB] dark:border-white/12 bg-white dark:bg-[#111318] py-5 px-4
+        border-r border-zinc-200/60 dark:border-zinc-800/60 bg-white dark:bg-[#09090b] py-6 px-4
         ${isMobileMenuOpen 
-          ? 'fixed top-0 left-0 bottom-0 shadow-lg translate-x-0 w-[220px] flex' 
-          : 'fixed -translate-x-full lg:relative lg:translate-x-0 w-0 lg:w-[220px] lg:flex invisible lg:visible opacity-0 lg:opacity-100'}
+          ? 'fixed top-0 left-0 bottom-0 shadow-2xl translate-x-0 w-[240px] flex' 
+          : 'fixed -translate-x-full lg:relative lg:translate-x-0 w-0 lg:w-[240px] lg:flex invisible lg:visible opacity-0 lg:opacity-100'}
       `}>
         
-        {/* User Profile — Clean Flat */}
-        <div className="flex items-center justify-between mb-6 py-2 hover:bg-gray-50 dark:hover:bg-white/5 rounded-lg transition-colors cursor-pointer group">
+        {/* User Profile Card */}
+        <div className="flex items-center justify-between mb-8 p-3 rounded-2xl border border-zinc-100 dark:border-zinc-900 bg-zinc-50/50 dark:bg-zinc-950/20 hover:scale-[1.01] transition-all cursor-pointer group">
           <div className="flex items-center min-w-0 gap-3">
             <img
-              src={`https://ui-avatars.com/api/?name=${encodeURIComponent(user?.name || 'U')}&background=2563EB&color=fff&size=36&bold=true&font-size=0.4`}
-              alt="avatar"
-              className="w-9 h-9 rounded-full shrink-0"
+              src={`https://ui-avatars.com/api/?name=${encodeURIComponent(user?.name || 'U')}&background=3b82f6&color=fff&size=36&bold=true&font-size=0.4`}
+              alt="user avatar"
+              className="w-9 h-9 rounded-xl shrink-0"
             />
             <div className="flex-1 min-w-0">
-              <h2 className="text-[14px] font-semibold text-[#111827] dark:text-gray-100 truncate leading-tight">{user?.name || 'User'}</h2>
-              <p className="text-[12px] text-[#6B7280] dark:text-gray-400 truncate">{user?.email || 'admin@floral.com'}</p>
+              <h2 className="text-xs font-bold text-zinc-900 dark:text-zinc-50 truncate leading-tight">{user?.name || 'User'}</h2>
+              <p className="text-[10px] text-zinc-400 truncate mt-0.5">{user?.email || 'admin@floral.com'}</p>
             </div>
           </div>
-          <ChevronDown size={14} className="text-[#6B7280] dark:text-gray-400 shrink-0 group-hover:text-[#2563EB] transition-colors" />
+          <ChevronDown size={12} className="text-zinc-400 shrink-0 group-hover:text-blue-500 transition-colors" />
         </div>
 
-        {/* Navigation — Grouped by section labels */}
-        <div className="flex-1 space-y-5 overflow-y-auto custom-scrollbar">
+        {/* Navigation — Grouped by Monospace Section Labels */}
+        <div className="flex-1 space-y-6 overflow-y-auto custom-scrollbar pr-1">
           {navSections.map((section) => {
             if (section.items.length === 0) return null;
             return (
-              <div key={section.title} className="space-y-0.5">
-                <h3 className="text-[11px] font-bold tracking-[1.5px] text-[#6B7280] dark:text-gray-400 uppercase px-3 mb-2">
+              <div key={section.title} className="space-y-1">
+                <h3 className="text-[9px] font-mono font-extrabold tracking-[2px] text-zinc-400 px-3 mb-2">
                   {section.title}
                 </h3>
-                <nav className="space-y-0.5">
+                <nav className="space-y-1">
                   {section.items.map((item) => {
                     const Icon = item.icon;
                     const isActive = activeTab === item.id;
@@ -319,16 +315,16 @@ export default function App() {
                           handleTabChange(item.id);
                           setIsMobileMenuOpen(false);
                         }}
-                        className={`w-full flex items-center transition-colors duration-200 group relative px-3 py-2.5 rounded-lg space-x-3
+                        className={`w-full flex items-center transition-all duration-200 group relative px-3 py-2.5 rounded-xl space-x-3 active:scale-[0.98]
                           ${isActive
-                            ? 'bg-[#F3F4F6] dark:bg-white/8 text-[#111827] dark:text-white font-semibold'
-                            : 'text-[#6B7280] dark:text-gray-400 hover:text-[#111827] dark:hover:text-gray-200 hover:bg-[#F9FAFB] dark:hover:bg-white/5 font-medium'}
+                            ? 'bg-blue-500/10 text-blue-600 dark:text-blue-400 font-extrabold border border-blue-500/10'
+                            : 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-100/50 dark:hover:bg-zinc-900/40 font-semibold'}
                         `}
                       >
                         <div className="flex-shrink-0">
-                          <Icon size={18} strokeWidth={isActive ? 2 : 1.5} className={isActive ? 'text-[#111827] dark:text-white' : ''} />
+                          <Icon size={16} strokeWidth={isActive ? 2.5 : 1.8} className={isActive ? 'text-blue-600 dark:text-blue-400' : 'text-zinc-400 group-hover:text-zinc-600 dark:group-hover:text-zinc-200 transition-colors'} />
                         </div>
-                        <span className="text-[14px] truncate">{item.label}</span>
+                        <span className="text-xs truncate">{item.label}</span>
                       </button>
                     );
                   })}
@@ -338,76 +334,78 @@ export default function App() {
           })}
         </div>
 
-        {/* Bottom Actions — Clean Flat */}
-        <div className="mt-auto pt-4 border-t border-[#D1D5DB] dark:border-white/12 space-y-0.5 shrink-0">
-          {/* Settings */}
+        {/* Bottom Actions */}
+        <div className="mt-auto pt-6 border-t border-zinc-100 dark:border-zinc-900 space-y-1 shrink-0">
           <button
             onClick={() => {
               navigate('/settings');
               setIsMobileMenuOpen(false);
             }}
-            className={`w-full flex items-center transition-colors duration-200 px-3 py-2.5 rounded-lg space-x-3
+            className={`w-full flex items-center transition-all duration-200 px-3 py-2.5 rounded-xl space-x-3 active:scale-[0.98]
               ${activeTab === 'settings'
-                ? 'bg-[#F3F4F6] dark:bg-white/8 text-[#111827] dark:text-white font-semibold'
-                : 'text-[#6B7280] dark:text-gray-400 hover:text-[#111827] dark:hover:text-gray-200 hover:bg-[#F9FAFB] dark:hover:bg-white/5 font-medium'}
+                ? 'bg-blue-500/10 text-blue-600 dark:text-blue-400 font-extrabold border border-blue-500/10'
+                : 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-100/50 dark:hover:bg-zinc-900/40 font-semibold'}
             `}
           >
-            <Settings size={18} strokeWidth={activeTab === 'settings' ? 2 : 1.5} />
-            <span className="text-[14px]">{t('settings')}</span>
+            <Settings size={16} strokeWidth={activeTab === 'settings' ? 2.5 : 1.8} className="text-zinc-400" />
+            <span className="text-xs">{t('settings')}</span>
           </button>
 
-          {/* Help Center style link */}
-          <div className="flex items-center px-3 py-2.5 rounded-lg space-x-3 text-[#6B7280] dark:text-gray-400 hover:text-[#111827] dark:hover:text-gray-200 hover:bg-[#F9FAFB] dark:hover:bg-white/5 transition-colors cursor-pointer font-medium">
-            <HelpCircle size={18} strokeWidth={1.5} />
-            <span className="text-[14px]">Help Center</span>
+          <div className="flex items-center px-3 py-2.5 rounded-xl space-x-3 text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-100/50 dark:hover:bg-zinc-900/40 transition-all cursor-pointer font-semibold active:scale-[0.98]">
+            <HelpCircle size={16} strokeWidth={1.8} className="text-zinc-400" />
+            <span className="text-xs">Help Center</span>
           </div>
         </div>
       </aside>
 
-      {/* Main Content Area */}
+      {/* Main Content Viewport */}
       <div className="flex-1 flex flex-col min-w-0 h-screen overflow-hidden">
-        <header className="h-16 flex items-center justify-between px-6 shrink-0 bg-white dark:bg-[#111318] border-b border-[#D1D5DB] dark:border-white/12">
-          <div className="flex items-center gap-3 sm:gap-6 flex-1 min-w-0">
+        
+        {/* Sleek App Header */}
+        <header className="h-16 flex items-center justify-between px-6 shrink-0 bg-white dark:bg-[#09090b] border-b border-zinc-200/60 dark:border-zinc-800/60">
+          <div className="flex items-center gap-4 flex-1 min-w-0">
             <button 
               onClick={() => setIsMobileMenuOpen(true)}
-              className="lg:hidden w-9 h-9 border border-[#D1D5DB] dark:border-white/12 rounded-lg flex items-center justify-center text-[#6B7280] hover:text-[#111827] hover:bg-[#F3F4F6] dark:hover:bg-white/5 transition-colors shrink-0"
+              className="lg:hidden w-10 h-10 border border-zinc-200 dark:border-zinc-800 rounded-xl flex items-center justify-center text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100 dark:hover:bg-zinc-900 transition-all shrink-0 active:scale-95"
             >
-               <Menu size={18} />
+               <Menu size={16} />
             </button>
-            <div className="relative w-full max-w-sm sm:max-w-lg">
-              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#6B7280] dark:text-gray-400 w-4 h-4" />
+            <div className="relative w-full max-w-sm sm:max-w-md">
+              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-400 w-4 h-4" />
               <Input
                 type="text"
                 placeholder={t('searching')}
-                className="flex h-10 w-full rounded-lg border border-[#D1D5DB] dark:border-white/12 bg-white dark:bg-white/8 pl-10 py-2 text-[14px] font-normal text-[#111827] dark:text-gray-100 placeholder:text-[#6B7280] dark:placeholder:text-gray-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/20 focus-visible:border-blue-500/50 transition-colors"
+                className="flex h-10 w-full rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/30 pl-10 pr-4 text-xs font-semibold text-zinc-900 dark:text-zinc-50 placeholder:text-zinc-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/20 transition-all"
               />
             </div>
           </div>
 
-          <div className="flex items-center gap-2 ml-4 shrink-0">
+          {/* Quick Config widgets */}
+          <div className="flex items-center gap-2.5 ml-4 shrink-0">
             <button 
               onClick={() => setLanguage(language === 'en' ? 'vi' : 'en')}
-              className="h-9 px-3 border border-[#D1D5DB] dark:border-white/12 rounded-lg flex items-center justify-center text-[12px] font-semibold text-[#6B7280] dark:text-gray-400 hover:text-[#111827] hover:bg-[#F3F4F6] dark:hover:bg-white/5 transition-colors gap-1.5"
+              className="h-9 px-3.5 border border-zinc-200 dark:border-zinc-800 rounded-xl flex items-center justify-center text-[10px] font-extrabold text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-50 hover:bg-zinc-100 dark:hover:bg-zinc-900 transition-all gap-1.5 active:scale-95"
             >
-              {language === 'en' ? '🇺🇸 EN' : '🇻🇳 VI'}
+              <span>{language === 'en' ? 'EN' : 'VI'}</span>
             </button>
             <button
               onClick={toggleTheme}
-              className="w-9 h-9 border border-[#D1D5DB] dark:border-white/12 rounded-lg flex items-center justify-center text-[#6B7280] hover:text-[#111827] hover:bg-[#F3F4F6] dark:hover:bg-white/5 transition-colors"
+              className="w-9 h-9 border border-zinc-200 dark:border-zinc-800 rounded-xl flex items-center justify-center text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-50 hover:bg-zinc-100 dark:hover:bg-zinc-900 transition-all active:scale-95"
             >
-              {theme === 'light' ? <Moon size={16} /> : <Sun size={16} />}
+              {theme === 'light' ? <Moon size={15} /> : <Sun size={15} />}
             </button>
             <button
               onClick={handleLogout}
-              className="w-9 h-9 border border-[#D1D5DB] dark:border-white/12 rounded-lg flex items-center justify-center text-[#6B7280] hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/20 transition-colors"
+              className="w-9 h-9 border border-zinc-200 dark:border-zinc-800 rounded-xl flex items-center justify-center text-zinc-400 hover:text-red-500 hover:bg-red-500/10 dark:hover:bg-red-500/5 transition-all active:scale-95"
               title={t('logout') || 'Đăng xuất'}
             >
-              <LogOut size={16} />
+              <LogOut size={15} />
             </button>
           </div>
         </header>
 
-        <div className={`flex-1 transition-opacity duration-300 overflow-y-auto custom-scrollbar p-6 ${isPending ? 'opacity-50' : 'opacity-100'}`}>
+        {/* Dynamic Route Container */}
+        <div className={`flex-1 transition-opacity duration-300 overflow-y-auto custom-scrollbar p-6 sm:p-8 ${isPending ? 'opacity-50' : 'opacity-100'}`}>
           <AppRoutes
             api={api}
             fanpages={fanpages}
@@ -421,36 +419,36 @@ export default function App() {
         </div>
       </div>
 
-      {/* Modals - Adapted for Neumorphism */}
+      {/* App Connection Picker Dialog */}
       <Dialog open={showAppPicker} onOpenChange={setShowAppPicker}>
-         <DialogContent className="max-w-md sm:max-w-md p-0 overflow-hidden border-0 bg-transparent shadow-none" showCloseButton={false}>
+         <DialogContent className="max-w-md p-0 overflow-hidden border-0 bg-transparent shadow-none" showCloseButton={false}>
             <DialogHeader className="sr-only">
                <DialogTitle>{t('connectNewPage')}</DialogTitle>
                <DialogDescription>{t('chooseAppBridge')}</DialogDescription>
             </DialogHeader>
-            <div className="nm-flat p-12 w-full animate-in zoom-in-95 duration-300 relative rounded-xl">
-               <Button onClick={() => setShowAppPicker(false)} variant="ghost" size="icon" className="absolute top-8 right-8 size-12 border border-[#D1D5DB] dark:border-white/12 rounded-lg flex items-center justify-center text-[#6B7280] dark:text-gray-400 hover:text-soft-pink transition-colors rounded-xl p-0 hover:bg-transparent">
-                  <X className="size-6" />
+            <div className="relative w-full rounded-[2rem] border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 p-8 sm:p-10 shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300">
+               <Button onClick={() => setShowAppPicker(false)} variant="ghost" size="icon" className="absolute top-6 right-6 w-9 h-9 border border-zinc-200 dark:border-zinc-800 rounded-xl flex items-center justify-center text-zinc-400 hover:text-red-500 dark:hover:text-red-400 active:scale-95 transition-all">
+                  <X size={16} />
                </Button>
-               <div className="mb-10 text-center">
-                 <div className="w-16 h-16 nm-flat text-soft-blue flex items-center justify-center mx-auto mb-6 rounded-xl">
-                   <Facebook size={32} />
+               <div className="mb-8 text-center">
+                 <div className="w-14 h-14 bg-blue-500/10 border border-blue-500/20 text-blue-600 dark:text-blue-400 flex items-center justify-center mx-auto mb-4 rounded-2xl">
+                   <Facebook size={26} className="fill-current" />
                  </div>
-                 <h3 className="text-2xl font-bold text-[#111827] dark:text-gray-100 tracking-tight uppercase">{t('connectNewPage')}</h3>
-                 <p className="text-[10px] font-bold text-[#6B7280] dark:text-gray-400 uppercase tracking-widest mt-2">{t('chooseAppBridge')}</p>
+                 <h3 className="text-lg font-bold text-zinc-900 dark:text-zinc-50 uppercase tracking-tight">{t('connectNewPage')}</h3>
+                 <p className="text-[10px] font-extrabold text-zinc-400 uppercase tracking-widest mt-1.5">{t('chooseAppBridge')}</p>
                </div>
-               <div className="space-y-4">
+               <div className="space-y-3">
                  {fbApps.map(app => (
                    <button
                      key={app.id}
                      onClick={() => handleConnectFacebook(app.id)}
-                     className="w-full flex items-center justify-between p-6 nm-button hover:text-[#2563EB] dark:hover:text-blue-400 group rounded-xl cursor-pointer"
+                     className="w-full flex items-center justify-between p-5 border border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/30 rounded-2xl hover:border-blue-500/30 hover:bg-blue-500/5 text-zinc-900 dark:text-zinc-100 hover:text-blue-600 dark:hover:text-blue-400 transition-all group active:scale-[0.99]"
                    >
                      <div className="text-left">
-                       <p className="text-[11px] font-bold uppercase tracking-widest">{app.name}</p>
-                       <p className="text-[9px] text-[#6B7280] dark:text-gray-400 mt-1">APP ID: {app.appId}</p>
+                       <p className="text-[10px] font-bold uppercase tracking-wider">{app.name}</p>
+                       <p className="text-[9px] text-zinc-400 font-mono mt-1">APP ID: {app.appId}</p>
                      </div>
-                     <Plus size={18} className="group-hover:rotate-90 transition-transform text-[#2563EB] dark:text-blue-400" />
+                     <Plus size={16} className="group-hover:rotate-90 transition-transform text-blue-600 dark:text-blue-400" />
                    </button>
                  ))}
                </div>
@@ -485,9 +483,9 @@ const AppRoutes = React.memo(function AppRoutes({
 }: AppRoutesProps) {
   return (
     <React.Suspense fallback={
-      <div className="flex flex-col items-center justify-center h-96 space-y-4 animate-pulse">
-        <Loader2 className="w-12 h-12 text-indigo-500 animate-spin" />
-        <p className="text-[10px] font-black text-text-secondary uppercase tracking-[0.4em]">{t('optimizing')}</p>
+      <div className="flex flex-col items-center justify-center h-96 space-y-4 text-zinc-400 animate-pulse">
+        <Loader2 className="w-8 h-8 text-blue-500 animate-spin" />
+        <p className="text-[10px] font-mono font-extrabold uppercase tracking-widest">{t('optimizing')}</p>
       </div>
     }>
       <Routes>
