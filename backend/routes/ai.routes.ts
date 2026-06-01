@@ -142,4 +142,16 @@ router.post('/generate-product-ad', authenticateToken, async (req: any, res) => 
   }
 });
 
+router.post('/generate-marketing-image', authenticateToken, async (req: any, res) => {
+  const { imageUrl, postContent } = req.body;
+  if (!imageUrl) return res.status(400).json({ error: 'Selected image URL is required' });
+
+  try {
+    const result = await aiService.generateMarketingImage(imageUrl, postContent || '');
+    res.json(result);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 export default router;

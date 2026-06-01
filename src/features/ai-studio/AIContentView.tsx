@@ -56,6 +56,16 @@ export const AIContentView = memo(({ fanpages, api }: { fanpages: Fanpage[], api
   const [productTargetAudience, setProductTargetAudience] = useState('');
   const [productInstructions, setProductInstructions] = useState('');
   const [showProductMediaLibrary, setShowProductMediaLibrary] = useState(false);
+  const [autoGenerateMarketingImage, setAutoGenerateMarketingImage] = useState(false);
+
+  const [selectedMediaId, setSelectedMediaId] = useState<string | null>(null);
+  const [isGeneratingMarketingImage, setIsGeneratingMarketingImage] = useState(false);
+
+  useEffect(() => {
+    if (mediaItems.length > 0 && !selectedMediaId) {
+      setSelectedMediaId(mediaItems[0].id);
+    }
+  }, [mediaItems, selectedMediaId]);
 
   useEffect(() => {
     api.topics.list()
@@ -159,7 +169,7 @@ export const AIContentView = memo(({ fanpages, api }: { fanpages: Fanpage[], api
       toast.error(isVi ? 'Vui lòng chọn hoặc tải lên hình ảnh sản phẩm!' : 'Please choose or upload a product image!');
       return;
     }
-    
+
     setIsGenerating(true);
     setIsGeneratingText(true);
     setError('');
@@ -181,14 +191,46 @@ export const AIContentView = memo(({ fanpages, api }: { fanpages: Fanpage[], api
 
       if (data.text) {
         setGeneratedContent(data.text);
-        // Automatically populate visual assets with the product image
-        setMediaItems([{
+        const originalId = Date.now().toString();
+        const initialMedia = [{
           type: 'image',
           data: productImage,
-          id: Date.now().toString(),
+          id: originalId,
           isAiGenerated: false
-        }]);
-        toast.success(isVi ? 'Tạo nội dung quảng cáo thành công!' : 'Product ad content generated successfully!', { id: tid });
+        }];
+        setMediaItems(initialMedia);
+        setSelectedMediaId(originalId);
+
+        if (autoGenerateMarketingImage) {
+          toast.loading(isVi ? 'Đang tự động thiết kế hình ảnh marketing...' : 'Auto-designing marketing image...', { id: tid });
+          try {
+            const mktData = await api.ai.generateMarketingImage({
+              imageUrl: productImage,
+              postContent: data.text
+            });
+            if (mktData.imageUrl) {
+              const mktId = (Date.now() + 1).toString();
+              setMediaItems([
+                ...initialMedia,
+                {
+                  type: 'image',
+                  data: mktData.imageUrl,
+                  id: mktId,
+                  isAiGenerated: true
+                }
+              ]);
+              setSelectedMediaId(mktId);
+              toast.success(isVi ? 'Tạo nội dung & Thiết kế ảnh Marketing thành công!' : 'Product ad & marketing image generated successfully!', { id: tid });
+            } else {
+              toast.success(isVi ? 'Tạo quảng cáo thành công (Không tạo được ảnh Marketing).' : 'Product ad generated successfully (failed to design marketing image).', { id: tid });
+            }
+          } catch (mktErr) {
+            console.warn('Auto marketing image failed:', mktErr);
+            toast.success(isVi ? 'Tạo quảng cáo thành công (Lỗi thiết kế ảnh Marketing).' : 'Product ad generated successfully (error designing marketing image).', { id: tid });
+          }
+        } else {
+          toast.success(isVi ? 'Tạo nội dung quảng cáo thành công!' : 'Product ad content generated successfully!', { id: tid });
+        }
       } else {
         throw new Error(isVi ? 'Không nhận được nội dung phản hồi từ AI.' : 'Empty content response received from AI.');
       }
@@ -201,6 +243,47 @@ export const AIContentView = memo(({ fanpages, api }: { fanpages: Fanpage[], api
     }
   }, [productImage, productName, productTone, productTargetAudience, productInstructions, productPostType, api, isVi]);
 
+  const handleGenerateMarketingImage = useCallback(async () => {
+    const selectedItem = mediaItems.find(item => item.id === selectedMediaId);
+    if (!selectedItem) {
+      toast.error(isVi ? 'Vui lòng chọn một hình ảnh trước!' : 'Please select an image first!');
+      return;
+    }
+    if (!generatedContent.trim()) {
+      toast.error(isVi ? 'Vui lòng tạo nội dung bài viết trước!' : 'Please generate post content first!');
+      return;
+    }
+
+    setIsGeneratingMarketingImage(true);
+    const tid = toast.loading(isVi ? 'Đang thiết kế hình ảnh marketing...' : 'Designing marketing image...');
+    try {
+      const data = await api.ai.generateMarketingImage({
+        imageUrl: selectedItem.data,
+        postContent: generatedContent
+      });
+
+      if (data.imageUrl) {
+        const newId = Date.now().toString();
+        setMediaItems(prev => [
+          ...prev,
+          {
+            type: 'image',
+            data: data.imageUrl,
+            id: newId,
+            isAiGenerated: true
+          }
+        ]);
+        setSelectedMediaId(newId);
+        toast.success(isVi ? 'Đã tạo ảnh Marketing thành công!' : 'Marketing image generated successfully!', { id: tid });
+      } else {
+        throw new Error(isVi ? 'Không nhận được đường dẫn ảnh từ server.' : 'Empty image URL returned from server.');
+      }
+    } catch (err: any) {
+      toast.error((isVi ? 'Lỗi tạo ảnh: ' : 'Error generating image: ') + (err.message || 'Lỗi không xác định'), { id: tid });
+    } finally {
+      setIsGeneratingMarketingImage(false);
+    }
+  }, [selectedMediaId, mediaItems, generatedContent, api, isVi]);
 
   const handlePost = useCallback(async () => {
     if (!selectedFanpage || !generatedContent.trim()) return;
@@ -233,7 +316,7 @@ export const AIContentView = memo(({ fanpages, api }: { fanpages: Fanpage[], api
 
   const handleGenerateVideo = useCallback(async (videoConfig?: any) => {
     if (!generatedContent.trim()) return;
-    
+
     // Check if video already exists to prevent accidental re-render
     if (videoResult?.url && !videoConfig) {
       const reRender = window.confirm('A neural video has already been synthesized for this content. Do you want to re-configure and render a new version?');
@@ -252,10 +335,10 @@ export const AIContentView = memo(({ fanpages, api }: { fanpages: Fanpage[], api
     setIsGeneratingVideo(true);
     try {
       toast.loading('Saving draft & synthesizing video...');
-      
+
       const topic = topics.find(t => t.id === selectedTopic);
       const page = fanpages.find(p => p.id === selectedFanpage);
-      
+
       const draftPost = await api.posts.queue({
         topic: topic?.name || 'AI Generated',
         content: generatedContent,
@@ -266,7 +349,7 @@ export const AIContentView = memo(({ fanpages, api }: { fanpages: Fanpage[], api
       if (!draftPost.post?.id) throw new Error('Failed to create draft post');
 
       const videoResultData = await api.ai.generateVideo(draftPost.post.id, videoConfig);
-      
+
       if (videoResultData.alreadyExists) {
         setVideoResult({ videoId: 'existing', url: videoResultData.videoUrl, status: 'ready' });
         toast.dismiss();
@@ -278,7 +361,7 @@ export const AIContentView = memo(({ fanpages, api }: { fanpages: Fanpage[], api
       setVideoResult({ videoId: videoResultData.videoId, status: 'processing', url: undefined });
       toast.dismiss();
       toast.success(`Synthesis Protocol Complete: ${videoResultData.videoId}`);
-      
+
       // Start polling for status
       let failCount = 0;
       const poll = setInterval(async () => {
@@ -289,7 +372,7 @@ export const AIContentView = memo(({ fanpages, api }: { fanpages: Fanpage[], api
           if (status && (status.status === 'ready' || status.status === 'completed' || status.videoUrl)) {
             const videoUrl = status.videoUrl;
             setVideoResult({ videoId: videoResultData.videoId, url: videoUrl, status: 'ready' });
-            
+
             try {
               const currentMedia = mediaItems || [];
               const updatedMedia = [...currentMedia, { type: 'video', data: videoUrl, id: `v_${Date.now()}`, isAiGenerated: true }];
@@ -302,7 +385,7 @@ export const AIContentView = memo(({ fanpages, api }: { fanpages: Fanpage[], api
 
             clearInterval(poll);
             toast.success('Neural Video Synthesis Successful!');
-            setShowPlayer(true); 
+            setShowPlayer(true);
           } else if (status && status.status === 'error') {
             clearInterval(poll);
             toast.error('Synthesis Failed: Server-side error during rendering.');
@@ -350,7 +433,7 @@ export const AIContentView = memo(({ fanpages, api }: { fanpages: Fanpage[], api
 
   return (
     <div className="space-y-8 sm:space-y-12 max-w-6xl mx-auto animate-in fade-in slide-in-from-bottom-6 duration-700 pb-24 px-4 sm:px-6 lg:px-8">
-      
+
       {/* DISCOVERY HUB */}
       <div className="nm-flat rounded-lg sm:rounded-xl overflow-hidden p-6 sm:p-10 lg:p-16 relative">
         <div className="absolute top-0 left-0 w-80 h-80 bg-[#2563EB]/5 blur-[120px] -ml-40 -mt-40"></div>
@@ -366,8 +449,8 @@ export const AIContentView = memo(({ fanpages, api }: { fanpages: Fanpage[], api
             </div>
           </div>
           {activeTab === 'topic' && (
-            <button 
-              onClick={() => setIsAddingTopic(prev => !prev)} 
+            <button
+              onClick={() => setIsAddingTopic(prev => !prev)}
               className="border border-[#D1D5DB] dark:border-white/12 rounded-lg px-6 py-3 sm:px-8 sm:py-4 text-[9px] sm:text-[10px] font-bold uppercase text-[#111827] dark:text-gray-100 hover:text-[#2563EB] dark:text-blue-400 self-start sm:self-auto"
             >
               <Plus className="inline-block mr-2" size={14} /> {t('addTopic')}
@@ -447,12 +530,12 @@ export const AIContentView = memo(({ fanpages, api }: { fanpages: Fanpage[], api
 
                 <div className="space-y-4">
                   <label className="text-[10px] font-bold text-[#6B7280] dark:text-gray-400 uppercase tracking-[0.3em] ml-4">Automation Layer</label>
-                  <button 
-                    onClick={() => setShowAdvanced(prev => !prev)} 
+                  <button
+                    onClick={() => setShowAdvanced(prev => !prev)}
                     className={`w-full h-12 border border-[#D1D5DB] dark:border-white/12 rounded-lg px-8 py-3 flex items-center justify-between font-bold text-[10px] uppercase transition-all bg-slate-200/50 dark:bg-slate-950/40 text-slate-900 dark:text-white ${showAdvanced ? 'text-[#2563EB] dark:text-blue-400 border-[#2563EB] dark:border-blue-400 bg-slate-300/30 dark:bg-slate-900/60' : 'hover:text-[#2563EB] dark:hover:text-blue-400'}`}
                   >
                     <div className="flex items-center gap-4">
-                      <Sparkles size={20} className={showAdvanced ? 'text-[#2563EB] dark:text-blue-400 animate-pulse' : 'text-[#6B7280] dark:text-gray-400'} /> 
+                      <Sparkles size={20} className={showAdvanced ? 'text-[#2563EB] dark:text-blue-400 animate-pulse' : 'text-[#6B7280] dark:text-gray-400'} />
                       {showAdvanced ? t('cancelProtocol') : t('configureAutomation')}
                     </div>
                     {showAdvanced ? <X size={20} /> : <Plus size={20} />}
@@ -480,15 +563,15 @@ export const AIContentView = memo(({ fanpages, api }: { fanpages: Fanpage[], api
                             </SelectContent>
                           </Select>
                         </div>
-                        
+
                         {/* Keywords */}
                         <div className="space-y-4">
                           <label className="text-[10px] font-bold text-[#6B7280] dark:text-gray-400 uppercase tracking-[0.2em] block ml-4">Neural Keywords / Từ khóa</label>
-                          <Input 
+                          <Input
                             type="text"
                             placeholder="e.g. sale, premium, summer..."
-                            className="flex h-12 w-full rounded-lg border border-black/10 dark:border-white/10 bg-slate-200/50 dark:bg-slate-950/40 px-6 py-3 text-sm font-bold text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:border-indigo-500 disabled:cursor-not-allowed disabled:opacity-50 transition-all" 
-                            value={automationConfig.keywords} 
+                            className="flex h-12 w-full rounded-lg border border-black/10 dark:border-white/10 bg-slate-200/50 dark:bg-slate-950/40 px-6 py-3 text-sm font-bold text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:border-indigo-500 disabled:cursor-not-allowed disabled:opacity-50 transition-all"
+                            value={automationConfig.keywords}
                             onChange={e => setAutomationConfig({ ...automationConfig, keywords: e.target.value })}
                           />
                         </div>
@@ -497,11 +580,11 @@ export const AIContentView = memo(({ fanpages, api }: { fanpages: Fanpage[], api
                       {/* Instructions */}
                       <div className="space-y-4">
                         <label className="text-[10px] font-bold text-[#6B7280] dark:text-gray-400 uppercase tracking-[0.2em] block ml-4">Strategic Instructions / Chỉ dẫn phụ</label>
-                        <Textarea 
-                          className="w-full min-h-[140px] p-4 font-bold text-sm resize-none custom-scrollbar rounded-lg border border-black/10 dark:border-white/10 bg-slate-200/50 dark:bg-slate-950/40 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:border-indigo-500 transition-all" 
+                        <Textarea
+                          className="w-full min-h-[140px] p-4 font-bold text-sm resize-none custom-scrollbar rounded-lg border border-black/10 dark:border-white/10 bg-slate-200/50 dark:bg-slate-950/40 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:border-indigo-500 transition-all"
                           rows={3}
                           placeholder="e.g. Hãy thêm call to action (kêu gọi hành động) ở cuối bài, sử dụng nhiều emoji..."
-                          value={automationConfig.instructions} 
+                          value={automationConfig.instructions}
                           onChange={e => setAutomationConfig({ ...automationConfig, instructions: e.target.value })}
                         />
                       </div>
@@ -511,9 +594,9 @@ export const AIContentView = memo(({ fanpages, api }: { fanpages: Fanpage[], api
               </div>
 
               <div className="flex justify-center pt-6">
-                <button 
-                  onClick={handleGenerate} 
-                  disabled={isGenerating || !selectedTopic} 
+                <button
+                  onClick={handleGenerate}
+                  disabled={isGenerating || !selectedTopic}
                   className="border border-[#D1D5DB] dark:border-white/12 rounded-lg px-16 py-6 bg-gradient-to-r from-soft-blue/10 to-indigo-600/10 border-soft-blue/20 text-[#2563EB] dark:text-blue-400 font-bold uppercase text-[11px] tracking-[0.3em] flex items-center gap-6 disabled:opacity-30 group hover: transition-all"
                 >
                   <Sparkles className={`w-6 h-6 ${isGenerating ? 'animate-spin' : 'group-hover:rotate-12 transition-transform'}`} />
@@ -532,7 +615,7 @@ export const AIContentView = memo(({ fanpages, api }: { fanpages: Fanpage[], api
                     <ImageIcon size={12} className="text-[#2563EB] dark:text-blue-400" />
                     {isVi ? 'HÌNH ẢNH SẢN PHẨM' : 'PRODUCT IMAGE'}
                   </label>
-                  <div 
+                  <div
                     onClick={() => setShowProductMediaLibrary(true)}
                     className="relative aspect-[4/3] rounded-lg nm-flat overflow-hidden p-3 group cursor-pointer border border-white/5 hover:scale-[1.01] transition-all duration-300 flex flex-col justify-center items-center"
                   >
@@ -569,9 +652,9 @@ export const AIContentView = memo(({ fanpages, api }: { fanpages: Fanpage[], api
                     <Bot size={12} className="text-[#2563EB] dark:text-blue-400" />
                     {isVi ? 'TÊN SẢN PHẨM / THƯƠNG HIỆU (TÙY CHỌN)' : 'PRODUCT NAME / BRAND (OPTIONAL)'}
                   </label>
-                  <Input 
-                    type="text" 
-                    placeholder={isVi ? 'Ví dụ: Giày Chạy Bộ Nike Air Max v2' : 'e.g. Nike Air Max Runner v2'} 
+                  <Input
+                    type="text"
+                    placeholder={isVi ? 'Ví dụ: Giày Chạy Bộ Nike Air Max v2' : 'e.g. Nike Air Max Runner v2'}
                     value={productName}
                     onChange={e => setProductName(e.target.value)}
                     className="flex h-12 w-full rounded-lg border border-black/10 dark:border-white/10 bg-slate-200/50 dark:bg-slate-950/40 px-6 py-3 text-sm font-bold text-slate-900 dark:text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-600 dark:placeholder:text-slate-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:border-indigo-500 disabled:cursor-not-allowed disabled:opacity-50 transition-all"
@@ -625,9 +708,9 @@ export const AIContentView = memo(({ fanpages, api }: { fanpages: Fanpage[], api
                     <Target size={12} className="text-[#2563EB] dark:text-blue-400" />
                     {isVi ? 'KHÁCH HÀNG MỤC TIÊU (TÙY CHỌN)' : 'TARGET AUDIENCE (OPTIONAL)'}
                   </label>
-                  <Input 
-                    type="text" 
-                    placeholder={isVi ? 'Ví dụ: Dân văn phòng năng động, người chạy bộ chuyên nghiệp' : 'e.g. Active office workers, marathon runners'} 
+                  <Input
+                    type="text"
+                    placeholder={isVi ? 'Ví dụ: Dân văn phòng năng động, người chạy bộ chuyên nghiệp' : 'e.g. Active office workers, marathon runners'}
                     value={productTargetAudience}
                     onChange={e => setProductTargetAudience(e.target.value)}
                     className="flex h-12 w-full rounded-lg border border-black/10 dark:border-white/10 bg-slate-200/50 dark:bg-slate-950/40 px-6 py-3 text-sm font-bold text-slate-900 dark:text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-600 dark:placeholder:text-slate-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:border-indigo-500 disabled:cursor-not-allowed disabled:opacity-50 transition-all"
@@ -639,21 +722,34 @@ export const AIContentView = memo(({ fanpages, api }: { fanpages: Fanpage[], api
                     <Sparkles size={12} className="text-[#2563EB] dark:text-blue-400" />
                     {isVi ? 'YÊU CẦU ĐẶC BIỆT / KHUYẾN MÃI (TÙY CHỌN)' : 'SPECIAL INSTRUCTIONS / PROMOS (OPTIONAL)'}
                   </label>
-                  <Textarea 
-                    placeholder={isVi ? 'Ví dụ: Nhấn mạnh bảo hành 12 tháng, chương trình khuyến mãi mua 1 tặng 1 trong tuần này.' : 'e.g. Highlight 12 months warranty, buy 1 get 1 free promo this week.'} 
+                  <Textarea
+                    placeholder={isVi ? 'Ví dụ: Nhấn mạnh bảo hành 12 tháng, chương trình khuyến mãi mua 1 tặng 1 trong tuần này.' : 'e.g. Highlight 12 months warranty, buy 1 get 1 free promo this week.'}
                     value={productInstructions}
                     onChange={e => setProductInstructions(e.target.value)}
                     rows={3}
                     className="w-full p-4 font-bold text-sm resize-none custom-scrollbar rounded-lg border border-black/10 dark:border-white/10 bg-slate-200/50 dark:bg-slate-950/40 text-slate-900 dark:text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-600 dark:placeholder:text-slate-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:border-indigo-500 transition-all"
                   />
                 </div>
+
+                <div className="pt-2 flex items-center gap-3 ml-4">
+                  <input
+                    type="checkbox"
+                    id="autoGenerateMarketingImage"
+                    checked={autoGenerateMarketingImage}
+                    onChange={(e) => setAutoGenerateMarketingImage(e.target.checked)}
+                    className="w-4 h-4 rounded border-black/10 dark:border-white/10 bg-slate-200/50 dark:bg-slate-950/40 text-indigo-600 focus:ring-indigo-500 cursor-pointer accent-indigo-600"
+                  />
+                  <label htmlFor="autoGenerateMarketingImage" className="text-[10px] font-bold text-[#6B7280] dark:text-gray-400 uppercase tracking-wider cursor-pointer select-none">
+                    {isVi ? 'Tự động thiết kế ảnh Marketing chuyên nghiệp (AI)' : 'Auto-generate professional Marketing Image (AI)'}
+                  </label>
+                </div>
               </div>
             </div>
 
             <div className="flex justify-center pt-6">
-              <button 
-                onClick={handleGenerateProductAd} 
-                disabled={isGenerating || !productImage} 
+              <button
+                onClick={handleGenerateProductAd}
+                disabled={isGenerating || !productImage}
                 className="border border-[#D1D5DB] dark:border-white/12 rounded-lg px-16 py-6 bg-gradient-to-r from-soft-blue/10 to-indigo-600/10 border-soft-blue/20 text-[#2563EB] dark:text-blue-400 font-bold uppercase text-[11px] tracking-[0.3em] flex items-center gap-6 disabled:opacity-30 group hover: transition-all"
               >
                 <Sparkles className={`w-6 h-6 ${isGenerating ? 'animate-spin' : 'group-hover:rotate-12 transition-transform'}`} />
@@ -666,7 +762,7 @@ export const AIContentView = memo(({ fanpages, api }: { fanpages: Fanpage[], api
 
       {error && (
         <div className="bg-[#F3F4F6] dark:bg-white/8 border border-[#D1D5DB] dark:border-white/12 rounded-lg p-8 rounded-lg text-soft-pink flex items-center animate-in shake duration-500">
-          <AlertCircle size={24} className="mr-6" /> 
+          <AlertCircle size={24} className="mr-6" />
           <span className="font-bold uppercase text-[10px] tracking-normal">{error}</span>
         </div>
       )}
@@ -696,11 +792,11 @@ export const AIContentView = memo(({ fanpages, api }: { fanpages: Fanpage[], api
                   <RefreshCw size={14} className={isGeneratingText ? 'animate-spin' : ''} /> Regenerate
                 </button>
               </div>
-              <Textarea 
-                value={generatedContent} 
-                onChange={e => setGeneratedContent(e.target.value)} 
-                rows={10} 
-                className="w-full p-6 sm:p-10 font-bold text-base sm:text-lg leading-relaxed text-white resize-none custom-scrollbar rounded-lg border border-black/10 dark:border-white/10 bg-slate-200/50 dark:bg-slate-950/40 placeholder:text-slate-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:border-indigo-500 transition-all" 
+              <Textarea
+                value={generatedContent}
+                onChange={e => setGeneratedContent(e.target.value)}
+                rows={10}
+                className="w-full p-6 sm:p-10 font-bold text-base sm:text-lg leading-relaxed text-white resize-none custom-scrollbar rounded-lg border border-black/10 dark:border-white/10 bg-slate-200/50 dark:bg-slate-950/40 placeholder:text-slate-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:border-indigo-500 transition-all"
               />
             </div>
 
@@ -711,8 +807,8 @@ export const AIContentView = memo(({ fanpages, api }: { fanpages: Fanpage[], api
                   <button onClick={() => { const t = topics.find(t => t.id === selectedTopic); if (t) handleGenerateImage(t.name, t.keywords || [], true); }} disabled={isGeneratingImage} className="w-10 h-10 border border-[#D1D5DB] dark:border-white/12 rounded-lg flex items-center justify-center text-[#6B7280] dark:text-gray-400 hover:text-[#2563EB] dark:text-blue-400 transition-all">
                     <RefreshCw size={16} className={isGeneratingImage ? 'animate-spin' : ''} />
                   </button>
-                  <button 
-                    onClick={() => setShowMediaLibrary(true)} 
+                  <button
+                    onClick={() => setShowMediaLibrary(true)}
                     className="border border-[#D1D5DB] dark:border-white/12 rounded-lg px-6 py-2 flex items-center gap-3 text-[#111827] dark:text-gray-100 font-bold uppercase text-[10px] tracking-normal hover:text-[#2563EB] dark:text-blue-400"
                   >
                     <Upload size={14} /> <span>Add</span>
@@ -721,19 +817,44 @@ export const AIContentView = memo(({ fanpages, api }: { fanpages: Fanpage[], api
               </div>
 
               <div className="grid grid-cols-2 gap-6">
-                {mediaItems.map(item => (
-                  <div key={item.id} className="relative aspect-square rounded-lg nm-flat p-2 group overflow-hidden">
-                    <img src={item.data} className="w-full h-full object-cover rounded-lg group-hover:scale-110 transition-transform duration-700" />
-                    <button onClick={() => setMediaItems(prev => prev.filter(i => i.id !== item.id))} className="absolute top-4 right-4 w-10 h-10 border border-[#D1D5DB] dark:border-white/12 rounded-lg bg-soft-pink/10 flex items-center justify-center text-soft-pink opacity-0 group-hover:opacity-100 transition-all">
-                      <X size={18} />
-                    </button>
-                    {item.isAiGenerated && (
-                      <div className="absolute bottom-4 left-4 nm-flat px-3 py-1.5 rounded-xl text-[8px] font-bold text-[#2563EB] dark:text-blue-400 uppercase backdrop-blur-md bg-white/40">
-                        AI Image
-                      </div>
-                    )}
-                  </div>
-                ))}
+                {mediaItems.map(item => {
+                  const isSelected = selectedMediaId === item.id;
+                  return (
+                    <div
+                      key={item.id}
+                      onClick={() => setSelectedMediaId(item.id)}
+                      className={`relative aspect-square rounded-lg nm-flat p-2 group overflow-hidden cursor-pointer transition-all duration-300 ${isSelected
+                          ? 'ring-4 ring-indigo-500 shadow-indigo-500/20 scale-[0.98] border-indigo-500/40'
+                          : 'border border-transparent hover:border-indigo-500/20'
+                        }`}
+                    >
+                      <img src={item.data} className="w-full h-full object-cover rounded-lg group-hover:scale-110 transition-transform duration-700" />
+
+                      {/* Selection Checkmark */}
+                      {isSelected && (
+                        <div className="absolute top-4 left-4 w-8 h-8 rounded-full bg-indigo-600 flex items-center justify-center text-white shadow-md animate-in zoom-in-50 duration-300">
+                          <CheckCircle size={16} />
+                        </div>
+                      )}
+
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setMediaItems(prev => prev.filter(i => i.id !== item.id));
+                          if (isSelected) setSelectedMediaId(null);
+                        }}
+                        className="absolute top-4 right-4 w-10 h-10 border border-[#D1D5DB] dark:border-white/12 rounded-lg bg-soft-pink/10 flex items-center justify-center text-soft-pink opacity-0 group-hover:opacity-100 transition-all hover:bg-soft-pink/20"
+                      >
+                        <X size={18} />
+                      </button>
+                      {item.isAiGenerated && (
+                        <div className="absolute bottom-4 left-4 nm-flat px-3 py-1.5 rounded-xl text-[8px] font-bold text-[#2563EB] dark:text-blue-400 uppercase backdrop-blur-md bg-white/40">
+                          AI Image
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
                 {isGeneratingImage && (
                   <div className="aspect-square flex items-center justify-center bg-[#F3F4F6] dark:bg-white/8 border border-[#D1D5DB] dark:border-white/12 rounded-lg rounded-lg">
                     <Loader2 className="animate-spin text-[#2563EB] dark:text-blue-400/30" size={32} />
@@ -745,6 +866,28 @@ export const AIContentView = memo(({ fanpages, api }: { fanpages: Fanpage[], api
                   </div>
                 )}
               </div>
+
+              {/* Marketing Image Generator Button */}
+              {mediaItems.length > 0 && (
+                <div className="pt-2">
+                  <Button
+                    onClick={handleGenerateMarketingImage}
+                    disabled={isGeneratingMarketingImage || !selectedMediaId || !generatedContent.trim()}
+                    className="w-full h-12 border border-[#D1D5DB] dark:border-white/12 rounded-lg bg-gradient-to-r from-blue-600/10 to-indigo-600/10 border-blue-500/20 text-[#2563EB] dark:text-blue-400 font-bold uppercase text-[10px] tracking-wider flex items-center justify-center gap-3 transition-all hover:scale-[1.01] disabled:opacity-30 disabled:pointer-events-none"
+                  >
+                    {isGeneratingMarketingImage ? (
+                      <Loader2 size={16} className="animate-spin" />
+                    ) : (
+                      <Sparkles size={16} className="animate-pulse text-indigo-500" />
+                    )}
+                    <span>
+                      {isGeneratingMarketingImage
+                        ? (isVi ? 'Đang thiết kế ảnh Marketing...' : 'Designing Marketing Image...')
+                        : (isVi ? 'Tạo ảnh Marketing từ ảnh đang chọn' : 'Generate Marketing Image')}
+                    </span>
+                  </Button>
+                </div>
+              )}
             </div>
           </div>
 
@@ -765,7 +908,7 @@ export const AIContentView = memo(({ fanpages, api }: { fanpages: Fanpage[], api
                   </div>
                 </div>
                 {videoResult.url ? (
-                  <button 
+                  <button
                     onClick={() => setShowPlayer(true)}
                     className="border border-[#D1D5DB] dark:border-white/12 rounded-lg px-8 py-3 text-[10px] font-bold text-emerald-500 uppercase flex items-center gap-3"
                   >
@@ -794,8 +937,8 @@ export const AIContentView = memo(({ fanpages, api }: { fanpages: Fanpage[], api
                   ))}
                 </SelectContent>
               </Select>
-              
-              <button 
+
+              <button
                 onClick={() => handleGenerateVideo()}
                 disabled={isGeneratingVideo || !generatedContent}
                 className="border border-[#D1D5DB] dark:border-white/12 rounded-lg px-8 py-6 text-[#2563EB] dark:text-blue-400 font-bold uppercase text-[11px] tracking-normal flex items-center gap-3 hover: disabled:opacity-30"
@@ -805,9 +948,9 @@ export const AIContentView = memo(({ fanpages, api }: { fanpages: Fanpage[], api
               </button>
             </div>
 
-            <button 
-              onClick={handlePost} 
-              disabled={isPosting || !selectedFanpage} 
+            <button
+              onClick={handlePost}
+              disabled={isPosting || !selectedFanpage}
               className="border border-[#D1D5DB] dark:border-white/12 rounded-lg px-16 sm:px-20 py-6 text-[#111827] dark:text-gray-100 font-bold uppercase text-sm tracking-[0.3em] flex items-center gap-6 group hover:text-[#2563EB] dark:text-blue-400"
             >
               <Send className={`w-6 h-6 ${isPosting ? 'animate-pulse' : 'group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform'}`} />
@@ -817,25 +960,25 @@ export const AIContentView = memo(({ fanpages, api }: { fanpages: Fanpage[], api
         </div>
       )}
       {showVideoConfig && (
-        <VideoConfigModal 
-          api={api} 
-          onConfirm={handleGenerateVideo} 
-          onClose={() => setShowVideoConfig(false)} 
+        <VideoConfigModal
+          api={api}
+          onConfirm={handleGenerateVideo}
+          onClose={() => setShowVideoConfig(false)}
         />
       )}
 
       {showPlayer && videoResult?.url && (
-        <VideoPlayerModal 
+        <VideoPlayerModal
           url={videoResult.url}
           onClose={() => setShowPlayer(false)}
           onPublish={handlePublishVideo}
           isPublishing={isPublishingVideo}
         />
       )}
-      
+
       <AnimatePresence>
         {showMediaLibrary && (
-          <MediaLibraryModal 
+          <MediaLibraryModal
             api={api}
             onClose={() => setShowMediaLibrary(false)}
             onSelect={(url) => {
@@ -851,7 +994,7 @@ export const AIContentView = memo(({ fanpages, api }: { fanpages: Fanpage[], api
         )}
 
         {showProductMediaLibrary && (
-          <MediaLibraryModal 
+          <MediaLibraryModal
             api={api}
             onClose={() => setShowProductMediaLibrary(false)}
             onSelect={(url) => {

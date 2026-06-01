@@ -110,6 +110,8 @@ export class ApiService {
       postType?: string;
       language?: string;
     }) => this.fetch('/api/ai/generate-product-ad', { method: 'POST', body: JSON.stringify(data) }).then(r => this.handleResponse(r)),
+    generateMarketingImage: (data: { imageUrl: string; postContent: string }) =>
+      this.fetch('/api/ai/generate-marketing-image', { method: 'POST', body: JSON.stringify(data) }).then(r => this.handleResponse(r)),
     generateVideo: (postId: string, options?: { templateId?: string, ttsProvider?: string, ttsVoiceId?: string, bgmAssetId?: string }) => 
       this.fetch('/api/ai/generate-video', { method: 'POST', body: JSON.stringify({ postId, ...options }) }).then(r => this.handleResponse(r)),
     getVideoOptions: () => this.fetch('/api/ai/video-options').then(r => this.handleResponse(r)),

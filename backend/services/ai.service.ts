@@ -9,12 +9,12 @@ const __dirname = __filename ? path.dirname(__filename) : process.cwd();
 const PROJECT_ROOT = path.resolve(__dirname, __filename ? '../../' : './');
 
 // Use the model name WITHOUT 'models/' prefix — the @google/genai v1 SDK requires it
-const DEFAULT_MODEL = 'gemini-2.0-flash';
+const DEFAULT_MODEL = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
 
 export function cleanAIResult(text: string) {
   if (!text) return '';
   let cleaned = text.trim();
-  
+
   // Remove markdown code blocks
   if (cleaned.startsWith('```')) {
     const lines = cleaned.split('\n');
@@ -43,22 +43,22 @@ export function cleanAIResult(text: string) {
  */
 export async function generateText(prompt: string) {
   const apiKey = process.env.GEMINI_API_KEY || '';
-  
+
   if (!apiKey) {
     throw new Error('GOOGLE_API_KEY_MISSING: Gemini API Key is not configured in .env file.');
   }
 
   try {
     const genAI = new GoogleGenAI({ apiKey });
-    
+
     // Usage for the specific @google/genai package
-    const result = await genAI.models.generateContent({ 
-      model: DEFAULT_MODEL, 
-      contents: prompt 
+    const result = await genAI.models.generateContent({
+      model: DEFAULT_MODEL,
+      contents: prompt
     });
-    
+
     const text = result.text;
-    
+
     if (!text) {
       throw new Error('GOOGLE_API_EMPTY_RESPONSE: Gemini returned an empty response. It might have been blocked due to safety settings.');
     }
@@ -67,11 +67,11 @@ export async function generateText(prompt: string) {
   } catch (error: any) {
     // Categorize and provide detailed messages for common Google API errors
     const errorMessage = error.message || '';
-    
+
     if (errorMessage.includes('429') || errorMessage.toLowerCase().includes('quota')) {
       throw new Error('GOOGLE_API_QUOTA_EXCEEDED: You have reached the rate limit for Gemini. Please wait a moment or upgrade your plan.');
     }
-    
+
     if (errorMessage.includes('403') || errorMessage.toLowerCase().includes('permission')) {
       throw new Error('GOOGLE_API_PERMISSION_DENIED: Access denied. Check if your API key is valid and has Gemini API enabled.');
     }
@@ -99,7 +99,7 @@ export async function generateImage(topic: string, userPrompt?: string, keywords
   // Priority 1: Use keywords if available (from Topic or Form)
   if (keywords && (Array.isArray(keywords) ? keywords.length > 0 : keywords.trim().length > 0)) {
     searchTerms = Array.isArray(keywords) ? keywords.join(' ') : keywords;
-  } 
+  }
   // Priority 2: Fallback to Topic or User Prompt
   else {
     searchTerms = topic || userPrompt || 'nature';
@@ -128,19 +128,19 @@ export async function generateImage(topic: string, userPrompt?: string, keywords
 
   // 3. Try Pexels (Secondary Search)
   if (process.env.PEXELS_API_KEY) {
-     try {
-       const pRes = await fetch(`https://api.pexels.com/v1/search?query=${query}&per_page=5&orientation=landscape`, {
-         headers: { 'Authorization': process.env.PEXELS_API_KEY }
-       });
-       const data = await pRes.json();
-       if (data.photos?.length > 0) {
-         const img = data.photos[0];
-         const buffer = await fetchImageBuffer(img.src.large2x || img.src.large);
-         if (buffer) return await persistImage(buffer);
-       }
-     } catch (e) {
-       console.warn('[IMAGE-SEARCH] Pexels API failed.');
-     }
+    try {
+      const pRes = await fetch(`https://api.pexels.com/v1/search?query=${query}&per_page=5&orientation=landscape`, {
+        headers: { 'Authorization': process.env.PEXELS_API_KEY }
+      });
+      const data = await pRes.json();
+      if (data.photos?.length > 0) {
+        const img = data.photos[0];
+        const buffer = await fetchImageBuffer(img.src.large2x || img.src.large);
+        if (buffer) return await persistImage(buffer);
+      }
+    } catch (e) {
+      console.warn('[IMAGE-SEARCH] Pexels API failed.');
+    }
   }
 
   // 4. Reliable Free Search/Discovery (LoremFlickr - searches multiple sources)
@@ -230,11 +230,11 @@ Yêu cầu cấu trúc:
 3. THÔNG ĐIỆP ý nghĩa & Kêu gọi tương tác/mua ngay, kèm 3-5 Hashtag truyền cảm hứng.`,
 
   tiktok_script: `Định dạng bài viết: Kịch bản video ngắn (TikTok/Reels/Shorts) triệu view tối ưu thời lượng 30s - 45s để có tỷ lệ giữ chân người xem cao nhất.
-Yêu cầu cấu trúc chi tiết:
-- Giây 0-3 (MỞ ĐẦU - HOOK): Câu thoại/hành động cực sốc đánh thẳng vào tâm lý tò mò. Kèm mô tả [Hành động] và [Âm thanh].
-- Giây 3-20 (THÂN BÀI - DEMO): Đưa sản phẩm ra trước camera biểu diễn tính năng độc đáo nhất (Show, don't tell).
-- Giây 20-30 (KÊU GỌI CTA): Bấm vào giỏ hàng hoặc link bio để nhận ưu đãi giới hạn.
-- Định dạng rõ ràng: [Thời gian] | [Hình ảnh/Góc máy] | [Lời thoại (Voiceover)] | [Âm thanh/Nhạc nền].`,
+Yêu cầu định dạng & cấu trúc:
+1. CHỈ viết phần lời thoại (voiceover) hoặc lời nói trực tiếp trôi chảy, tự nhiên để đọc/nói.
+2. TUYỆT ĐỐI KHÔNG sử dụng bất kỳ mốc thời gian dạng ngoặc vuông nào (ví dụ: KHÔNG viết [0-3s], [Giây 0-3], [3-20s]...).
+3. TUYỆT ĐỐI KHÔNG đưa vào các chỉ dẫn góc máy, mô tả hình ảnh, hành động hay âm thanh dạng ngoặc vuông hoặc ngăn cách bằng dấu đứng (ví dụ: KHÔNG viết [Cận cảnh...], [Hành động], [Âm thanh], [Góc máy] hoặc dấu |).
+4. Bài viết phải có cấu trúc cuốn hút gồm: Câu hook mở đầu giật gân, phân tích điểm nổi bật của sản phẩm, và lời kêu gọi tương tác/mua hàng ở cuối bài.`,
 
   default: `Định dạng bài viết: Bài đăng giới thiệu sản phẩm nghệ thuật súc tích, đầy đủ thông tin đắt giá từ tính năng nổi bật đến cách sở hữu, kích thích ham muốn mua sắm ngay lập tức (đọc khoảng 30s-60s).
 Yêu cầu cấu trúc:
@@ -287,7 +287,7 @@ export async function generateProductAd(params: {
       const port = process.env.PORT || '5000';
       absoluteUrl = `http://localhost:${port}${imageUrl}`;
     }
-    
+
     const fetchResult = await fetchImageAndMimeType(absoluteUrl);
     if (fetchResult) {
       buffer = fetchResult.buffer;
@@ -341,7 +341,7 @@ YÊU CẦU VỀ ĐỘ DÀI VÀ TỐI ƯU THỜI GIAN:
   try {
     const genAI = new GoogleGenAI({ apiKey });
     const base64Data = buffer.toString('base64');
-    
+
     const result = await genAI.models.generateContent({
       model: DEFAULT_MODEL,
       contents: [
@@ -354,9 +354,9 @@ YÊU CẦU VỀ ĐỘ DÀI VÀ TỐI ƯU THỜI GIAN:
         prompt
       ]
     });
-    
+
     const text = result.text;
-    
+
     if (!text) {
       throw new Error('GOOGLE_API_EMPTY_RESPONSE: Gemini returned an empty response. It might have been blocked due to safety settings.');
     }
@@ -370,3 +370,113 @@ YÊU CẦU VỀ ĐỘ DÀI VÀ TỐI ƯU THỜI GIAN:
     throw new Error(`GOOGLE_API_ERROR: ${errorMessage}`);
   }
 }
+
+/**
+ * Generate a professional marketing image from a selected image and post content
+ */
+export async function generateMarketingImage(imageUrl: string, postContent: string) {
+  const apiKey = process.env.GEMINI_API_KEY || '';
+  if (!apiKey) {
+    const fallbackUrl = await generateImage('marketing promotion banner', postContent);
+    return { imageUrl: fallbackUrl, prompt: 'marketing promotion banner' };
+  }
+
+  let buffer: Buffer | null = null;
+  let mimeType = 'image/jpeg';
+
+  if (imageUrl.startsWith('/api/media/')) {
+    const filename = imageUrl.replace('/api/media/', '');
+    const filePath = path.join(PROJECT_ROOT, 'public', 'uploads', filename);
+    if (fs.existsSync(filePath)) {
+      buffer = fs.readFileSync(filePath);
+      const ext = path.extname(filename).toLowerCase();
+      if (ext === '.png') mimeType = 'image/png';
+      else if (ext === '.webp') mimeType = 'image/webp';
+      else if (ext === '.gif') mimeType = 'image/gif';
+      else if (ext === '.jpeg' || ext === '.jpg') mimeType = 'image/jpeg';
+    }
+  }
+
+  if (!buffer) {
+    let absoluteUrl = imageUrl;
+    if (imageUrl.startsWith('/')) {
+      const port = process.env.PORT || '5000';
+      absoluteUrl = `http://localhost:${port}${imageUrl}`;
+    }
+
+    const fetchResult = await fetchImageAndMimeType(absoluteUrl);
+    if (fetchResult) {
+      buffer = fetchResult.buffer;
+      mimeType = fetchResult.mimeType;
+    }
+  }
+
+  let prompt = `You are a high-end Creative Director and AI Image Designer.
+I have a product image and a social media marketing post content.
+Your task is to analyze BOTH the product image and the post content, then generate a highly specific, professional, and visually stunning image generation prompt (in English, less than 50 words).
+This prompt will be fed into a state-of-the-art AI image generation model (Imagen 3) to generate a professional marketing/advertising photo.
+
+Requirements for the generated prompt:
+1. It MUST describe the exact product seen in the image, preserving its key visual features (color, style, shape).
+2. It MUST place and highlight the product prominently in the center of the image.
+3. It MUST describe a beautiful, styled, and professional background matching the marketing post content (e.g. flatlay, studio lighting, natural environment, lifestyle backdrop).
+4. Keep it concise, descriptive, and direct. Do NOT write conversational text, introductions, or explanations. Only return the prompt text.
+Example: "A professional commercial photo of a sleek black ceramic running shoe, placed on a dark reflective marble podium, soft neon pink and blue background lighting, premium advertising style."`;
+
+  let optimizedKeywords = 'professional marketing banner showcasing premium product';
+
+  if (buffer) {
+    try {
+      const genAI = new GoogleGenAI({ apiKey });
+      const base64Data = buffer.toString('base64');
+      const result = await genAI.models.generateContent({
+        model: DEFAULT_MODEL,
+        contents: [
+          {
+            inlineData: {
+              mimeType: mimeType,
+              data: base64Data
+            }
+          },
+          prompt
+        ]
+      });
+      const text = result.text;
+      if (text) {
+        optimizedKeywords = cleanAIResult(text);
+        console.log(`[MARKETING-IMAGE] Gemini-optimized Imagen prompt: "${optimizedKeywords}"`);
+      }
+    } catch (e: any) {
+      console.warn('[MARKETING-IMAGE] Gemini prompt generation failed, using fallback keywords.', e.message);
+    }
+  }
+
+  // Use state-of-the-art Imagen 3 to generate a brand new image based on the prompt!
+  try {
+    const genAI = new GoogleGenAI({ apiKey });
+    console.log(`[MARKETING-IMAGE-GENERATOR] Calling Imagen 3 with prompt: "${optimizedKeywords}"`);
+    const response = await genAI.models.generateImages({
+      model: 'imagen-3.0-generate-002',
+      prompt: optimizedKeywords,
+      config: {
+        numberOfImages: 1,
+        outputMimeType: 'image/jpeg',
+        aspectRatio: '1:1',
+      },
+    });
+
+    if (response.generatedImages?.[0]?.image?.imageBytes) {
+      const imageBytes = response.generatedImages[0].image.imageBytes;
+      const bufferBytes = Buffer.from(imageBytes, 'base64');
+      const finalImageUrl = await persistImage(bufferBytes);
+      console.log(`[MARKETING-IMAGE-GENERATOR] Successfully generated marketing image via Imagen 3: ${finalImageUrl}`);
+      return { imageUrl: finalImageUrl, prompt: optimizedKeywords };
+    }
+  } catch (imagenErr: any) {
+    console.warn('[MARKETING-IMAGE-GENERATOR] Imagen 3 generation failed, falling back to discovery search:', imagenErr.message);
+  }
+
+  const finalImageUrl = await generateImage(optimizedKeywords, optimizedKeywords);
+  return { imageUrl: finalImageUrl, prompt: optimizedKeywords };
+}
+
